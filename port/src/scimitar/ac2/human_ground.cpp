@@ -273,9 +273,19 @@ void HumanGround::UpdateMoveCycleMain(float dt) {
     float target = ComputeTargetSpeedRatio(data.m_DestSpeedRatio, data.m_Sprint,
                                            m_HighProfileIntention != 0, m_AISpeedOverride != 0,
                                            m_AISpeedRatio);
-    // PORT: no action system yet, so this is always the game's "move cycle is playing" branch; the restriction mode
-    // (RestrictTargetSpeedRatio) only applies outside it. The port's Human is the player, so slowing down follows the
-    // curve. LIVE row 4: the game's step is the float at entity +0x6C -> +0x5D8, taken to be dt.
+    // PC 0x61BD2D: while the current action isn't the move cycle (93469659) and won't finish this frame, the target is
+    // restricted (mode +0x994, then <= 0.2 without high profile), the ratio steps by plain dt, and the bands / gait
+    // aren't updated (the branch returns). The step is the frame dt (RE/20 row 4).
+    if (!PortIsMoveCycleActionCurrent(dt)) {
+        const float t = RestrictTargetSpeedRatio(target, m_SpeedRestriction, /*isPlayer=*/true, data.m_Sprint,
+                                                 m_HighProfileIntention != 0, m_SpeedRatio);
+        m_SpeedRatio = StepSpeedRatio(m_SpeedRatio, t, dt, 1.0f);
+        // (UpdateMoveDefaultBlendFactors(1, 1): animation layer)
+        if (m_MoveCycleEntryFlags & 1) m_PortActionTimeScale = 2.0f - m_PortAction.Progress();
+        return;
+    }
+    // The move cycle is current. The port's Human is the player; slowing down follows the curve unless the AI
+    // override is on.
     const float curve = m_AISpeedOverride ? 1.0f : m_SlowDownCurve.GetOutput(m_SpeedRatio);
     m_SpeedRatio = StepSpeedRatio(m_SpeedRatio, target, dt, curve);
     GaitFromSpeedRatio(m_SpeedRatio, m_GaitLevel, m_Running);
@@ -427,14 +437,35 @@ void HumanGround::ExecTurnStartToMoveCycleMain() {
         m_SpeedRatio = 0.6f;
         data.m_TransitionToMotionType = 2;
     } else {
-        if (m_HighProfileIntention)
+        if (m_HighProfileIntention) {
+            m_MoveCycleEntryFlags |= 1;
             m_SpeedRatio = 0.6f;
-        else if (isPlayer && m_MovementDivision == 1)
+        } else if (isPlayer && m_MovementDivision == 1)
             m_SpeedRatio = 0;
         else
             m_SpeedRatio = 0.2f;
         data.m_TransitionToMotionType = 3;
     }
+    // PORT: the move cycle action is targeted here (0x5923BDB) but isn't current at once (RE/20 row 8).
+    m_PortAction.Start(m_Human.GetPortActionLengths().moveCycleEntry);
+    m_PortMoveCycleEntryPending = true;
+}
+
+bool HumanGround::PortIsMoveCycleActionCurrent(float dt) {
+    // PORT: the game asks the action component whether the current action is the move cycle or will finish. The port
+    // only knows the one case seen live: after ExecTurnStartToMoveCycleMain, the previous action stays current for
+    // PortActionLengths::moveCycleEntry. Other entries into MoveCycle count as current at once.
+    if (m_PortMoveCycleEntryPending && m_PortAction.WillFinish(dt * m_PortActionTimeScale))
+        m_PortMoveCycleEntryPending = false;
+    return !m_PortMoveCycleEntryPending;
+}
+
+void HumanGround::ExitMoveCycle() {
+    // PC 0x60DB70, Mac 0xF9FD94. (+0x8B4, the +0x398 block and the animation flags aren't mirrored.)
+    HumanGroundData& data = m_Human.GetGroundData();
+    data.m_CurrentBodyAngle = 0;
+    data.m_CurrentBodyBankingAngle = 0;
+    m_MoveCycleEntryFlags &= ~1;
 }
 
 void HumanGround::ExecMoveStopToWaitMain() {
@@ -524,6 +555,10 @@ bool HumanGround::TestRollToMoveCycleMain(float dt) const {
 }
 
 void HumanGround::SwitchMoveState(State next) {
+    if (next != State::MoveCycle) {
+        if (m_MoveState == State::MoveCycle) ExitMoveCycle();
+        m_PortMoveCycleEntryPending = false;
+    }
     m_MoveState = next;
     m_PortActionTimeScale = 1;
     switch (next) {

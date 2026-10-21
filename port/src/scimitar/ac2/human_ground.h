@@ -138,6 +138,8 @@ private:
 
     void EnterMove();        // PC 0x60C610, Mac 0xFA3D06
     void EnterMoveCycle();   // Mac 0xFBE706 (PC _EnterMoveCycle 0x619DD0)
+    void ExitMoveCycle();    // PC 0x60DB70, Mac 0xF9FD94
+    bool PortIsMoveCycleActionCurrent(float dt);  // PORT: the action check at PC 0x61BD2D
     void EnterTurnStart();   // PC 0x614BB0, Mac 0xFBE3D6
     void EnterMoveStop();    // PC 0x614370, Mac 0xFB7804
     void EnterRunTurn();     // Mac 0xFB76DE
@@ -179,12 +181,16 @@ private:
     bool m_ForceTurnAround = false;       // +0x8D4 (Has180TurnIntention; SetForceTurnAround's target, hypothesis)
     float m_TurnOnMovementMinAngle = kPi / 2;  // +0x990 (ctor: pi/2)
     int m_SpeedRestriction = 1;               // +0x994 (ctor: 1)
+    // +0x998 bit 0: set by ExecTurnStartToMoveCycleMain's high-profile branch; while the move-cycle action isn't
+    // current yet, UpdateMoveCycleMain then plays the current action at 2 - its ratio. Cleared by ExitMoveCycle.
+    std::uint8_t m_MoveCycleEntryFlags = 0;
 
     PortAction m_PortAction;
     float m_PortSpeed = 0;           // PORT: the stand-in speed this frame
     float m_PortEntrySpeed = 0;      // PORT: speed when a stop / run turn started, faded out over the action
     float m_PortTurnToApply = 0;     // PORT: the turn a TurnStart / RunTurn animation would make, spread over it
     float m_PortActionTimeScale = 1; // PORT: ActionComponent::SetTimeScale on the stand-in action
+    bool m_PortMoveCycleEntryPending = false;  // PORT: the action before the move cycle is still current (RE/20 row 8)
 };
 
 // HumanGroundData::MovementState values that EnterMove understands (RE/11_ground.md 11; names partly hypothesis).

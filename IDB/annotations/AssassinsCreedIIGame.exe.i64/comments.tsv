@@ -17680,6 +17680,8 @@ FFF84	c	char *
 60DB29	c	float
 60DB30	c	float
 60DB41	c	float
+60DB70	F	Mac ExitMoveCycle 0xF9FD94 (same writes; PC +0x998 = Mac this[606]). Clears data CurrentBodyAngle/BankingAngle, +0x8B4, +0x998 bit 0 (the move-cycle entry's time-scale flag), +0x790->+0x4C; +0x794 |= 4.
+60DB70	c	Mac ExitMoveCycle 0xF9FD94 (same writes; PC +0x998 = Mac this[606]). Clears data CurrentBodyAngle/BankingAngle, +0x8B4, +0x998 bit 0 (the move-cycle entry's time-scale flag), +0x790->+0x4C; +0x794 |= 4.
 60DCB1	c	float
 60DD3D	c	float
 60DE19	c	float
@@ -17736,6 +17738,7 @@ FFF84	c	char *
 61BB60	F	Mac HumanGround::UpdateMoveCycleMain 0xFCD20A. Speed ratio this+0x7BC (Mac +0x79C): target = data+0x88 (stick mag) * 0.2 + {0, 0.2 if data+0xEE, 0.6 if HP this+0x7B4, 0.8 if both}, clamped 1; AI override this+0x8A8/+0x7C0; restriction mode this+0x994. Bands of 0.2 pick MoveCycle blend slots 0-3,3-6,6-9,9-13,13-16 (+1/+2 = turn variants). RE/11_ground.md
 61BB60	c	Mac HumanGround::UpdateMoveCycleMain 0xFCD20A. Speed ratio this+0x7BC (Mac +0x79C): target = data+0x88 (stick mag) * 0.2 + {0, 0.2 if data+0xEE, 0.6 if HP this+0x7B4, 0.8 if both}, clamped 1; AI override this+0x8A8/+0x7C0; restriction mode this+0x994. Bands of 0.2 pick MoveCycle blend slots 0-3,3-6,6-9,9-13,13-16 (+1/+2 = turn variants). RE/11_ground.md
 61BCF6	c	float
+61BD2D	c	Gate (RE/20 row 8): current action != move cycle 93469659 (0x5923BDB) and not finishing -> restricted target (mode +0x994, then <= 0.2 without +0x7B4), plain dt step, no band update; +0x998 bit 0 -> action time scale 2 - ratio. Live 2026-10-21: the 0.5-0.68 s holds after TurnStart -> MoveCycle.
 61BF4E	c	int
 61BF68	c	float
 61CA91	c	float

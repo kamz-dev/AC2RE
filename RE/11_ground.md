@@ -166,7 +166,12 @@ code constants.
 2. **When the current action isn't the move cycle** (action id != 93469659 and not finishing): non-player humans
    are held to [0.2, 0.6]; the restriction mode (+0x994) limits *t*: 0 → 0.6; 1, 4 → [0.2, 0.6]; 2 → 0.2 below a
    ratio of 0.6, else 0.6; 3 → [0, 0.6]; 5, 6 → ≥ 0.2 and ≤ 0.6 (≤ 1 with +0xEE); 7 → ≤ 0.6 (≤ 1 with +0xEE);
-   without high profile *t* ≤ 0.2. The ratio then moves toward *t* by `step` per frame.
+   without high profile *t* ≤ 0.2. The ratio then moves toward *t* by `step` per frame (no curve), and the function
+   returns before the bands: gait and running keep their values. With +0x998 bit 0 (set by
+   `ExecTurnStartToMoveCycleMain`'s high-profile branch, cleared by `ExitMoveCycle` PC 0x60DB70 [0xF9FD94]) the current
+   action plays at 2 − its ratio. **Live** (row 8): this is the 0.68 s / 0.50 s hold after TurnStart → MoveCycle: the
+   restriction mode is 3 (`TransitionToMotionType` 3 from the Exec), so the ratio stays at 0.2 (no high profile) or
+   0.6 (high profile) until the move cycle action becomes current.
 3. **In the move cycle:** rising, ratio += `step` (at most *t*); falling, the player's ratio drops by
    `step × curve(ratio)`, not below *t*; the AI's drops by `step`. The curve is the `ResponseCurve` at PC +0x81C,
    piecewise linear (`ResponseCurve::GetOutput` Mac 0x507D10) through the keys `LocalInit` (0x61F920) adds:
@@ -262,7 +267,7 @@ values are open (live row 6).
 ## 9. Open
 - [ ] Who calls `IHumanGround`'s heading setters, `SetBreakHard` and `SetSprint` for the player. *What* they set is
       known from the live session (rows 5–7, 2026-10-21); the caller is the player's controller (`21_input.md`).
-- [ ] The ~0.5–0.67 s hold of the speed ratio after MoveCycle starts (live row 8).
+- [x] The hold of the speed ratio after MoveCycle starts: the restricted branch while the move cycle action isn't current (section 5, live row 8, 2026-10-21). Still open: which action is current during it.
 - [ ] The custom-action orientation check in TurnOnSpot; `SetTurnMode`'s target (+0x464?) and
       `SetUseTurnOnSpotCycle` (the TurnOnSpot cycle flag); who sets the turn-on-spot target (+0x8C0 Mac).
 - [ ] CrouchWait's transition-animation check (flag Mac +0x8B5); `ActorCanPhysicallyStandUp`'s collision query.

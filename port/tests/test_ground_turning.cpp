@@ -195,3 +195,50 @@ TEST(ground_move_stop_and_run_turn) {
     for (int i = 0; i < 60 && ground.GetMoveState() == State::RunTurn; ++i) human.Update({}, world, dt);
     CHECK(ground.GetMoveState() == State::Wait);  // division 0 and the run turn's action finished
 }
+
+namespace {
+// Turns 150 degrees from Wait with `buttons` held, then measures how long the speed ratio stays at its value on
+// entering MoveCycle, and where it ends up.
+struct EntryHold {
+    float entryRatio = -1, holdSeconds = 0, finalRatio = 0;
+};
+EntryHold MeasureMoveCycleEntryHold(std::uint32_t buttons) {
+    port::BoxWorld world;
+    Human human;
+    HumanGround& ground = human.GetContextBundle().GetGround();
+    const float dt = 1.0f / 60.0f;
+    port::MoveInput in;
+    in.moveDir = scimitar::forwardFromYaw(2.6f);
+    in.moveMag = 1;
+    in.buttons = buttons;
+    EntryHold r;
+    for (int i = 0; i < 120 && ground.GetMoveState() != State::MoveCycle; ++i) human.Update(in, world, dt);
+    r.entryRatio = ground.GetSpeedRatio();
+    int held = 0;
+    for (int i = 0; i < 300; ++i) {
+        human.Update(in, world, dt);
+        if (std::fabs(ground.GetSpeedRatio() - r.entryRatio) < 1e-4f) ++held; else break;
+    }
+    r.holdSeconds = held * dt;
+    for (int i = 0; i < 120; ++i) human.Update(in, world, dt);
+    r.finalRatio = ground.GetSpeedRatio();
+    return r;
+}
+}  // namespace
+
+TEST(ground_move_cycle_entry_holds_the_ratio_while_walking) {
+    // Live session 1 (RE/20 row 8): TurnStart -> MoveCycle with Sprint (legs) held: 0.2 for 0.68 s, then up to 0.4.
+    // The restriction (mode 3 from ExecTurnStartToMoveCycleMain) caps the target at 0.2 without high profile.
+    const EntryHold r = MeasureMoveCycleEntryHold(port::kLegs);
+    CHECK_NEAR(r.entryRatio, 0.2f, 1e-5f);
+    CHECK(r.holdSeconds > 0.6f && r.holdSeconds < 0.72f);
+    CHECK_NEAR(r.finalRatio, 0.4f, 1e-5f);
+}
+
+TEST(ground_move_cycle_entry_hold_is_shorter_in_high_profile) {
+    // Live session 1: with high profile, 0.6 for 0.50 s, then up; the action plays at 2 - ratio (+0x998 bit 0).
+    const EntryHold r = MeasureMoveCycleEntryHold(port::kHighProfile);
+    CHECK_NEAR(r.entryRatio, 0.6f, 1e-5f);
+    CHECK(r.holdSeconds > 0.4f && r.holdSeconds < 0.55f);
+    CHECK_NEAR(r.finalRatio, 0.8f, 1e-5f);
+}

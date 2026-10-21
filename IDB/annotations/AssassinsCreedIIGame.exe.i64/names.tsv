@@ -2632,6 +2632,7 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 60C610	scimitar::ac2::HumanGround::EnterMove
 60CE67	def_60CE4D
 60CED0	jpt_60CE4D
+60DB70	scimitar::ac2::HumanGround::ExitMoveCycle
 610DB0	scimitar::ac2::HumanGround::_TransitFromMoveStopToRunTurnMain
 614370	scimitar::ac2::HumanGround::EnterMoveStop
 614BB0	scimitar::ac2::HumanGround::EnterTurnStart

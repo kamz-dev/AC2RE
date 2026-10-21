@@ -148,6 +148,9 @@ inline constexpr PortHeadingSettings kPortHeadingSprint{0.975f, 2.6f, 0.17453292
 // takes from the animations (g_TurnStartActionMap etc., RE/11_ground.md 10). Stand-ins until they are loaded.
 struct PortActionLengths {
     float turnStart = 0.39f;  // live: 0.39 s walking, 0.27..0.30 s in high profile (RE/20 row 8 notes)
+    // The action still current after TurnStart -> MoveCycle, before the move cycle's (RE/20 row 8). Live: 0.68 s
+    // walking; 0.50 s in high profile, where the 2 - ratio time scale makes it 0.68 x ln 2 = 0.47 s.
+    float moveCycleEntry = 0.68f;
     float moveStop = 0.4f;
     float runTurn = 0.6f;
     float landing = 0.5f;
