@@ -90,18 +90,36 @@ TEST(ground_turns_towards_move_direction) {
     Human human;
     HumanGround& ground = human.GetContextBundle().GetGround();
     const float dt = 1.0f / 30.0f;
-    port::MoveInput right;
-    right.moveDir = {1, 0, 0};
-    right.moveMag = 1;
+    port::MoveInput in;
+    in.moveDir = scimitar::forwardFromYaw(-1.0472f);  // 60 degrees to the right
+    in.moveMag = 1;
 
-    human.Update(right, world, dt);
+    human.Update(in, world, dt);
     CHECK(ground.GetMovementDivision() == 2);
-    CHECK_NEAR(ground.GetTurnAngle(), -kHalfPi, 1e-4f);  // facing +Y, asked to go +X
-    CHECK_NEAR(human.m_Yaw, 0.0f, 1e-6f);               // gait level 0 on the first frame: no turning yet
+    CHECK_NEAR(ground.GetTurnAngle(), -1.0472f, 1e-4f);
+    CHECK(ground.GetMoveState() == State::MoveCycle);  // under TurnOnMovementMinAngle (pi/2): no TurnStart
+    CHECK_NEAR(human.m_Yaw, 0.0f, 1e-6f);               // the gait level was 0 during this frame's UpdateMoveMain
 
-    for (int i = 0; i < 30; ++i) human.Update(right, world, dt);
-    CHECK_NEAR(human.m_Yaw, -kHalfPi, 1e-4f);  // turned within the second
+    for (int i = 0; i < 30; ++i) human.Update(in, world, dt);
+    CHECK_NEAR(human.m_Yaw, -1.0472f, 1e-4f);  // UpdateOrientation turned it within the second
     CHECK(human.m_Position.x > 0.0f);
+}
+
+TEST(ground_turn_start_from_wait) {
+    port::BoxWorld world;
+    Human human;
+    HumanGround& ground = human.GetContextBundle().GetGround();
+    const float dt = 1.0f / 30.0f;
+    port::MoveInput back;
+    back.moveDir = scimitar::forwardFromYaw(2.6f);  // about 150 degrees to the left
+    back.moveMag = 1;
+
+    human.Update(back, world, dt);
+    CHECK(ground.GetMoveState() == State::TurnStart);  // Wait tests TurnStart before MoveCycle
+    CHECK(ground.GetGaitLevel() == 0);
+    for (int i = 0; i < 60 && ground.GetMoveState() == State::TurnStart; ++i) human.Update(back, world, dt);
+    CHECK(ground.GetMoveState() == State::MoveCycle);  // the turn's action finished with movement intended
+    CHECK(std::fabs(human.m_Yaw - 2.6f) < 0.2f);        // PORT: the stand-in turn spreads the angle over the action
 }
 
 TEST(ground_slowing_from_a_run_follows_the_curve) {
@@ -116,15 +134,45 @@ TEST(ground_slowing_from_a_run_follows_the_curve) {
     for (int i = 0; i < 40; ++i) human.Update(run, world, dt);
     CHECK_NEAR(ground.GetSpeedRatio(), 0.8f, 1e-5f);
 
-    // Released: the ratio falls at dt x curve(ratio); the curve is low (0.2..0.3) between 0.4 and 0.666, so it
-    // takes over a second to get back under 0.4 (running), and only then MoveCycle hands over to Wait.
+    // High profile released, still walking: the target drops to 0.2 and the ratio falls at dt x curve(ratio). The
+    // curve is low (0.2..0.3) between 0.4 and 0.666, so it takes over a second to get under 0.4.
+    port::MoveInput walk = run;
+    walk.buttons = 0;
     int frames = 0;
-    while (ground.GetMoveState() == State::MoveCycle && frames < 300) {
-        human.Update({}, world, dt);
+    while (ground.GetSpeedRatio() > 0.4f && frames < 300) {
+        human.Update(walk, world, dt);
         ++frames;
     }
-    CHECK(ground.GetMoveState() == State::Wait);
+    CHECK(ground.GetMoveState() == State::MoveCycle);
     CHECK(frames > 30);
     CHECK(frames < 90);
-    CHECK(ground.GetSpeedRatio() <= 0.4f);
+}
+
+TEST(ground_move_stop_and_run_turn) {
+    port::BoxWorld world;
+    Human human;
+    HumanGround& ground = human.GetContextBundle().GetGround();
+    const float dt = 1.0f / 30.0f;
+    port::MoveInput run;
+    run.moveDir = {0, 1, 0};
+    run.moveMag = 1;
+    run.buttons = port::kHighProfile;
+    for (int i = 0; i < 40; ++i) human.Update(run, world, dt);
+
+    human.Update({}, world, dt);  // released while running: BreakHard -> MoveStop
+    CHECK(ground.GetMoveState() == State::MoveStop);
+    const float y0 = human.m_Position.y;
+    human.Update({}, world, dt);
+    const float step1 = human.m_Position.y - y0;
+    human.Update({}, world, dt);
+    const float step2 = human.m_Position.y - y0 - step1;
+    CHECK(step1 > 0.0f);
+    CHECK(step2 < step1);  // PORT: the stand-in stop slows down over the action
+
+    ground.SetForceTurnAround(true);  // Has180TurnIntention -> RunTurn when the stop's action is about to finish
+    for (int i = 0; i < 60 && ground.GetMoveState() == State::MoveStop; ++i) human.Update({}, world, dt);
+    CHECK(ground.GetMoveState() == State::RunTurn);
+    ground.SetForceTurnAround(false);
+    for (int i = 0; i < 60 && ground.GetMoveState() == State::RunTurn; ++i) human.Update({}, world, dt);
+    CHECK(ground.GetMoveState() == State::Wait);  // division 0 and the run turn's action finished
 }

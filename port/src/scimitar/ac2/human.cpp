@@ -60,7 +60,10 @@ void Human::Update(const port::MoveInput& input, const port::World& world, float
     m_GroundData.m_MoveDirection = input.moveDir;
     m_GroundData.m_StickMagnitude = input.moveMag;
     m_GroundData.m_HighProfileRequest = input.held(port::kHighProfile);
-    m_GroundData.m_SpeedBandUp = input.held(port::kLegs);
+    IHumanGround& ground = m_ContextBundle.GetGround();
+    ground.SetSprint(input.held(port::kLegs));
+    // PORT: who calls SetBreakHard for the player isn't decoded (LIVE row 7); the port breaks when the stick is let go.
+    ground.SetBreakHard(input.moveMag <= 0.0f);
 
     m_RequestedContext = HumanContextId::Count;
     if (ActorContext* ctx = m_ContextBundle.Get(m_CurrentContext)) ctx->Update(input, world, dt);

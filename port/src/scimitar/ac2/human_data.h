@@ -14,9 +14,9 @@ struct HumanGroundData {
     float m_StickMagnitude = 0;         // +0x88 0..1 (hypothesis)
     float m_TurnAngle = 0;              // +0xB4
     float m_TurnAngle2 = 0;             // +0xB8
-    bool m_AllowMoveStop = false;       // +0xED
-    bool m_SpeedBandUp = false;         // +0xEE raises the target speed ratio by 0.2 (LIVE row 5)
-    bool m_CrouchRequest = false;       // +0xF3
+    bool m_BreakHard = false;           // +0xED IHumanGround::SetBreakHard; while running -> MoveStop (LIVE row 7)
+    bool m_Sprint = false;              // +0xEE IHumanGround::SetSprint; +0.2 to the target speed ratio (LIVE row 5)
+    bool m_Crouch = false;              // +0xF3 IHumanGround::SetCrouch
     // +0x155 / +0x158: the movement-division tables, [0] without and [1] with high profile. HumanGround::LocalInit
     // (PC 0x61F920) fills them; these defaults are its values.
     unsigned char m_MovementDivisionCount[2] = {3, 3};
@@ -54,6 +54,14 @@ struct PortHeadingSettings {
     float maxRotationSpeed = 9.0f;    // rad/s
     float minRotationAngle = 0.3f;    // rad
     float maxRotationAngle = 1.5708f; // rad
+};
+
+// PORT: the lengths of the animation-driven ground states' actions (TurnStart, MoveStop, RunTurn), which the game
+// takes from the animations (g_TurnStartActionMap etc., RE/11_ground.md 10). Stand-ins until they are loaded.
+struct PortActionLengths {
+    float turnStart = 0.5f;
+    float moveStop = 0.4f;
+    float runTurn = 0.6f;
 };
 
 struct HumanInAirData {

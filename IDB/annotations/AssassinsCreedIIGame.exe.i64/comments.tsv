@@ -17587,6 +17587,8 @@ FFF84	c	char *
 5FC10C	c	float
 5FCB5A	c	float
 5FD67B	c	float
+5FDF00	F	Mac GetTurnAnimation 0xFB3550: signed angle sight -> target about +Z; |a| < 25 deg 0/1, < 70 deg 2/3, < 135 deg 4/5, else 6/7 (even = positive). 8 only for NaN.
+5FDF00	c	Mac GetTurnAnimation 0xFB3550: signed angle sight -> target about +Z; |a| < 25 deg 0/1, < 70 deg 2/3, < 135 deg 4/5, else 6/7 (even = positive). 8 only for NaN.
 5FE6A0	F	Mac HumanGround::UpdateTurnAngle 0xFB34C4: +0x7D8 = signed angle about +Z between data+0x20 (move dir) and the entity's sight.
 5FE6A0	c	Mac HumanGround::UpdateTurnAngle 0xFB34C4: +0x7D8 = signed angle about +Z between data+0x20 (move dir) and the entity's sight.
 5FE823	c	float
@@ -17692,6 +17694,8 @@ FFF84	c	char *
 612C99	c	void *
 61314A	c	void *
 613BB4	c	void *
+614BB0	F	Mac EnterTurnStart 0xFBE3D6. |turn angle| >= TurnOnMovementMinAngle: action g_TurnStartActionMap[6*side(+0x468) + 3*running + foot(player only)], 2 blend items (1-f, f), f = (|a| - pi/2)/(pi/2); else 3 items blended by |a|/(pi/2). Saves the turn angle at +0x480, clears gait level.
+614BB0	c	Mac EnterTurnStart 0xFBE3D6. |turn angle| >= TurnOnMovementMinAngle: action g_TurnStartActionMap[6*side(+0x468) + 3*running + foot(player only)], 2 blend items (1-f, f), f = (|a| - pi/2)/(pi/2); else 3 items blended by |a|/(pi/2). Saves the turn angle at +0x480, clears gait level.
 614F26	c	float
 6164DB	c	int
 6164E0	c	float
@@ -17749,6 +17753,12 @@ FFF84	c	char *
 61FF7E	c	void *
 620C26	c	void *
 621447	c	void *
+621C80	F	Mac _UpdateMoveStop 0xFD1CA4. -> RunTurn: Has180TurnIntention inlined (force-turn byte +0x8D4 or |turn angle| > 2pi/3) and WillActionFinish; -> Wait: TestMoveStopToWaitMain; -> MoveCycle: TestMoveStopToMoveCycleMain.
+621C80	c	Mac _UpdateMoveStop 0xFD1CA4. -> RunTurn: Has180TurnIntention inlined (force-turn byte +0x8D4 or |turn angle| > 2pi/3) and WillActionFinish; -> Wait: TestMoveStopToWaitMain; -> MoveCycle: TestMoveStopToMoveCycleMain.
+621E60	F	Mac _UpdateRunTurn 0xFD197C. Division 0 and HasActionFinished -> Wait; TestRunTurnToMoveCycleMain (division != 0 and (HasActionFinished or no 180 intention)) -> MoveCycle.
+621E60	c	Mac _UpdateRunTurn 0xFD197C. Division 0 and HasActionFinished -> Wait; TestRunTurnToMoveCycleMain (division != 0 and (HasActionFinished or no 180 intention)) -> MoveCycle.
+621EE0	F	Mac _UpdateTurnStart 0xFD18F6. UpdateTurnStartMain (x2 time scale in high profile except the 4 running turn ids), then division 0 and WillActionFinish -> Wait, division != 0 and WillActionFinish -> MoveCycle.
+621EE0	c	Mac _UpdateTurnStart 0xFD18F6. UpdateTurnStartMain (x2 time scale in high profile except the 4 running turn ids), then division 0 and WillActionFinish -> Wait, division != 0 and WillActionFinish -> MoveCycle.
 6225E0	c	int
 6225E6	c	int
 6225E7	c	int
@@ -18419,7 +18429,13 @@ FFF84	c	char *
 630524	c	hinstDLL
 6327B6	c	void *
 6327C5	c	Defaults: +0x8B8..+0x8C4 heading rotation speeds/angles 0, +0x8D0 direction 0, +0x8C8 15.0, +0x8CC 12.5, +0x990 TurnOnMovementMinAngle pi/2, +0x994 speed restriction 1.
+632E20	F	IHumanGround slot 30 (vftable 0x19BF390), this = HumanGround+0x14: HumanGroundData+0xED = BreakHard. Mac SetBreakHard 0x153B958. BreakHard while running -> MoveStop.
+632E20	c	IHumanGround slot 30 (vftable 0x19BF390), this = HumanGround+0x14: HumanGroundData+0xED = BreakHard. Mac SetBreakHard 0x153B958. BreakHard while running -> MoveStop.
+632E80	F	IHumanGround: HumanGroundData+0xEE = Sprint. Mac SetSprint 0x153B9D0. Sprint adds 0.2 to the target speed ratio (UpdateMoveCycleMain).
+632E80	c	IHumanGround: HumanGroundData+0xEE = Sprint. Mac SetSprint 0x153B9D0. Sprint adds 0.2 to the target speed ratio (UpdateMoveCycleMain).
 633821	c	void *
+633E90	F	Mac HumanGround::InitializeGlobalActions 0xFA755A: fills the g_*ActionMap tables with constant action ids (aliases or hashes). RE/11_ground.md 10
+633E90	c	Mac HumanGround::InitializeGlobalActions 0xFA755A: fills the g_*ActionMap tables with constant action ids (aliases or hashes). RE/11_ground.md 10
 634D20	F	Mac HumanGround::_UpdateMove 0xFE069C. data+0x80 == 3 -> OrientedMove; Poisoned; walking-on-horse flag this+0x6F9 (Mac +0x6E9) -> InAir.
 634D20	c	Mac HumanGround::_UpdateMove 0xFE069C. data+0x80 == 3 -> OrientedMove; Poisoned; walking-on-horse flag this+0x6F9 (Mac +0x6E9) -> InAir.
 6367D1	c	Block

@@ -54,6 +54,7 @@ public:
     const HumanGroundData& GetGroundData() const { return m_GroundData; }
     const HumanInAirData& GetInAirData() const { return m_InAirData; }
     const PortGroundSpeeds& GetPortGroundSpeeds() const { return m_PortGroundSpeeds; }
+    const PortActionLengths& GetPortActionLengths() const { return m_PortActionLengths; }
 
     // A context asks to hand over to another one; the switch happens at the end of the update.
     void RequestContext(HumanContextId id) { m_RequestedContext = id; }
@@ -75,6 +76,7 @@ private:
     HumanGroundData m_GroundData;
     HumanInAirData m_InAirData;
     PortGroundSpeeds m_PortGroundSpeeds;
+    PortActionLengths m_PortActionLengths;
 };
 
 }  // namespace scimitar::ac2

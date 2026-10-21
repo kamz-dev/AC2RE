@@ -34,6 +34,24 @@ inline constexpr std::uint32_t HumanGround_TestMoveCycleToWaitMain = 0x5EAB90; /
 inline constexpr std::uint32_t HumanGround_IHumanGround_vftable = 0x19BF390;   // at +0x14 (ctor); static
 inline constexpr std::uint32_t RotateVectorToVectorWithAngularSpeed = 0x5FF930;  // Mac 0xFB4A3C; static
 inline constexpr std::uint32_t HumanGroundData_GetMovementDivisionFromSpeedRatio = 0x90E190;  // Mac 0x1119F44
+inline constexpr std::uint32_t HumanGround_InitializeGlobalActions = 0x633E90;  // Mac 0xFA755A; static
+inline constexpr std::uint32_t HumanGround_EnterTurnStart = 0x614BB0;          // Mac 0xFBE3D6; static
+inline constexpr std::uint32_t HumanGround_EnterMoveStop = 0x614370;           // Mac 0xFB7804; static
+inline constexpr std::uint32_t HumanGround_UpdateMoveStop = 0x621C80;          // Mac 0xFD1CA4; static
+inline constexpr std::uint32_t HumanGround_UpdateTurnStart = 0x621EE0;         // Mac 0xFD18F6; static
+inline constexpr std::uint32_t HumanGround_UpdateRunTurn = 0x621E60;           // Mac 0xFD197C; static
+inline constexpr std::uint32_t HumanGround_StartTurnOnSpotAnim = 0x606B70;     // Mac 0xFB37D0; static
+inline constexpr std::uint32_t HumanGround_GetTurnAnimation = 0x5FDF00;        // Mac 0xFB3550; static
+inline constexpr std::uint32_t HumanGround_SetBreakHard = 0x632E20;            // IHumanGround slot 30, Mac 0x153B958
+inline constexpr std::uint32_t HumanGround_SetSprint = 0x632E80;               // IHumanGround, Mac 0x153B9D0
+inline constexpr std::uint32_t ActionComponent_WillActionFinish = 0x165C90;    // named by call shape; static
+inline constexpr std::uint32_t ActionComponent_HasActionFinished = 0x165C20;   // named by call shape; static
+
+// Action-id maps (filled by HumanGround::InitializeGlobalActions)
+inline constexpr std::uint32_t g_GroundWaitActionMap = 0x1E13600;
+inline constexpr std::uint32_t g_MoveStopActionMap = 0x1E13694;
+inline constexpr std::uint32_t g_RunTurnActionMap = 0x1E136A4;
+inline constexpr std::uint32_t g_TurnStartActionMap = 0x1E13740;
 
 // Context data
 inline constexpr std::uint32_t HumanInAirData_FastLoad = 0x90C4D0;  // named

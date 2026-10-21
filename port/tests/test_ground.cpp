@@ -92,9 +92,13 @@ TEST(ground_wait_movecycle_wait) {
     CHECK_NEAR(ground.GetSpeedRatio(), 0.8f, 1e-5f);
     CHECK(ground.IsRunning());
 
-    // Released: MoveCycle -> Wait once the division is 0 and the ratio is no longer a running one (<= 0.4).
-    for (int i = 0; i < 300 && ground.GetMoveState() == State::MoveCycle; ++i) human.Update({}, world, dt);
+    // Released while running: BreakHard (the port's stand-in controller) sends MoveCycle to MoveStop, and MoveStop to
+    // Wait once its action is over and the division is 0. The speed ratio isn't reset on the way (RE/11 10).
+    human.Update({}, world, dt);
+    CHECK(ground.GetMoveState() == State::MoveStop);
+    for (int i = 0; i < 60 && ground.GetMoveState() == State::MoveStop; ++i) human.Update({}, world, dt);
     CHECK(ground.GetMoveState() == State::Wait);
-    CHECK(ground.GetSpeedRatio() <= 0.4f);
-    CHECK(!ground.IsRunning());
+    // One slow-down step happened on the release frame (UpdateMoveCycleMain runs before the MoveStop test); then the
+    // ratio stays put through MoveStop and Wait.
+    CHECK(ground.GetSpeedRatio() > 0.75f && ground.GetSpeedRatio() < 0.8f);
 }

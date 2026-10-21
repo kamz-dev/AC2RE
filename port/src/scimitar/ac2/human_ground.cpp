@@ -10,20 +10,20 @@ namespace scimitar::ac2 {
 
 // --- UpdateMoveCycleMain's rules (PC 0x61BB60, Mac 0xFCD20A; RE/11_ground.md 5) ---
 
-float HumanGround::ComputeTargetSpeedRatio(float stickMagnitude, bool speedBandUp, bool highProfile, bool aiOverride,
+float HumanGround::ComputeTargetSpeedRatio(float stickMagnitude, bool sprint, bool highProfile, bool aiOverride,
                                            float aiSpeedRatio) {
     float target;
     if (aiOverride) {
         target = aiSpeedRatio;  // +0x7C0 when +0x8A8 is set
     } else if (highProfile) {
-        target = stickMagnitude * 0.2f + (speedBandUp ? 0.8f : 0.6f);
+        target = stickMagnitude * 0.2f + (sprint ? 0.8f : 0.6f);
     } else {
-        target = stickMagnitude * 0.2f + (speedBandUp ? 0.2f : 0.0f);
+        target = stickMagnitude * 0.2f + (sprint ? 0.2f : 0.0f);
     }
     return target > 1.0f ? 1.0f : target;
 }
 
-float HumanGround::RestrictTargetSpeedRatio(float target, int restrictionMode, bool isPlayer, bool speedBandUp,
+float HumanGround::RestrictTargetSpeedRatio(float target, int restrictionMode, bool isPlayer, bool sprint,
                                             bool highProfile, float currentRatio) {
     float t = target;
     float cap = 0.6f;
@@ -54,7 +54,7 @@ float HumanGround::RestrictTargetSpeedRatio(float target, int restrictionMode, b
             if (t < 0.2f) t = 0.2f;
             [[fallthrough]];
         case 7:
-            if (speedBandUp) cap = 1.0f;
+            if (sprint) cap = 1.0f;
             if (cap < t) t = cap;
             break;
         default:
@@ -162,9 +162,9 @@ void HumanGround::LocalInit() {
     m_SlowDownCurve.AddKey(0.4f, 0.3f);
     m_SlowDownCurve.AddKey(0.666f, 0.2f);
     m_SlowDownCurve.AddKey(1.0f, 1.0f);
-    data.m_AllowMoveStop = false;
-    data.m_CrouchRequest = false;
-    data.m_SpeedBandUp = false;
+    data.m_BreakHard = false;
+    data.m_Crouch = false;
+    data.m_Sprint = false;
     m_TurnAngle = 0;
 }
 
@@ -226,7 +226,7 @@ void HumanGround::UpdateMoveMain(float dt) {
 
 void HumanGround::UpdateMoveCycleMain(float dt) {
     const HumanGroundData& data = m_Human.GetGroundData();
-    float target = ComputeTargetSpeedRatio(data.m_StickMagnitude, data.m_SpeedBandUp,
+    float target = ComputeTargetSpeedRatio(data.m_StickMagnitude, data.m_Sprint,
                                            m_HighProfileIntention != 0, m_AISpeedOverride != 0,
                                            m_AISpeedRatio);
     // PORT: no action system yet, so this is always the game's "move cycle is playing" branch; the restriction mode
@@ -237,14 +237,127 @@ void HumanGround::UpdateMoveCycleMain(float dt) {
     GaitFromSpeedRatio(m_SpeedRatio, m_GaitLevel, m_Running);
 }
 
+// --- IHumanGround setters that write HumanGroundData ---
+
+void HumanGround::SetBreakHard(bool v) { m_Human.GetGroundData().m_BreakHard = v; }
+void HumanGround::SetSprint(bool v) { m_Human.GetGroundData().m_Sprint = v; }
+void HumanGround::SetCrouch(bool v) { m_Human.GetGroundData().m_Crouch = v; }
+
+// --- Locomotion transitions (RE/11_ground.md 6 and 10) ---
+// PORT: without an action system, "the current action can be cut by movement" (IsActionInterruptibleByMovement) is
+// never true; WillActionFinish / HasActionFinished read the stand-in action; in MoveCycle the current action is
+// always the move cycle; and Wait plays no action, so it is always free.
+
+bool HumanGround::Has180TurnIntention() const {
+    return m_ForceTurnAround || std::fabs(m_TurnAngle) > 2.0943952f;  // 2pi/3
+}
+
+bool HumanGround::TestWaitToTurnStartMain() const {
+    return std::fabs(m_TurnAngle) > m_TurnOnMovementMinAngle && !m_BlockTurnStartFromWait;
+}
+
 bool HumanGround::TestWaitToMoveCycleMain() const {
-    // PORT: "free" (the action will finish or can be cut by movement) is always true without an action system.
     return m_MovementDivision == 1 || m_MovementDivision == 2;
 }
 
+bool HumanGround::TestMoveCycleToMoveStopMain() const {
+    return m_Running == 1 && m_GaitLevel != 0 && m_Human.GetGroundData().m_BreakHard;
+}
+
 bool HumanGround::TestMoveCycleToWaitMain() const {
-    // PORT: the current action is always the move cycle while in MoveCycle (no action system).
     return m_MovementDivision == 0 && m_Running == 0;
+}
+
+bool HumanGround::TestMoveCycleToTurnStartMain() const {
+    return m_Running == 0 && std::fabs(m_TurnAngle) > m_TurnOnMovementMinAngle;
+}
+
+bool HumanGround::TestMoveStopToRunTurnMain(float dt) const {
+    return Has180TurnIntention() && m_PortAction.WillFinish(dt);
+}
+
+bool HumanGround::TestMoveStopToWaitMain() const {
+    return m_PortAction.HasFinished() && m_MovementDivision == 0;
+}
+
+bool HumanGround::TestMoveStopToMoveCycleMain() const {
+    return m_PortAction.HasFinished() && (m_MovementDivision == 1 || m_MovementDivision == 2);
+}
+
+bool HumanGround::TestTurnStartToWaitMain(float dt) const {
+    return m_MovementDivision == 0 && m_PortAction.WillFinish(dt);
+}
+
+bool HumanGround::TestTurnStartToMoveCycleMain(float dt) const {
+    return m_MovementDivision != 0 && m_PortAction.WillFinish(dt);
+}
+
+bool HumanGround::TestRunTurnToWaitMain() const {
+    return m_MovementDivision == 0 && m_PortAction.HasFinished();
+}
+
+bool HumanGround::TestRunTurnToMoveCycleMain() const {
+    return m_MovementDivision != 0 && (m_PortAction.HasFinished() || !Has180TurnIntention());
+}
+
+// --- Entering the states ---
+
+void HumanGround::EnterMoveCycle() {
+    // Mac 0xFBE706: the gait level takes the movement division and running takes the high-profile intention; the
+    // blend weights and HumanGroundData's turn angle are reset. (The action set-up is left to the animation layer.)
+    m_GaitLevel = m_MovementDivision;
+    m_Running = m_HighProfileIntention;
+    m_Human.GetGroundData().m_TurnAngle = 0;
+}
+
+void HumanGround::EnterTurnStart() {
+    // PC 0x614BB0. The action is g_TurnStartActionMap[6 * side + 3 * running + foot] (big turns) or a 3-way blend
+    // (small turns); only the field changes are mirrored here.
+    const float a = m_TurnAngle;
+    if (std::fabs(a) >= m_TurnOnMovementMinAngle) {
+        m_TurnStartSide = a >= 0.0f ? 1 : 0;
+        m_HighProfileIntention = m_Running;
+    } else {
+        m_TurnStartSide = a >= 0.0f ? 1 : 0;
+    }
+    m_TurnStartAngle = a;
+    m_GaitLevel = 0;
+    m_Running = m_HighProfileIntention;
+    // PORT: the turn animation's length and rotation.
+    m_PortAction.Start(m_Human.GetPortActionLengths().turnStart);
+    m_PortTurnToApply = a;
+}
+
+void HumanGround::EnterMoveStop() {
+    // PC 0x614370. The stop animation is g_MoveStopActionMap[foot], blended by the speed ratio it starts from.
+    m_PortAction.Start(m_Human.GetPortActionLengths().moveStop);
+    m_PortEntrySpeed = m_PortSpeed;
+}
+
+void HumanGround::EnterRunTurn() {
+    // Mac 0xFB76DE. The action is g_RunTurnActionMap[foot]; the entity's banking is set.
+    m_PortAction.Start(m_Human.GetPortActionLengths().runTurn);
+    m_PortEntrySpeed = m_PortSpeed;
+    m_PortTurnToApply = m_TurnAngle;
+}
+
+void HumanGround::SwitchMoveState(State next) {
+    m_MoveState = next;
+    m_PortActionTimeScale = 1;
+    switch (next) {
+        case State::MoveCycle: EnterMoveCycle(); break;
+        case State::TurnStart: EnterTurnStart(); break;
+        case State::MoveStop: EnterMoveStop(); break;
+        case State::RunTurn: EnterRunTurn(); break;
+        default: break;
+    }
+}
+
+void HumanGround::UpdateTurnStartMain() {
+    // PC 0x5EB6F0: twice the speed in high profile, unless the action is one of the running turns (the
+    // g_TurnStartActionMap entries with running = 1).
+    const bool runningTurn = std::fabs(m_TurnStartAngle) >= m_TurnOnMovementMinAngle && m_Running == 1;
+    m_PortActionTimeScale = (m_HighProfileIntention == 1 && !runningTurn) ? 2.0f : 1.0f;
 }
 
 float HumanGround::PortSpeedFromRatio() const {
@@ -260,26 +373,75 @@ float HumanGround::PortSpeedFromRatio() const {
 void HumanGround::Update(const port::MoveInput&, const port::World& world, float dt) {
     Human& h = m_Human;
 
-    // _UpdateMove (PC 0x634D20): UpdateMoveMain, then the current child. The port has Wait and MoveCycle so far;
-    // MoveStop and TurnStart (tested before and after Wait in MoveCycle) aren't in yet.
+    // _UpdateMove (PC 0x634D20): UpdateMoveMain, then the current child's update and its transitions, in the
+    // game's order.
     UpdateMoveMain(dt);
     switch (m_MoveState) {
-        case State::Wait:  // _UpdateWait PC 0x621A80: transitions only, no main update
-            if (TestWaitToMoveCycleMain()) m_MoveState = State::MoveCycle;
+        case State::Wait:  // _UpdateWait PC 0x621A80 (TurnOnSpot and CrouchWait not in the port yet)
+            if (TestWaitToTurnStartMain())
+                SwitchMoveState(State::TurnStart);
+            else if (TestWaitToMoveCycleMain())
+                SwitchMoveState(State::MoveCycle);
             break;
-        case State::MoveCycle:  // _UpdateMoveCycle PC 0x621B90: main update, then the transitions
+        case State::MoveCycle:  // _UpdateMoveCycle PC 0x621B90 (CrouchMove not in the port yet)
             UpdateMoveCycleMain(dt);
-            if (TestMoveCycleToWaitMain()) m_MoveState = State::Wait;
+            if (TestMoveCycleToMoveStopMain())
+                SwitchMoveState(State::MoveStop);
+            else if (TestMoveCycleToWaitMain())
+                SwitchMoveState(State::Wait);
+            else if (TestMoveCycleToTurnStartMain())
+                SwitchMoveState(State::TurnStart);
+            break;
+        case State::MoveStop:  // _UpdateMoveStop PC 0x621C80
+            if (TestMoveStopToRunTurnMain(dt))
+                SwitchMoveState(State::RunTurn);
+            else if (TestMoveStopToWaitMain())
+                SwitchMoveState(State::Wait);
+            else if (TestMoveStopToMoveCycleMain())
+                SwitchMoveState(State::MoveCycle);
+            break;
+        case State::TurnStart: {  // _UpdateTurnStart PC 0x621EE0
+            UpdateTurnStartMain();
+            const float scaled = dt * m_PortActionTimeScale;
+            if (TestTurnStartToWaitMain(scaled))
+                SwitchMoveState(State::Wait);
+            else if (TestTurnStartToMoveCycleMain(scaled))
+                SwitchMoveState(State::MoveCycle);
+            break;
+        }
+        case State::RunTurn:  // _UpdateRunTurn PC 0x621E60
+            if (TestRunTurnToWaitMain())
+                SwitchMoveState(State::Wait);
+            else if (TestRunTurnToMoveCycleMain())
+                SwitchMoveState(State::MoveCycle);
             break;
         default:
             break;
     }
 
-    // PORT: the game moves by the blended animations' root motion, which carries the character along its facing; the
-    // port moves along the facing at a stand-in speed for the ratio.
-    float speed = m_MoveState == State::MoveCycle ? PortSpeedFromRatio() : 0.0f;
-    h.m_Velocity = forwardFromYaw(h.m_Yaw) * speed;
+    // PORT: the game moves and turns by the animations' root motion. The port moves along the facing at a stand-in
+    // speed (the ratio's in MoveCycle, fading out through MoveStop / RunTurn) and spreads TurnStart's / RunTurn's
+    // turn over their stand-in length.
+    const float scaledDt = dt * m_PortActionTimeScale;
+    switch (m_MoveState) {
+        case State::MoveCycle:
+            m_PortSpeed = PortSpeedFromRatio();
+            break;
+        case State::MoveStop:
+        case State::RunTurn:
+            m_PortSpeed = m_PortEntrySpeed * (1.0f - m_PortAction.Progress());
+            break;
+        default:
+            m_PortSpeed = 0;
+            break;
+    }
+    if ((m_MoveState == State::TurnStart || m_MoveState == State::RunTurn) && m_PortAction.duration > 0) {
+        float step = m_PortTurnToApply * (scaledDt / m_PortAction.duration);
+        h.m_Yaw += step;
+    }
+    m_PortAction.elapsed += scaledDt;
 
+    h.m_Velocity = forwardFromYaw(h.m_Yaw) * m_PortSpeed;
     Vec3 next = h.m_Position + h.m_Velocity * dt;
     std::optional<float> ground = world.groundBelow(next.x, next.y, h.m_Position.z + 0.01f);
     h.m_Position = next;

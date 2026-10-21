@@ -27,6 +27,10 @@ public:
     // IHumanGround::RotationDirection in the game; 0 = the short way, -1 / 1 force a side (values' names unknown).
     virtual void SetHeadingRotationDirection(int direction) = 0;      // Mac 0xF97764
     virtual void SetTurnOnMovementMinAngle(float radians) = 0;        // Mac 0xF9825E
+    virtual void SetForceTurnAround(bool force) = 0;                  // Mac 0x153B89A
+    virtual void SetBreakHard(bool breakHard) = 0;                    // PC 0x632E20, Mac 0x153B958
+    virtual void SetSprint(bool sprint) = 0;                          // PC 0x632E80, Mac 0x153B9D0
+    virtual void SetCrouch(bool crouch) = 0;                          // Mac 0x153B994
 };
 
 // Mac 0xFB4A3C, PC 0x5FF930. Turns `from` towards `to` (about +Z) by one frame at an angular speed that grows with
@@ -53,6 +57,10 @@ public:
     void SetHeadingMaxRotationAngle(float v) override { m_HeadingMaxRotationAngle = v; }
     void SetHeadingRotationDirection(int v) override { m_HeadingRotationDirection = v; }
     void SetTurnOnMovementMinAngle(float v) override { m_TurnOnMovementMinAngle = v < kPi ? v : kPi; }
+    void SetForceTurnAround(bool v) override { m_ForceTurnAround = v; }
+    void SetBreakHard(bool v) override;
+    void SetSprint(bool v) override;
+    void SetCrouch(bool v) override;
 
     State GetMoveState() const { return m_MoveState; }
     float GetSpeedRatio() const { return m_SpeedRatio; }
@@ -65,10 +73,10 @@ public:
     // --- Decoded rules of UpdateMoveCycleMain (PC 0x61BB60, Mac 0xFCD20A), RE/11_ground.md 5 ---
 
     // Step 1: the target speed ratio.
-    static float ComputeTargetSpeedRatio(float stickMagnitude, bool speedBandUp, bool highProfile, bool aiOverride,
+    static float ComputeTargetSpeedRatio(float stickMagnitude, bool sprint, bool highProfile, bool aiOverride,
                                          float aiSpeedRatio);
     // Step 2: the restriction mode's limits, applied while the current action isn't the move cycle.
-    static float RestrictTargetSpeedRatio(float target, int restrictionMode, bool isPlayer, bool speedBandUp,
+    static float RestrictTargetSpeedRatio(float target, int restrictionMode, bool isPlayer, bool sprint,
                                           bool highProfile, float currentRatio);
     // Step 3: one frame of the ratio towards the target. `slowDownCurve` is the player's ResponseCurve output when
     // falling (1 for AI-driven humans).
@@ -84,12 +92,46 @@ private:
     void UpdateTurnAngle();                // PC 0x5FE6A0, Mac 0xFB34C4
     void UpdateOrientation(float dt);      // PC 0x5FFC40, Mac 0xFB4E32
     void UpdateMoveCycleMain(float dt);    // PC 0x61BB60, Mac 0xFCD20A
-    bool TestWaitToMoveCycleMain() const;  // PC 0x5F4E70, Mac 0xF9EAE6
-    bool TestMoveCycleToWaitMain() const;  // PC 0x5EAB90, Mac 0xFB5D7A
+    void UpdateTurnStartMain();            // PC 0x5EB6F0, Mac 0xFB65B6
+    bool Has180TurnIntention() const;      // Mac 0xF9916C (inlined on PC)
+
+    bool TestWaitToTurnStartMain() const;       // PC 0x5F4EC0, Mac 0xF9EA82
+    bool TestWaitToMoveCycleMain() const;       // PC 0x5F4E70, Mac 0xF9EAE6
+    bool TestMoveCycleToMoveStopMain() const;   // PC 0x5EAAF0, Mac 0xFB5CAE
+    bool TestMoveCycleToWaitMain() const;       // PC 0x5EAB90, Mac 0xFB5D7A
+    bool TestMoveCycleToTurnStartMain() const;  // PC 0x5F5B00, Mac 0xF9E8DA
+    bool TestMoveStopToRunTurnMain(float dt) const;  // inlined in PC 0x621C80, Mac 0xF9DA6C
+    bool TestMoveStopToWaitMain() const;        // PC 0x5F5B70, Mac 0xF9E88E
+    bool TestMoveStopToMoveCycleMain() const;   // PC 0x5F5BB0, Mac 0xF9E840
+    bool TestTurnStartToWaitMain(float dt) const;       // inlined in PC 0x621EE0, Mac 0xF9DDD6
+    bool TestTurnStartToMoveCycleMain(float dt) const;  // inlined in PC 0x621EE0, Mac 0xF9DE14
+    bool TestRunTurnToWaitMain() const;         // inlined in PC 0x621E60, Mac 0xF9DD4A
+    bool TestRunTurnToMoveCycleMain() const;    // PC 0x5EB690, Mac 0xF9DD88
+
+    void EnterMoveCycle();   // Mac 0xFBE706 (PC _EnterMoveCycle 0x619DD0)
+    void EnterTurnStart();   // PC 0x614BB0, Mac 0xFBE3D6
+    void EnterMoveStop();    // PC 0x614370, Mac 0xFB7804
+    void EnterRunTurn();     // Mac 0xFB76DE
+    void SwitchMoveState(State next);
+
     float PortSpeedFromRatio() const;
+
+    // PORT: stands in for the action component (animations are not loaded yet). Each animation-driven state starts
+    // one of these with a stand-in length; WillActionFinish / HasActionFinished read it.
+    struct PortAction {
+        float duration = 0;
+        float elapsed = 0;
+        void Start(float seconds) { duration = seconds; elapsed = 0; }
+        bool WillFinish(float dt) const { return elapsed + dt >= duration; }
+        bool HasFinished() const { return elapsed >= duration; }
+        float Progress() const { return duration > 0 ? (elapsed < duration ? elapsed / duration : 1.0f) : 1.0f; }
+    };
 
     // Mirrors of HumanGround's fields (PC offsets).
     State m_MoveState = State::Wait;     // the Move record's current child (+0x94)
+    int m_TurnStartSide = 0;             // +0x468 1 when the turn angle is >= 0
+    float m_TurnStartAngle = 0;          // +0x480 the turn angle when TurnStart was entered
+    bool m_BlockTurnStartFromWait = false;  // +0x7A0
     int m_GaitLevel = 0;                 // +0x7A8
     int m_MovementDivision = 0;          // +0x7AC
     int m_Running = 0;                   // +0x7B0
@@ -104,8 +146,15 @@ private:
     float m_HeadingMinRotationAngle = 0;  // +0x8C0
     float m_HeadingMaxRotationAngle = 0;  // +0x8C4
     int m_HeadingRotationDirection = 0;   // +0x8D0
+    bool m_ForceTurnAround = false;       // +0x8D4 (Has180TurnIntention; SetForceTurnAround's target, hypothesis)
     float m_TurnOnMovementMinAngle = kPi / 2;  // +0x990 (ctor: pi/2)
     int m_SpeedRestriction = 1;               // +0x994 (ctor: 1)
+
+    PortAction m_PortAction;
+    float m_PortSpeed = 0;           // PORT: the stand-in speed this frame
+    float m_PortEntrySpeed = 0;      // PORT: speed when a stop / run turn started, faded out over the action
+    float m_PortTurnToApply = 0;     // PORT: the turn a TurnStart / RunTurn animation would make, spread over it
+    float m_PortActionTimeScale = 1; // PORT: ActionComponent::SetTimeScale on the stand-in action
 };
 
 }  // namespace scimitar::ac2

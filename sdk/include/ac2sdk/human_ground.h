@@ -92,11 +92,17 @@ struct HumanGround {
     std::uint8_t fsmCurrentState;   // 0x042  read by _UpdateHumanGround 0x6381D0
     AC2_PAD(0x8C - 0x43);           // 0x043  (+0x44: FSMSuccessfulInterfaceTransitionTracker)
     std::uint8_t fsmStates[0x2AD - 0x8C];  // 0x08C  records and wrappers, ids 1..147 (LinkFSM 0x602270)
-    AC2_PAD(0x6F9 - 0x2AD);         // 0x2AD
+    AC2_PAD(0x468 - 0x2AD);         // 0x2AD
+    std::int32_t turnStartSide;     // 0x468  1 when the turn angle was >= 0; EnterTurnStart 0x614BB0
+    AC2_PAD(0x480 - 0x46C);         // 0x46C
+    float turnStartAngle;           // 0x480  the turn angle when TurnStart was entered
+    AC2_PAD(0x6F9 - 0x484);         // 0x484
     std::uint8_t walkingOnHorse;    // 0x6F9  _UpdateMove 0x634D20
     AC2_PAD(0x790 - 0x6FA);         // 0x6FA
     std::uint32_t upperBody;        // 0x790  HumanUpperBody* (hypothesis)
-    AC2_PAD(0x7A8 - 0x794);         // 0x794
+    AC2_PAD(0x7A0 - 0x794);         // 0x794
+    std::uint8_t blockTurnStartFromWait;  // 0x7A0  TestWaitToTurnStartMain 0x5F4EC0
+    AC2_PAD(0x7A8 - 0x7A1);         // 0x7A1
     std::int32_t gaitLevel;         // 0x7A8  1 / 2, UpdateMoveCycleMain 0x61BB60
     std::int32_t movementDivision;  // 0x7AC  0 = no movement intent, 2 = moving; UpdateMovementIntention 0x5E03E0
     std::int32_t running;           // 0x7B0  ratio above 0.4
@@ -122,7 +128,8 @@ struct HumanGround {
     float unk8C8;                   // 0x8C8  15.0 at construction
     float unk8CC;                   // 0x8CC  12.5 at construction
     std::int32_t headingRotationDirection;  // 0x8D0  IHumanGround::RotationDirection, -1 / 0 / 1
-    AC2_PAD(0x990 - 0x8D4);         // 0x8D4
+    std::uint8_t forceTurnAround;   // 0x8D4  Has180TurnIntention (inlined in _UpdateMoveStop 0x621C80)
+    AC2_PAD(0x990 - 0x8D5);         // 0x8D5
     float turnOnMovementMinAngle;   // 0x990  pi/2 at construction; Wait / MoveCycle -> TurnStart
     std::int32_t speedRestriction;  // 0x994  mode 0..7 (1 at construction)
 };
@@ -131,7 +138,11 @@ AC2_ASSERT_OFFSET(HumanGround, actor, 0x008);
 AC2_ASSERT_OFFSET(HumanGround, groundData, 0x010);
 AC2_ASSERT_OFFSET(HumanGround, fsmCurrentState, 0x042);
 AC2_ASSERT_OFFSET(HumanGround, fsmStates, 0x08C);
+AC2_ASSERT_OFFSET(HumanGround, turnStartSide, 0x468);
+AC2_ASSERT_OFFSET(HumanGround, turnStartAngle, 0x480);
 AC2_ASSERT_OFFSET(HumanGround, walkingOnHorse, 0x6F9);
+AC2_ASSERT_OFFSET(HumanGround, blockTurnStartFromWait, 0x7A0);
+AC2_ASSERT_OFFSET(HumanGround, forceTurnAround, 0x8D4);
 AC2_ASSERT_OFFSET(HumanGround, upperBody, 0x790);
 AC2_ASSERT_OFFSET(HumanGround, gaitLevel, 0x7A8);
 AC2_ASSERT_OFFSET(HumanGround, movementDivision, 0x7AC);
@@ -163,10 +174,10 @@ struct HumanGroundData {
     float turnAngle;               // 0x0B4
     float turnAngle2;              // 0x0B8
     AC2_PAD(0xED - 0xBC);          // 0x0BC
-    std::uint8_t allowMoveStop;    // 0x0ED  TestMoveCycleToMoveStopMain 0x5EAAF0
-    std::uint8_t speedBandUp;      // 0x0EE  +0.2 to the target speed ratio
+    std::uint8_t breakHard;        // 0x0ED  IHumanGround::SetBreakHard 0x632E20; -> MoveStop while running
+    std::uint8_t sprint;           // 0x0EE  IHumanGround::SetSprint 0x632E80; +0.2 to the target speed ratio
     AC2_PAD(0xF3 - 0xEF);          // 0x0EF
-    std::uint8_t crouchRequest;    // 0x0F3
+    std::uint8_t crouch;           // 0x0F3  IHumanGround::SetCrouch (Mac 0x153B994)
     AC2_PAD(0x155 - 0xF4);         // 0x0F4
     std::uint8_t movementDivisionCount[2];        // 0x155  without / with high profile
     AC2_PAD(0x01);                                // 0x157
@@ -183,9 +194,9 @@ AC2_ASSERT_OFFSET(HumanGroundData, moveDirection, 0x020);
 AC2_ASSERT_OFFSET(HumanGroundData, movementMode, 0x080);
 AC2_ASSERT_OFFSET(HumanGroundData, stickMagnitude, 0x088);
 AC2_ASSERT_OFFSET(HumanGroundData, turnAngle, 0x0B4);
-AC2_ASSERT_OFFSET(HumanGroundData, allowMoveStop, 0x0ED);
-AC2_ASSERT_OFFSET(HumanGroundData, speedBandUp, 0x0EE);
-AC2_ASSERT_OFFSET(HumanGroundData, crouchRequest, 0x0F3);
+AC2_ASSERT_OFFSET(HumanGroundData, breakHard, 0x0ED);
+AC2_ASSERT_OFFSET(HumanGroundData, sprint, 0x0EE);
+AC2_ASSERT_OFFSET(HumanGroundData, crouch, 0x0F3);
 AC2_ASSERT_OFFSET(HumanGroundData, movementDivisionCount, 0x155);
 AC2_ASSERT_OFFSET(HumanGroundData, movementDivisionThresholds, 0x158);
 AC2_ASSERT_OFFSET(HumanGroundData, highProfileRequest, 0x181);

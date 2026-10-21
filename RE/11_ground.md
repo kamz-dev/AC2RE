@@ -2,7 +2,8 @@
 
 Status 2026-10-21: the class, its vftable, the FSM layout and the locomotion branch of the state tree are matched
 Mac → PC; the MoveCycle speed model, the Wait / MoveCycle transitions and ground turning are decoded from both
-builds. MoveStop, the turn states, landings, jumps and edges are next.
+builds, and so are MoveStop, TurnStart, RunTurn and TurnOnSpot with the action maps they play. Landings, jumps,
+edges and crouching are next.
 
 Addresses: **PC** first (IDB rebased to 0), Mac (`IDB/scimitar_sf.i64`) in brackets.
 
@@ -53,7 +54,9 @@ later than Mac. Check each field on PC.
 | +0x8C… | FSM records | see 3 | `LinkFSM` |
 | +0x6F9 [+0x6E9] | bool | walking on a horse (cached `IsWalkingOnHorse` 0x5FBCE0) → InAir | `_UpdateMove` 0x634D20 |
 | +0x790 [+0x770] | `HumanUpperBody*` **(hypothesis from Mac calls)** | upper-body context | `UpdateMoveCycleMain` |
-| +0x464 [+0x460] | int | must be 1 for TurnOnSpot | `TestWaitToTurnOnSpotMain` 0x5F4F30 |
+| +0x464 [+0x460] | int | must be 1 for TurnOnSpot (`IHumanGround::SetTurnMode`'s target, hypothesis) | `TestWaitToTurnOnSpotMain` 0x5F4F30 |
+| +0x468 [+0x464] | int | TurnStart side: 1 when the turn angle was ≥ 0 | `EnterTurnStart` 0x614BB0 |
+| +0x480 | float | the turn angle when TurnStart was entered | `EnterTurnStart` |
 | +0x7A0 [+0x780] | bool | blocks TurnStart from Wait | `TestWaitToTurnStartMain` 0x5F4EC0 |
 | +0x7A8 [+0x788] | int | gait level 1 / 2 (drives `UpdateOrientation` when non-zero) | `UpdateMoveCycleMain`, `UpdateMoveMain` 0x604990 |
 | +0x7AC [+0x78C] | int | **movement division**: 0 = no movement intent, 2 = moving (see 6) | `UpdateMovementIntention` 0x5E03E0 |
@@ -69,6 +72,7 @@ later than Mac. Check each field on PC.
 | +0x8B8 / +0x8BC [+0x898 / ?] | float | `HeadingMinRotationSpeed` / `HeadingMaxRotationSpeed` (rad/s) | Mac setters 0xF9771C / 0xF9772E; `UpdateOrientation` 0x5FFC40 |
 | +0x8C0 / +0x8C4 | float | `HeadingMinRotationAngle` / `HeadingMaxRotationAngle` (rad) | Mac setters 0xF97740 / 0xF97752 |
 | +0x8D0 | int | `HeadingRotationDirection` (`IHumanGround::RotationDirection`; −1 / 0 / 1) | Mac setter 0xF97764; `UpdateOrientation` |
+| +0x8D4 [+0x8B4] | bool | force turn-around (`Has180TurnIntention`; `SetForceTurnAround`'s target, hypothesis) | `_UpdateMoveStop` 0x621C80 |
 | +0x8C8 / +0x8CC | float | 15.0 / 12.5 at construction; use unknown | ctor 0x6317A0 |
 | +0x990 [+0x970] | float | `TurnOnMovementMinAngle` (clamped ≤ π; π/2 at construction) | Mac setter 0xF9825E; ctor |
 | +0x994 [+0x974] | int | speed restriction mode 0..7 (1 at construction) | `UpdateMoveCycleMain`; ctor |
@@ -123,9 +127,9 @@ named:
 | +0x80 | int | movement mode; 3 = oriented move (→ OrientedMove) | `_UpdateMove` 0x634D20 |
 | +0x88 | float | stick magnitude **(hypothesis)**; input to the movement division and the target ratio | `UpdateMovementIntention` 0x5E03E0 |
 | +0xB4 / +0xB8 | float | turn angles, smoothed with the sight (`ComputeVectorRotationWithSight` 0x5FE3D0) | `UpdateMoveCycleMain` |
-| +0xED | bool | allows MoveStop | `TestMoveCycleToMoveStopMain` 0x5EAAF0 |
-| +0xEE | bool | raises the speed band by 0.2 (with high profile: run → sprint) **(hypothesis: the "legs" button)** | `UpdateMoveCycleMain` |
-| +0xF3 | bool | crouch request (→ CrouchMove) | `LocalInit` 0x61F920 (cleared); Mac `_UpdateMoveCycle` |
+| +0xED | bool | **BreakHard**: while running, sends MoveCycle to MoveStop. Set by `IHumanGround::SetBreakHard` (PC 0x632E20 [0x153B958]) | `TestMoveCycleToMoveStopMain` 0x5EAAF0 |
+| +0xEE | bool | **Sprint**: +0.2 to the target speed ratio (high profile + sprint = 0.8..1). Set by `IHumanGround::SetSprint` (PC 0x632E80 [0x153B9D0]) | `UpdateMoveCycleMain` |
+| +0xF3 | bool | **Crouch** (→ CrouchMove / CrouchWait). Set by `IHumanGround::SetCrouch` [0x153B994] | `LocalInit` 0x61F920 (cleared); Mac `_UpdateMoveCycle` |
 | +0x154 | u8 | 2 after `LocalInit`; use unknown | `LocalInit` |
 | +0x155 / +0x156 | u8 | movement-division threshold counts (without / with high profile), 3 after `LocalInit` | `LocalInit`; Mac `GetMovementDivisionFromSpeedRatio` 0x1119F44 |
 | +0x158 / +0x16C | float[5] | movement-division thresholds, {0, 0.9, 1} after `LocalInit` | same |
@@ -142,8 +146,8 @@ code constants.
 
 1. **Target ratio** *t*:
    - AI override on (+0x8A8): *t* = +0x7C0;
-   - else *t* = stick × 0.2 + base, base = 0 (walk), 0.2 (+0xEE), 0.6 (high profile), 0.8 (high profile and
-     +0xEE; the player also emits witness event 26 at most every 0.5 s);
+   - else *t* = stick × 0.2 + base, base = 0 (walk), 0.2 (Sprint), 0.6 (high profile), 0.8 (high profile and
+     Sprint; the player also emits witness event 26 at most every 0.5 s);
    - clamped to ≤ 1.
 2. **When the current action isn't the move cycle** (action id != 93469659 and not finishing): non-player humans
    are held to [0.2, 0.6]; the restriction mode (+0x994) limits *t*: 0 → 0.6; 1, 4 → [0.2, 0.6]; 2 → 0.2 below a
@@ -191,6 +195,15 @@ flags (+0xC) have 0x20; else the flag bit chosen by (division, high profile): (0
 | Wait → MoveCycle | 0x5F4E70 [0xF9EAE6] | division 1 or 2, free |
 | Wait → TurnOnSpot | 0x5F4F30 [0xF9E9F8] | +0x464 == 1, custom-action orientation check, free, division 0, \|turn angle\| ≥ 1° |
 | Wait → CrouchWait | 0x5F4FC0 | not decoded |
+| MoveStop → RunTurn | inline in 0x621C80 [0xF9DA6C] | `Has180TurnIntention` (force turn-around +0x8D4, or \|turn angle\| > 2π/3) and `WillActionFinish` |
+| MoveStop → Wait | 0x5F5B70 [0xF9E88E] | (`HasActionFinished` or interruptible) and division 0 |
+| MoveStop → MoveCycle | 0x5F5BB0 [0xF9E840] | (`HasActionFinished` or interruptible) and division 1 or 2 |
+| TurnStart → Wait | inline in 0x621EE0 [0xF9DDD6] | division 0 and `WillActionFinish` |
+| TurnStart → MoveCycle | inline in 0x621EE0 [0xF9DE14] | division ≠ 0 and `WillActionFinish` |
+| RunTurn → Wait | inline in 0x621E60 [0xF9DD4A] | division 0 and `HasActionFinished` |
+| RunTurn → MoveCycle | 0x5EB690 [0xF9DD88] | division ≠ 0 and (`HasActionFinished` or no 180° intention any more) |
+| TurnOnSpotStep → TurnOnSpotStep | 0x5FE0A0 [0xFB3684] | the turn-on-spot cycle flag (+0x8BD Mac) set, action finished, and time left for the next turn animation |
+| TurnOnSpotStep → Wait | [0xF9D8FE] | cycle flag clear and `HasActionFinished` |
 | MoveCycle → MoveStop | 0x5EAAF0 [0xFB5CAE] | running, gait level ≠ 0, item flag 0x20 clear, `HumanGroundData`+0xED, and the action is MoveCycle (93469659), 96 or 97, or past 33 % |
 | MoveCycle → Wait | 0x5EAB90 [0xFB5D7A] | division 0, and not running or the action isn't MoveCycle |
 | MoveCycle → TurnStart | 0x5F5B00 [0xF9E8DA] | not running, \|turn angle\| > `TurnOnMovementMinAngle`, free |
@@ -231,11 +244,58 @@ values are open (live row 6).
   height − 0.15 (`CharacterComponent` +0x64 / +0x68 / +0x6C from +0x78) **(hypothesis: capsule fields)**.
 
 ## 9. Open
-- [ ] MoveStop, TurnStart / TurnOnSpot / RunTurn: their `Update*Main` and exits.
-- [ ] Who calls `IHumanGround`'s heading setters for the player, and with what (live row 6; `21_input.md`).
-- [ ] Wait → CrouchWait (0x5F4FC0) and the custom-action orientation check in TurnOnSpot.
+- [ ] Who calls `IHumanGround`'s heading setters, `SetBreakHard` and `SetSprint` for the player, and with what (live
+      rows 5–7; `21_input.md`).
+- [ ] Wait → CrouchWait (0x5F4FC0), the crouch states, and the custom-action orientation check in TurnOnSpot.
+- [ ] `IHumanGround::SetTurnMode` (+0x464?) and `SetUseTurnOnSpotCycle` (the TurnOnSpot cycle flag).
+- [ ] Idle and its children (IdleStill, IdleBreaker: `g_IdleBreakerActions`).
 - [ ] Landing / LandingHard / LandingBalanceFall / Roll / EdgeLanding: what InAir hands over and how each is
       chosen.
 - [ ] JumpImpulsion*, ObstacleCollision, EdgeStop, WallingImpulsion: the free-run entry points.
 - [ ] `HumanGroundData`'s full field list from its reflection properties.
-- [ ] The MoveCycle action's animations and their root-motion speeds (needed for the port's speeds).
+- [ ] The actions' animations: root-motion speeds and turns, lengths (needed for the port's speeds, turns and the
+      animation-driven states).
+
+## 10. Animation-driven states: MoveStop, TurnStart, RunTurn, TurnOnSpot
+These states play one action and leave when it ends (`ActionComponent::WillActionFinish` = ends this frame,
+`HasActionFinished` = has ended; PC 0x165C90 / 0x165C20) or when movement may cut it; the movement division picks
+where they go (section 6's table). The turn or stop itself is the animation's root motion.
+
+- **TurnStart** (id 29; entered from Wait or MoveCycle when \|turn angle\| > `TurnOnMovementMinAngle`):
+  `EnterTurnStart` (PC 0x614BB0 [0xFBE3D6]) plays `g_TurnStartActionMap[6 × side + 3 × running + foot]` (foot only
+  for the player, `GetCurrentFoot` PC 0x5ECDE0) blended 1−f / f with f = (\|a\| − π/2) / (π/2), i.e. between a
+  90° and a 180° turn; a smaller angle uses a 3-item blend by \|a\| / (π/2). It stores the side (+0x468) and the
+  angle (+0x480), sets high profile := running then running := high profile, and clears the gait level (so
+  `UpdateOrientation` doesn't run during the turn). `UpdateTurnStartMain` (PC 0x5EB6F0 [0xFB65B6]) plays it at
+  twice the speed in high profile, except the four running turns.
+- **MoveStop** (id 22; from MoveCycle when running and BreakHard): `EnterMoveStop` (PC 0x614370 [0xFB7804]) plays
+  `g_MoveStopActionMap[foot]`, a 3-item blend set from the speed ratio it stops from (from the move cycle:
+  (0, 1 − f, f) with f = (ratio − 0.8) / 0.2 above 0.8; otherwise by how far the previous action got past 33 %).
+- **RunTurn** (id 28; from MoveStop with a 180° intention): `EnterRunTurn` [0xFB76DE] plays
+  `g_RunTurnActionMap[foot]` and sets the entity's banking.
+- **TurnOnSpot** (id 30, child TurnOnSpotStep 31; from Wait): `StartTurnOnSpotAnim` (PC 0x606B70 [0xFB37D0]) picks a
+  turn with `GetTurnAnimation` (PC 0x5FDF00 [0xFB3550]): the signed angle from the sight to the target about +Z,
+  \|a\| < 25° → 0 / 1, < 70° → 2 / 3, < 135° → 4 / 5, else 6 / 7 (even for a positive angle); then
+  `PlayTurnAnimation` (PC 0x5EA850) with weight \|a\| / (15°, 45°, 90° or 180° for the four sizes) and a 0.2 s
+  blend. Action ids 0–7: 788325963, 788325965, 660761273, 660761275, 660761277, 660761279, 660761269, 660761271.
+
+**The speed ratio is not reset** by `ExitMoveCycle` [0xF9FD94], `EnterWait` [0xFBEA66] or `EnterMoveCycle`, so it
+carries over a stop into the next move cycle (hypothesis: nothing else resets it either).
+
+**Action maps** (filled once by `HumanGround::InitializeGlobalActions`, PC 0x633E90 [0xFA755A]; ids are either
+small aliases or hashes):
+
+| Map (PC address) | Index | Ids |
+|---|---|---|
+| `g_GroundWaitActionMap` (0x1E13600) | [3][2][2][3] | 48, 49, 50, 51, 52, 53, 0xF0000049, 0xF000008C, 15963158, 15963159 (the rest −1) |
+| `g_MoveStopActionMap` (0x1E13694) | [foot] | 86, 87 |
+| `g_RunTurnActionMap` (0x1E136A4) | [foot] | 94, 95 |
+| `g_TurnStartActionMap` (0x1E13740) | [side][running][foot] | side 0: 137346172, 137346183 / running 161521137, 161522199; side 1: 137346184, 137346185 / running 161521138, 161522200 |
+| `g_JumpStraightAnticipationActionMap` (0x1E136B4) | [foot] | 233845637, 250429907 |
+| `g_JumpStraightAnticipationCancelActionMap` (0x1E136C4) | [foot] | 88, 17407127 |
+| `g_JumpImpulsionStraightActionMap` (0x1E136D4) | [foot] | 89, 17407126 |
+| `g_JumpImpulsionRunActionMap` (0x1E136E4) | [foot] | 9, 9 |
+| `g_HandPassOverReceptionActionMap` (0x1E136F4) | [foot] | 172796614, 172796613 |
+| `g_CrouchWaitActionMap` (0x1E13704) | [3][2] | 17228607, … |
+| `g_CrouchTurnActionMap` (0x1E13730) | [2] | 314169075, 314169075 |
+| the move cycle | | 93469659 (0x5923BDB) |
