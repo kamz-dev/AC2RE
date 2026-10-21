@@ -53,6 +53,7 @@ public:
     HumanGroundData& GetGroundData() { return m_GroundData; }
     const HumanGroundData& GetGroundData() const { return m_GroundData; }
     const HumanInAirData& GetInAirData() const { return m_InAirData; }
+    HumanInAirData& GetInAirData() { return m_InAirData; }
     const PortGroundSpeeds& GetPortGroundSpeeds() const { return m_PortGroundSpeeds; }
     const PortActionLengths& GetPortActionLengths() const { return m_PortActionLengths; }
 
@@ -66,6 +67,8 @@ public:
     Vec3 m_Position;
     Vec3 m_Velocity;
     float m_Yaw = 0;
+    // PORT: the action component's current action (channel 0). Only the landing hand-over sets it so far.
+    std::uint32_t m_PortCurrentActionId = 0;
 
 private:
     void SetPortHeading(const PortHeadingSettings& heading);  // PORT: the controller's heading setters

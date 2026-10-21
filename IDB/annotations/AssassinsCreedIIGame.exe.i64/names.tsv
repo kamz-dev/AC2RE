@@ -2813,6 +2813,10 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 6914D8	__cfltcvt_init_35
 691514	__cfltcvt_init_36
 691672	__cfltcvt_init_37
+6925D0	scimitar::ac2::HumanInAir::IsInSpringJump
+6927A0	scimitar::ac2::HumanInAir::ComputeFallDamage
+69AF20	scimitar::ac2::HumanInAir::ConvertLandingToDamageAndSendEvent
+69B730	scimitar::ac2::HumanInAir::ExecMainToGroundMain
 6A9E30	__RTC_NumErrors_1521
 6AAC20	__RTC_NumErrors_1522
 6ADB30	?SetExecutingCollection@ContextBase@details@Concurrency@@QAEXPAV_TaskCollectionBase@23@@Z_2
@@ -3676,6 +3680,7 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 825450	__RTC_NumErrors_2023
 825550	__RTC_NumErrors_2024
 825A70	?IsThrottled@VirtualProcessor@details@Concurrency@@QBE_NXZ_1
+825E20	scimitar::ac2::HumanData::GetGroundData
 825FFE	def_825FDB
 826004	jpt_825FDB
 8277D0	j_nullsub_1858
@@ -4365,6 +4370,7 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 90E0D0	?SetCompletionList@UMSThreadScheduler@details@Concurrency@@UAEXPAUIUMSCompletionList@3@@Z
 90E190	scimitar::ac2::HumanGroundData::GetMovementDivisionFromSpeedRatio
 90E250	scimitar::ac2::HumanGroundData::SetRotationRatio
+90EFA0	scimitar::ac2::TransitionSetupDataToMovement::SetupTransitionData
 90F0F0	__RTC_NumErrors_2504
 90F490	j_nullsub_1599_17
 90F4D0	__RTC_NumErrors_2505
@@ -4390,6 +4396,7 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 914CE0	__RTC_NumErrors_2510
 914D30	__RTC_NumErrors_2511
 914D40	__RTC_NumErrors_2512
+9183D0	scimitar::ac2::Human::GetFrontFoot
 91A160	def_91A133
 91A168	jpt_91A133
 91CCF8	def_91CB28

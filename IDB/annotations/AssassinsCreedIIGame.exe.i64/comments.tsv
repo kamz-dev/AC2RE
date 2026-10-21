@@ -19548,10 +19548,14 @@ FFF84	c	char *
 691A68	c	int
 691BE0	c	void *
 691D09	c	void *
+6925D0	F	Mac HumanInAir::IsInSpringJump 0x122FDC4 (same call site).
+6925D0	c	Mac HumanInAir::IsInSpringJump 0x122FDC4 (same call site).
 6926C7	c	float
 6926CA	c	int
 692757	c	float
 69275A	c	int
+6927A0	F	Mac HumanInAir::ComputeFallDamage(float drop, long&) 0x122F4C4 (same call site).
+6927A0	c	Mac HumanInAir::ComputeFallDamage(float drop, long&) 0x122F4C4 (same call site).
 6929E8	c	float
 6929EB	c	int
 693A32	c	void *
@@ -19639,12 +19643,16 @@ FFF84	c	char *
 69A5B0	c	float
 69AA6B	c	float
 69AED4	c	void *
+69AF20	F	Mac HumanInAir::ConvertLandingToDamageAndSendEvent(float, bool) 0x122F726 (same call site).
+69AF20	c	Mac HumanInAir::ConvertLandingToDamageAndSendEvent(float, bool) 0x122F726 (same call site).
 69AF2C	c	int
 69AF30	c	float
 69B227	c	void *
 69B239	c	void *
 69B24B	c	void *
 69B25A	c	void *
+69B730	F	Mac HumanInAir::ExecMainToGroundMain 0x1236156. InAir +0x181 bit 0x20 / 0x40 (DoAirAssassination / DoAirTackle): GroundData EntryState := 2 / 10, return. Drop = HumanInAirData JumpOrigin.z (+0x40) - pos.z. Spring jump (action 0xDA3ACAAF) or drop > 3: MovementState 11 LandingHard, action 0x10DD707 (LandingSpeedRatio +0x21C <= 0.2 or fall damage 2) else 0x10DD70B / 0x256801CC. Else MovementState 10 Landing: steep fall -> 1855747415 / 1855746090, else band(+0x21C: 0.2/0.5/0.9) ? 1830814048+foot : 1855747402/404. RE/11_ground.md 11
+69B730	c	Mac HumanInAir::ExecMainToGroundMain 0x1236156. InAir +0x181 bit 0x20 / 0x40 (DoAirAssassination / DoAirTackle): GroundData EntryState := 2 / 10, return. Drop = HumanInAirData JumpOrigin.z (+0x40) - pos.z. Spring jump (action 0xDA3ACAAF) or drop > 3: MovementState 11 LandingHard, action 0x10DD707 (LandingSpeedRatio +0x21C <= 0.2 or fall damage 2) else 0x10DD70B / 0x256801CC. Else MovementState 10 Landing: steep fall -> 1855747415 / 1855746090, else band(+0x21C: 0.2/0.5/0.9) ? 1830814048+foot : 1855747402/404. RE/11_ground.md 11
 69BD61	c	int
 69BD65	c	float
 69BF58	c	char
@@ -24026,6 +24034,8 @@ FFF84	c	char *
 8254A0	F	Microsoft VisualC 2-14/net runtime
 825577	c	Block
 8255A3	c	int
+825E20	F	Mac HumanData::GetGroundData 0xE394FA (same call sites).
+825E20	c	Mac HumanData::GetGroundData 0xE394FA (same call sites).
 825FD6	c	switch 5 cases
 825FDB	c	switch jump
 825FE2	r	jumptable 00825FDB case 0
@@ -26466,6 +26476,8 @@ FFF84	c	char *
 90E2B0	F	Microsoft VisualC 2-14/net runtime
 90E2C0	F	Microsoft VisualC 2-14/net runtime
 90EB01	c	Block
+90EFA0	F	Mac TransitionSetupDataToMovement::SetupTransitionData 0x111AAC6 (vftable 0x19BE554 slot 0). Copies MvtState -> data+0x1A0, transition -> +0x1A8/+0x204, flags +0x20C, feet +0x210, blends +0x214, ratio +0x21C, step +0x220, skip +0x224, motion type +0x228, teleport +0x22C; EntryState +0x250 := 0.
+90EFA0	c	Mac TransitionSetupDataToMovement::SetupTransitionData 0x111AAC6 (vftable 0x19BE554 slot 0). Copies MvtState -> data+0x1A0, transition -> +0x1A8/+0x204, flags +0x20C, feet +0x210, blends +0x214, ratio +0x21C, step +0x220, skip +0x224, motion type +0x228, teleport +0x22C; EntryState +0x250 := 0.
 90F0C0	F	Microsoft VisualC 2-14/net runtime
 90F1E1	c	Block
 90F4A0	F	Microsoft VisualC 2-14/net runtime
@@ -26578,6 +26590,8 @@ FFF84	c	char *
 915DDC	c	void *
 917350	F	Microsoft VisualC 2-14/net runtime
 91829F	c	void *
+9183D0	F	Mac Human::GetFrontFoot 0x12C6468 (same call site in ExecMainToGroundMain).
+9183D0	c	Mac Human::GetFrontFoot 0x12C6468 (same call site in ExecMainToGroundMain).
 918697	c	void *
 9189D8	c	void *
 918A0C	c	void *

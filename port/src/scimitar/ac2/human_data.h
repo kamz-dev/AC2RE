@@ -200,6 +200,20 @@ struct PortActionLengths {
 struct HumanInAirData {
     // PORT: placeholder gravity (m/s^2), not from the game.
     float gravity = 9.81f;
+    // +0x10 JumpOrigin (reflected, a matrix): where the jump or fall started. The port keeps its translation (+0x40),
+    // which HumanInAir::ExecMainToGroundMain measures the drop from.
+    Vec3 m_JumpOrigin;
 };
+
+// Landing action ids (HumanInAir::ExecMainToGroundMain PC 0x69B730; HumanGround::TestLandingToWaitMain PC 0x5EB330).
+namespace landing_action {
+inline constexpr std::uint32_t StandingRightFoot = 1855747402;  // front foot 1
+inline constexpr std::uint32_t StandingLeftFoot = 1855747404;
+inline constexpr std::uint32_t StandingVertical = 1855747415;   // a steep fall, no landing speed
+inline constexpr std::uint32_t MovingVertical = 1855746090;     // a steep fall with landing speed
+inline constexpr std::uint32_t MovingRightFoot = 1830814048;    // + 1 for the other front foot
+inline constexpr std::uint32_t Hard = 0x10DD707;                // LandingHard, no speed or fatal damage
+inline constexpr std::uint32_t HardRoll = 0x10DD70B;            // LandingHard with speed
+}  // namespace landing_action
 
 }  // namespace scimitar::ac2

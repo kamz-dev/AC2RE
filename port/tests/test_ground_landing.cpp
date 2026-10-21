@@ -116,3 +116,26 @@ TEST(ground_sprint_landing_keeps_the_sprint) {
     CHECK(sawLanding);
     CHECK_NEAR(ground.GetSpeedRatio(), 1.0f, 1e-5f);  // high profile + sprint: MovementState Sprint, ratio 1
 }
+
+TEST(in_air_drop_over_3m_lands_hard) {
+    // HumanInAir::ExecMainToGroundMain (PC 0x69B730): a drop of more than 3 m from the jump origin hands over with
+    // MovementState LandingHard; with no landing speed the action is the plain hard landing.
+    port::BoxWorld world;
+    port::Sim sim(world, {.position = {0, 0, 4}, .context = scimitar::ac2::HumanContextId::InAir});
+    const HumanGround& ground = sim.human().GetContextBundle().GetGround();
+    bool sawHard = false;
+    for (int i = 0; i < 90 && !sawHard; ++i) {
+        sim.step({});
+        sawHard = ground.GetMoveState() == State::LandingHard;
+    }
+    CHECK(sawHard);
+    CHECK(sim.human().m_PortCurrentActionId == scimitar::ac2::landing_action::Hard);
+}
+
+TEST(in_air_steep_standing_fall_picks_the_vertical_standing_landing) {
+    // A fall with no horizontal speed and no landing speed: the steep standing landing, which Ground ends in Wait.
+    port::BoxWorld world;
+    port::Sim sim(world, {.position = {0, 0, 2}, .context = scimitar::ac2::HumanContextId::InAir});
+    for (int i = 0; i < 90 && sim.human().GetCurrentContextID() == scimitar::ac2::HumanContextId::InAir; ++i) sim.step({});
+    CHECK(sim.human().m_PortCurrentActionId == scimitar::ac2::landing_action::StandingVertical);
+}

@@ -278,8 +278,8 @@ values are open (live row 6).
 - [x] TurnOnSpot: the custom-action check, `m_TurnMode`, the cycle flag and the target (section 13, 2026-10-21).
       Still open: who calls `DoTurnOnSpot` / `SetUseTurnOnSpotCycle` (the look-at and custom-action systems).
 - [x] CrouchWait's transition check and `ActorCanPhysicallyStandUp` (section 13, 2026-10-21).
-- [ ] InAir's side of the hand-over: which `MovementState` / landing action it sets from `LandingType`
-      (`12_in_air.md`); EdgeLanding.
+- [x] InAir's side of the landing hand-over (`HumanInAir::ExecMainToGroundMain`, section 11, 2026-10-21). Still open:
+      EdgeLanding; who sets InAir's `m_LandingSpeedRatio` (live row 10); `ComputeFallDamage`; the spring jump.
 - [ ] Who sends the jump / edge / obstacle interface commands (the free-run / guidance system); `CanWallingVertical`,
       `TestForPotentialObstacleCollision`, `IsNarrowEdge`.
 - [x] `HumanGroundData`'s property names (section 15, 2026-10-21).
@@ -379,6 +379,26 @@ ExecMoveToGroundOnHumanNarrowObjectInterfaceCommand_Collide` (Mac 0xF211E8) hand
 or CustomAction isn't decoded (no caller seen with 9). `EnterMove` has no case for either, so they keep Move's
 previous child. A separate reflected enum `LandingType` (Safe,
 SmallDamage, HeavyDamage, Fatal) is InAir's, and most likely what picks 10 / 11 / 12.
+
+**The landing from InAir** (`HumanInAir::ExecMainToGroundMain` PC 0x69B730 [0x1236156]) picks the landing action
+and the `MovementState`:
+1. With InAir's `m_DoAirAssassination` / `m_DoAirTackle` (InAir +0x181 bits 0x20 / 0x40) it only sets
+   `HumanGroundData::m_EntryState` to 2 / 10 (`EntryState_AirAssassination` / `_AirTackle`) and stops.
+2. The drop is `HumanInAirData::JumpOrigin`'s height (the matrix at +0x10, translation at +0x40) minus the landing
+   height. In a spring jump (current action 0xDA3ACAAF on PC; `IsInSpringJump` PC 0x6925D0 on Mac) or **above 3.0 m**:
+   **LandingHard** (11). The action is 0x10DD707 when InAir's `m_LandingSpeedRatio` (+0x21C) is ≤ 0.2 or
+   `ComputeFallDamage` (PC 0x6927A0) returns 2, else 0x10DD70B (0x256801CC in a spring jump). Then fall damage
+   (`ConvertLandingToDamageAndSendEvent` PC 0x69AF20), a witness event, a sound and a dust FX scaled by
+   (drop − 3) / 7.
+3. Otherwise **Landing** (10). A steep fall (no horizontal speed, or more than 75° between it and the velocity with z
+   clamped ≤ 0) gives 1855747415 (no landing speed) or 1855746090. Otherwise the landing speed band
+   (`m_LandingSpeedRatio` < 0.2 / 0.5 / 0.9 / else) picks a standing landing 1855747402 / 1855747404 (by
+   `Human::GetFrontFoot` PC 0x9183D0) or a moving one 1830814048 + foot, blended by min(drop / 2.5, (horizontal
+   distance − 5) / 7.5, 1).
+4. Both hand over through `TransitionSetupDataToMovement` (`SetupTransitionData` PC 0x90EFA0) with rotation ratio 0,
+   step 0.5 and `TransitionToMotionType_BlendWalkToJog`.
+
+So Ground's Landing → Wait (the three standing ids, below) happens exactly when InAir had no landing speed.
 
 **The landing states** play the action the handing-over context set up and leave when it ends:
 

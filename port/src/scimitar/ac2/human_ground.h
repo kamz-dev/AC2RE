@@ -127,6 +127,7 @@ private:
     bool TestRunTurnToMoveCycleMain() const;    // PC 0x5EB690, Mac 0xF9DD88
 
     bool TestLandingToWaitMain() const;               // PC 0x5EB330, Mac 0xFB5FA6
+    bool IsStandingLanding() const;                   // the current action check in PC 0x5EB330
     bool TestLandingToMoveCycleMain() const;          // PC 0x5EB3A0, Mac 0xFB602A
     void ExecLandingToMoveCycleMain();                // Mac 0xFA920A
     void ExecTurnStartToWaitMain();                   // PC 0x614F40, Mac 0xFB664C

@@ -621,15 +621,23 @@ void HumanGround::EnterRunTurn() {
     m_PortTurnToApply = m_TurnAngle;
 }
 
-// --- Landings and Roll (RE/11_ground.md 11). PORT: the landing actions are chosen by InAir in the game; the
-// port's "standing landing" (the three ids TestLandingToWaitMain accepts) is a landing with no movement intended. ---
+// --- Landings and Roll (RE/11_ground.md 11). InAir picks the landing action (HumanInAir::ExecMainToGroundMain);
+// TestLandingToWaitMain accepts the three standing ones. ---
+
+bool HumanGround::IsStandingLanding() const {
+    const std::uint32_t id = m_Human.m_PortCurrentActionId;
+    return id == landing_action::StandingRightFoot || id == landing_action::StandingLeftFoot ||
+           id == landing_action::StandingVertical;
+}
 
 bool HumanGround::TestLandingToWaitMain() const {
-    return m_PortAction.HasFinished() && m_IntentionMvtState == 0;
+    // PC 0x5EB330: the landing action has finished and it is one of the three standing landings.
+    return m_PortAction.HasFinished() && IsStandingLanding();
 }
 
 bool HumanGround::TestLandingToMoveCycleMain() const {
-    return m_PortAction.HasFinished() && m_IntentionMvtState != 0;
+    // PC 0x5EB3A0: the landing action has finished and it is any other landing.
+    return m_PortAction.HasFinished() && !IsStandingLanding();
 }
 
 void HumanGround::ExecLandingToMoveCycleMain() {
