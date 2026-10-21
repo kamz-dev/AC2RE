@@ -104914,6 +104914,7 @@ FFFF48	c	Source
 1C6B4CC	c	reference to RTTI's vftable
 1C6B4D0	c	internal runtime reference
 1C6B4D4	r	type descriptor name
+1D1C528	c	Reflection class descriptor HumanGroundData (hash E00AE315, parent HumanGroundDatav2, size 0x3A0): +0 props 0x1D1BED8 x36, +8 enums x4, +0x20 name. RE/22_reflection.md
 1DEAE04	c	reference to RTTI's vftable
 1DEAE08	c	internal runtime reference
 1DEAE0C	r	type descriptor name

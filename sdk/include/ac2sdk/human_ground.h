@@ -161,24 +161,59 @@ AC2_ASSERT_OFFSET(HumanGround, headingRotationDirection, 0x8D0);
 AC2_ASSERT_OFFSET(HumanGround, turnOnMovementMinAngle, 0x990);
 AC2_ASSERT_OFFSET(HumanGround, speedRestriction, 0x994);
 
-// HumanGround::groundData points here (RE/11_ground.md 4). Same offsets in both builds; each read on PC.
+// HumanGround::groundData points here: the reflected class HumanGroundData (descriptor PC 0x1D1C528, size 0x3A0,
+// parent HumanGroundDatav2; names from RE/tools/refl.py), then the unreflected members found in the code.
 struct HumanGroundData {
-    AC2_PAD(0x10);                 // 0x000
-    float direction[4];            // 0x010  zeroed after use
-    float moveDirection[4];        // 0x020  desired move direction; UpdateTurnAngle / UpdateOrientation
-    AC2_PAD(0x80 - 0x30);          // 0x030
-    std::int32_t movementMode;     // 0x080  3 = oriented move
-    AC2_PAD(0x04);                 // 0x084
-    float stickMagnitude;          // 0x088  (hypothesis)
-    AC2_PAD(0xB4 - 0x8C);          // 0x08C
-    float turnAngle;               // 0x0B4
-    float turnAngle2;              // 0x0B8
-    AC2_PAD(0xED - 0xBC);          // 0x0BC
-    std::uint8_t breakHard;        // 0x0ED  IHumanGround::SetBreakHard 0x632E20; -> MoveStop while running
-    std::uint8_t sprint;           // 0x0EE  IHumanGround::SetSprint 0x632E80; +0.2 to the target speed ratio
-    AC2_PAD(0xF3 - 0xEF);          // 0x0EF
-    std::uint8_t crouch;           // 0x0F3  IHumanGround::SetCrouch (Mac 0x153B994)
-    AC2_PAD(0x155 - 0xF4);         // 0x0F4
+    enum HumanGroundSubState : std::int32_t {
+        SubState_Movement = 0, SubState_Fight = 1, SubState_FreeRun = 2, SubState_OrientedMove = 3, SubState_Hurt = 4,
+        SubState_ObstacleCollision = 5,
+    };
+    enum MvtDivisions : std::int32_t {
+        MvtDivision_WaitLow = 0, MvtDivision_WaitHigh = 1, MvtDivision_WalkVerySlow = 2, MvtDivision_Walk = 3,
+        MvtDivision_Jog = 4, MvtDivision_Run = 5, MvtDivision_Crouch = 6, MvtDivision_MAX = 7, MvtDivision_Invalid = 8,
+    };
+    enum CombatStyle : std::int32_t { CombatStyle_Normal = 0, CombatStyle_Assassin = 1, CombatStyle_MAX = 2 };
+    enum ObstacleLeanType : std::int32_t { ObstacleLeanType_Hands = 0, ObstacleLeanType_Feet = 1 };
+
+    AC2_PAD(0x10);                                // 0x000
+    float destGlobalBodyOrientation[4];           // 0x010  DestGlobalBodyOrientation
+    float destHeading[4];                         // 0x020  DestHeading
+    float collidePosition[4];                     // 0x030  CollidePosition
+    float collideNormal[4];                       // 0x040  CollideNormal
+    float lcoActorSight[4];                       // 0x050  LCOActorSight
+    float lcoPelvisSight[4];                      // 0x060  LCOPelvisSight
+    float lcoFootSight[4];                        // 0x070  LCOFootSight
+    HumanGroundSubState subState;                 // 0x080  SubState
+    float curSpeedRatio;                          // 0x084  CurSpeedRatio
+    float destSpeedRatio;                         // 0x088  DestSpeedRatio
+    float headingLinearRotationSpeed;             // 0x08C  HeadingLinearRotationSpeed
+    float headingEasedOutRotationSpeedRatio;      // 0x090  HeadingEasedOutRotationSpeedRatio
+    std::uint32_t paramFlags;                     // 0x094  ParamFlags
+    std::uint32_t internalFlags;                  // 0x098  InternalFlags
+    std::uint32_t entityToAvoid;                  // 0x09C  EntityToAvoid (Handle<Entity>)
+    CombatStyle combatStyle;                      // 0x0A0  CombatStyle
+    std::uint8_t carryObjectData[0x10];           // 0x0A4  CarryObjectData (HumanGroundCarryObjectData, 0x10)
+    float currentBodyAngle;                       // 0x0B4  CurrentBodyAngle
+    float currentBodyBankingAngle;                // 0x0B8  CurrentBodyBankingAngle
+    ObstacleLeanType obstacleLeanType;            // 0x0BC  ObstacleLeanType
+    float collideHeight;                          // 0x0C0  CollideHeight
+    std::uint32_t collideEntity;                  // 0x0C4  CollideEntity (Handle<Entity>)
+    float blockCylinderRadius;                    // 0x0C8  BlockCylinderRadius
+    float blockCylinderLength;                    // 0x0CC  BlockCylinderLength
+    float blockCylinderOffset[4];                 // 0x0D0  BlockCylinderOffset
+    std::uint32_t customActionControlChannel;     // 0x0E0  CustomActionControlChannel
+    std::uint32_t customActionSecondaryChannel;   // 0x0E4  CustomActionSecondaryChannel
+    std::uint32_t idleBreakerActionBlock;         // 0x0E8  IdleBreakerActionBlock (Handle<ActionBlock>)
+    std::uint8_t isSet;                           // 0x0EC  IsSet
+    std::uint8_t breakHard;                       // 0x0ED  BreakHard (IHumanGround::SetBreakHard 0x632E20)
+    std::uint8_t sprint;                          // 0x0EE  Sprint (IHumanGround::SetSprint 0x632E80)
+    std::uint8_t forceFallFromGrabThrow;          // 0x0EF  ForceFallFromGrabThrow
+    std::uint8_t forceRemainStandingOnAnyWallImpact;  // 0x0F0  ForceRemainStandingOnAnyWallImpact
+    std::uint8_t actingPlaying;                   // 0x0F1  ActingPlaying
+    std::uint8_t actingInterrupted;               // 0x0F2  ActingInterrupted
+    std::uint8_t crouch;                          // 0x0F3  Crouch (IHumanGround::SetCrouch)
+    // Unreflected members, named after what they do.
+    AC2_PAD(0x155 - 0xF4);                        // 0x0F4  (+0x150 := 1 in EnterMove, +0x154 = 2 after LocalInit)
     std::uint8_t movementDivisionCount[2];        // 0x155  without / with high profile
     AC2_PAD(0x01);                                // 0x157
     float movementDivisionThresholds[2][5];       // 0x158  GetMovementDivisionFromSpeedRatio 0x90E190
@@ -192,13 +227,21 @@ struct HumanGroundData {
     std::uint8_t transitionFlag224;               // 0x224
     AC2_PAD(0x03);                                // 0x225
     std::int32_t transitionToMotionType;          // 0x228  -> HumanGround speed restriction mode in EnterMoveCycle
+    AC2_PAD(0x3A0 - 0x22C);                       // 0x22C
 };
 
-AC2_ASSERT_OFFSET(HumanGroundData, direction, 0x010);
-AC2_ASSERT_OFFSET(HumanGroundData, moveDirection, 0x020);
-AC2_ASSERT_OFFSET(HumanGroundData, movementMode, 0x080);
-AC2_ASSERT_OFFSET(HumanGroundData, stickMagnitude, 0x088);
-AC2_ASSERT_OFFSET(HumanGroundData, turnAngle, 0x0B4);
+AC2_ASSERT_SIZE(HumanGroundData, 0x3A0);
+AC2_ASSERT_OFFSET(HumanGroundData, destGlobalBodyOrientation, 0x010);
+AC2_ASSERT_OFFSET(HumanGroundData, destHeading, 0x020);
+AC2_ASSERT_OFFSET(HumanGroundData, lcoFootSight, 0x070);
+AC2_ASSERT_OFFSET(HumanGroundData, subState, 0x080);
+AC2_ASSERT_OFFSET(HumanGroundData, destSpeedRatio, 0x088);
+AC2_ASSERT_OFFSET(HumanGroundData, internalFlags, 0x098);
+AC2_ASSERT_OFFSET(HumanGroundData, combatStyle, 0x0A0);
+AC2_ASSERT_OFFSET(HumanGroundData, currentBodyAngle, 0x0B4);
+AC2_ASSERT_OFFSET(HumanGroundData, collideEntity, 0x0C4);
+AC2_ASSERT_OFFSET(HumanGroundData, blockCylinderOffset, 0x0D0);
+AC2_ASSERT_OFFSET(HumanGroundData, idleBreakerActionBlock, 0x0E8);
 AC2_ASSERT_OFFSET(HumanGroundData, breakHard, 0x0ED);
 AC2_ASSERT_OFFSET(HumanGroundData, sprint, 0x0EE);
 AC2_ASSERT_OFFSET(HumanGroundData, crouch, 0x0F3);
@@ -208,6 +251,5 @@ AC2_ASSERT_OFFSET(HumanGroundData, highProfileRequest, 0x181);
 AC2_ASSERT_OFFSET(HumanGroundData, movementState, 0x1A0);
 AC2_ASSERT_OFFSET(HumanGroundData, rotationRatio, 0x21C);
 AC2_ASSERT_OFFSET(HumanGroundData, transitionToMotionType, 0x228);
-AC2_ASSERT_OFFSET(HumanGroundData, rotationRatioStep, 0x220);
 
 }  // namespace ac2sdk

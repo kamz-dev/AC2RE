@@ -26,6 +26,9 @@ follow it."
 `AC2_GAME_DIR` (the install folder) or `AC2_EXE` (the exe itself), then check the build:
 `py RE/tools/triage.py` must print `== pinned build`.
 
+For `RE/tools/refl.py`, get the hash list from the project owner (a text file of the strings the game hashes; it
+is not in git) and set `AC2_HASHES` to its path.
+
 ## 4. The C++ build
 **Visual Studio 2022** with "Desktop development with C++". Its bundled CMake is enough
 (`<VS>\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin`), or install CMake 3.24+.

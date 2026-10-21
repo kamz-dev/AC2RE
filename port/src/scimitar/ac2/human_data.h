@@ -1,22 +1,75 @@
 #pragma once
 // The contexts' data. In the game each context's data is a reflected class that also holds the context's runtime
-// state (RE/11_ground.md 4): HumanGround reads its inputs from HumanGroundData (PC: HumanGround +0x10). Field names
-// are the port's until the reflection names are recovered; each field's comment gives its PC offset, and the
-// layout is in sdk/include/ac2sdk/human_ground.h.
+// state (RE/11_ground.md 4 and 15): HumanGround reads its inputs from HumanGroundData (PC: HumanGround +0x10). The
+// reflected members keep their reflected names (RE/tools/refl.py); the rest are named after what they do, with
+// their PC offset. The layout is in sdk/include/ac2sdk/human_ground.h.
+
+#include <cstdint>
 
 #include "scimitar/math.h"
 
 namespace scimitar::ac2 {
 
+// Reflected class HumanGroundData (descriptor PC 0x1D1C528, size 0x3A0, parent HumanGroundDatav2).
 struct HumanGroundData {
-    Vec3 m_MoveDirection;               // +0x20 desired move direction
-    int m_MovementMode = 0;             // +0x80 3 = oriented move
-    float m_StickMagnitude = 0;         // +0x88 0..1 (hypothesis)
-    float m_TurnAngle = 0;              // +0xB4
-    float m_TurnAngle2 = 0;             // +0xB8
-    bool m_BreakHard = false;           // +0xED IHumanGround::SetBreakHard; while running -> MoveStop (LIVE row 7)
-    bool m_Sprint = false;              // +0xEE IHumanGround::SetSprint; +0.2 to the target speed ratio (LIVE row 5)
-    bool m_Crouch = false;              // +0xF3 IHumanGround::SetCrouch
+    enum HumanGroundSubState {  // HumanGroundData::HumanGroundSubState
+        SubState_Movement = 0,
+        SubState_Fight = 1,
+        SubState_FreeRun = 2,
+        SubState_OrientedMove = 3,
+        SubState_Hurt = 4,
+        SubState_ObstacleCollision = 5,
+    };
+    enum MvtDivisions {  // HumanGroundData::MvtDivisions (the movement-division tables' indices)
+        MvtDivision_WaitLow = 0,
+        MvtDivision_WaitHigh = 1,
+        MvtDivision_WalkVerySlow = 2,
+        MvtDivision_Walk = 3,
+        MvtDivision_Jog = 4,
+        MvtDivision_Run = 5,
+        MvtDivision_Crouch = 6,
+        MvtDivision_MAX = 7,
+        MvtDivision_Invalid = 8,
+    };
+    enum CombatStyle { CombatStyle_Normal = 0, CombatStyle_Assassin = 1, CombatStyle_MAX = 2 };
+    enum ObstacleLeanType { ObstacleLeanType_Hands = 0, ObstacleLeanType_Feet = 1 };
+
+    // Reflected members (PC offset). Handles (EntityToAvoid +0x9C, CollideEntity +0xC4, IdleBreakerActionBlock +0xE8)
+    // and CarryObjectData (+0xA4) aren't mirrored yet.
+    Vec3 m_DestGlobalBodyOrientation;              // +0x10
+    Vec3 m_DestHeading;                            // +0x20 the direction the controller asks to move in
+    Vec3 m_CollidePosition;                        // +0x30
+    Vec3 m_CollideNormal;                          // +0x40
+    Vec3 m_LCOActorSight;                          // +0x50
+    Vec3 m_LCOPelvisSight;                         // +0x60
+    Vec3 m_LCOFootSight;                           // +0x70
+    HumanGroundSubState m_SubState = SubState_Movement;  // +0x80
+    float m_CurSpeedRatio = 0;                     // +0x84
+    float m_DestSpeedRatio = 0;                    // +0x88 the speed ratio the controller asks for (0..1)
+    float m_HeadingLinearRotationSpeed = 0;        // +0x8C
+    float m_HeadingEasedOutRotationSpeedRatio = 0; // +0x90
+    std::uint32_t m_ParamFlags = 0;                // +0x94
+    std::uint32_t m_InternalFlags = 0;             // +0x98
+    CombatStyle m_CombatStyle = CombatStyle_Normal;  // +0xA0
+    float m_CurrentBodyAngle = 0;                  // +0xB4
+    float m_CurrentBodyBankingAngle = 0;           // +0xB8
+    ObstacleLeanType m_ObstacleLeanType = ObstacleLeanType_Hands;  // +0xBC
+    float m_CollideHeight = 0;                     // +0xC0
+    float m_BlockCylinderRadius = 0;               // +0xC8
+    float m_BlockCylinderLength = 0;               // +0xCC
+    Vec3 m_BlockCylinderOffset;                    // +0xD0
+    std::uint32_t m_CustomActionControlChannel = 0;    // +0xE0
+    std::uint32_t m_CustomActionSecondaryChannel = 0;  // +0xE4
+    bool m_IsSet = false;                          // +0xEC
+    bool m_BreakHard = false;                      // +0xED IHumanGround::SetBreakHard; while running -> MoveStop (LIVE row 7)
+    bool m_Sprint = false;                         // +0xEE IHumanGround::SetSprint; +0.2 to the target ratio (LIVE row 5)
+    bool m_ForceFallFromGrabThrow = false;         // +0xEF
+    bool m_ForceRemainStandingOnAnyWallImpact = false;  // +0xF0
+    bool m_ActingPlaying = false;                  // +0xF1
+    bool m_ActingInterrupted = false;              // +0xF2
+    bool m_Crouch = false;                         // +0xF3 IHumanGround::SetCrouch
+
+    // Unreflected members (named after what they do).
     // +0x155 / +0x158: the movement-division tables, [0] without and [1] with high profile. HumanGround::LocalInit
     // (PC 0x61F920) fills them; these defaults are its values.
     unsigned char m_MovementDivisionCount[2] = {3, 3};

@@ -55,10 +55,11 @@ void Human::ForceContext(HumanContextId id) {
 }
 
 void Human::Update(const port::MoveInput& input, const port::World& world, float dt) {
-    // PORT: the game fills HumanGroundData from its controller / action interpreter (not decoded); the port copies
-    // the input in. LIVE rows 3 and 5: which buttons set +0xEE and +0x181.
-    m_GroundData.m_MoveDirection = input.moveDir;
-    m_GroundData.m_StickMagnitude = input.moveMag;
+    // PORT: the game's controller / action interpreter (not decoded) sets HumanGroundData's DestHeading and
+    // DestSpeedRatio; the port copies the input's world direction and stick magnitude in. LIVE rows 3 and 5: which
+    // buttons set Sprint and +0x181.
+    m_GroundData.m_DestHeading = input.moveDir;
+    m_GroundData.m_DestSpeedRatio = input.moveMag;
     m_GroundData.m_HighProfileRequest = input.held(port::kHighProfile);
     IHumanGround& ground = m_ContextBundle.GetGround();
     ground.SetSprint(input.held(port::kLegs));

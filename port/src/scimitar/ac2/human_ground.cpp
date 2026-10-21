@@ -146,9 +146,13 @@ HumanGround::HumanGround(Human& human) : ActorContext(human) {
 void HumanGround::LocalInit() {
     // PC 0x61F920: the parts the port mirrors so far.
     HumanGroundData& data = m_Human.GetGroundData();
-    data.m_MovementMode = 0;
-    data.m_MoveDirection = {};
-    data.m_StickMagnitude = 0;
+    data.m_SubState = HumanGroundData::SubState_Movement;
+    data.m_DestHeading = {};
+    data.m_ParamFlags = 0;
+    data.m_InternalFlags = 0;
+    data.m_HeadingLinearRotationSpeed = 0;
+    data.m_CurSpeedRatio = 0;
+    data.m_DestSpeedRatio = 0;
     for (int h = 0; h < 2; ++h) {
         data.m_MovementDivisionCount[h] = 3;
         data.m_MovementDivisionThresholds[h][0] = 0.0f;
@@ -177,9 +181,12 @@ void HumanGround::EnterMove() {
     // PC 0x60C610, Mac 0xFA3D06: HumanGroundData's MovementState (left by the context handing over, through
     // TransitionSetupDataToMovement) picks Move's first child and seeds the gait fields.
     HumanGroundData& data = m_Human.GetGroundData();
-    data.m_MovementMode = 0;
-    data.m_MoveDirection = forwardFromYaw(m_Human.m_Yaw);  // +0x20 := the sight
-    data.m_StickMagnitude = 0;
+    data.m_SubState = HumanGroundData::SubState_Movement;
+    data.m_DestHeading = forwardFromYaw(m_Human.m_Yaw);  // DestHeading := the sight
+    data.m_CurSpeedRatio = 0;
+    data.m_DestSpeedRatio = 0;
+    data.m_ParamFlags |= 1;
+    data.m_InternalFlags |= 1;
     State first = State::Wait;  // PORT: for other values the game keeps Move's previous initial child
     auto seed = [this](int running, int gait, float ratio) {
         m_Running = running;
@@ -216,7 +223,7 @@ void HumanGround::UpdateMovementIntention() {
     if (m_AISpeedOverride) {
         m_MovementDivision = m_AISpeedRatio > 0.0f ? 2 : 0;
     } else {
-        int division = data.GetMovementDivisionFromSpeedRatio(data.m_HighProfileRequest, data.m_StickMagnitude);
+        int division = data.GetMovementDivisionFromSpeedRatio(data.m_HighProfileRequest, data.m_DestSpeedRatio);
         if (division == 0)
             m_MovementDivision = 0;
         else if (division == 1 || division == 2)
@@ -228,7 +235,7 @@ void HumanGround::UpdateMovementIntention() {
 void HumanGround::UpdateTurnAngle() {
     // The signed angle about +Z between the desired move direction and the sight. PORT: the sign convention of
     // Gear::GetAngle isn't checked (taken as sight to move direction, counter-clockwise positive).
-    const Vec3& move = m_Human.GetGroundData().m_MoveDirection;
+    const Vec3& move = m_Human.GetGroundData().m_DestHeading;
     if (NullWithEpsilon(Vec3{move.x, move.y, 0}, 0.0005f)) {
         m_TurnAngle = 0;
         return;
@@ -244,7 +251,7 @@ void HumanGround::UpdateOrientation(float dt) {
 
     // PORT: no action system, so the current action item's 0x10 flag (no turning) is never set.
     Vec3 sight = forwardFromYaw(m_Human.m_Yaw);
-    Vec3 move{data.m_MoveDirection.x, data.m_MoveDirection.y, 0};
+    Vec3 move{data.m_DestHeading.x, data.m_DestHeading.y, 0};
     if (NullWithEpsilon(sight, 0.0005f) || NullWithEpsilon(move, 0.0005f)) return;
     Vec3 next = RotateVectorToVectorWithAngularSpeed(sight, move, m_HeadingMinRotationSpeed,
                                                      m_HeadingMaxRotationSpeed, m_HeadingMinRotationAngle * ratio,
@@ -263,7 +270,7 @@ void HumanGround::UpdateMoveMain(float dt) {
 
 void HumanGround::UpdateMoveCycleMain(float dt) {
     const HumanGroundData& data = m_Human.GetGroundData();
-    float target = ComputeTargetSpeedRatio(data.m_StickMagnitude, data.m_Sprint,
+    float target = ComputeTargetSpeedRatio(data.m_DestSpeedRatio, data.m_Sprint,
                                            m_HighProfileIntention != 0, m_AISpeedOverride != 0,
                                            m_AISpeedRatio);
     // PORT: no action system yet, so this is always the game's "move cycle is playing" branch; the restriction mode
@@ -400,7 +407,7 @@ void HumanGround::EnterMoveCycle() {
     m_Running = m_HighProfileIntention;
     m_SpeedRestriction = data.m_TransitionToMotionType;  // this[605] = HumanGroundData +0x228
     TransitionSetupDataToMovement::ResetTransitionData(data);
-    data.m_TurnAngle = 0;
+    data.m_CurrentBodyAngle = 0;
 }
 
 void HumanGround::EnterTurnStart() {

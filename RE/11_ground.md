@@ -119,19 +119,24 @@ MoveCycleDefault).
 
 ## 4. `HumanGroundData` is runtime state
 `HumanGroundData` (the DataContext's context data, at `this+0x10`) holds the per-frame inputs and outputs and
-some tuning (it is a reflected class). Offsets are the same in both builds; each was read on PC in the function
-named:
+some tuning. It is a reflected class (section 15): the names of its members up to +0xF3 are the game's own, from
+the reflection table; the members after that aren't reflected and are named here after what they do. Offsets are
+the same in both builds; each was read on PC in the function named.
 
 | Offset | Type | Meaning | PC evidence |
 |---|---|---|---|
-| +0x10 | vec4 | a direction, zeroed after use | `UpdateMoveCycleMain` 0x61BB60 |
-| +0x20 | vec4 | the **desired move direction** (the turn angle and `UpdateOrientation` turn towards it) | `UpdateTurnAngle` 0x5FE6A0, `UpdateOrientation` 0x5FFC40 |
-| +0x80 | int | movement mode; 3 = oriented move (→ OrientedMove) | `_UpdateMove` 0x634D20 |
-| +0x88 | float | stick magnitude **(hypothesis)**; input to the movement division and the target ratio | `UpdateMovementIntention` 0x5E03E0 |
-| +0xB4 / +0xB8 | float | turn angles, smoothed with the sight (`ComputeVectorRotationWithSight` 0x5FE3D0) | `UpdateMoveCycleMain` |
-| +0xED | bool | **BreakHard**: while running, sends MoveCycle to MoveStop. Set by `IHumanGround::SetBreakHard` (PC 0x632E20 [0x153B958]) | `TestMoveCycleToMoveStopMain` 0x5EAAF0 |
-| +0xEE | bool | **Sprint**: +0.2 to the target speed ratio (high profile + sprint = 0.8..1). Set by `IHumanGround::SetSprint` (PC 0x632E80 [0x153B9D0]) | `UpdateMoveCycleMain` |
-| +0xF3 | bool | **Crouch** (→ CrouchMove / CrouchWait). Set by `IHumanGround::SetCrouch` [0x153B994] | `LocalInit` 0x61F920 (cleared); Mac `_UpdateMoveCycle` |
+| +0x10 | vec4 | `DestGlobalBodyOrientation`; zeroed after use in `UpdateMoveCycleMain` | `UpdateMoveCycleMain` 0x61BB60 |
+| +0x20 | vec4 | **`DestHeading`**: the direction the controller asks to move in (the turn angle and `UpdateOrientation` turn towards it) | `UpdateTurnAngle` 0x5FE6A0, `UpdateOrientation` 0x5FFC40 |
+| +0x80 | enum | **`SubState`** (`HumanGroundSubState`: 0 Movement, 1 Fight, 2 FreeRun, 3 OrientedMove → OrientedMove, 4 Hurt, 5 ObstacleCollision) | `_UpdateMove` 0x634D20 |
+| +0x84 | float | `CurSpeedRatio` (zeroed by `LocalInit` / `EnterMove`) | `EnterMove` 0x60C610 |
+| +0x88 | float | **`DestSpeedRatio`**: the speed ratio the controller asks for (the player's: the stick); input to the movement division and the target ratio | `UpdateMovementIntention` 0x5E03E0 |
+| +0x8C / +0x90 | float | `HeadingLinearRotationSpeed` / `HeadingEasedOutRotationSpeedRatio` | `LocalInit` |
+| +0x94 / +0x98 | u32 | `ParamFlags` / `InternalFlags` (`EnterMove` sets bit 1 in both) | `EnterMove` |
+| +0xB4 / +0xB8 | float | `CurrentBodyAngle` / `CurrentBodyBankingAngle`, smoothed with the sight (`ComputeVectorRotationWithSight` 0x5FE3D0); they weight the move cycle's turn variants | `UpdateMoveCycleMain` |
+| +0xED | bool | **`BreakHard`**: while running, sends MoveCycle to MoveStop. Set by `IHumanGround::SetBreakHard` (PC 0x632E20 [0x153B958]) | `TestMoveCycleToMoveStopMain` 0x5EAAF0 |
+| +0xEE | bool | **`Sprint`**: +0.2 to the target speed ratio (high profile + sprint = 0.8..1). Set by `IHumanGround::SetSprint` (PC 0x632E80 [0x153B9D0]) | `UpdateMoveCycleMain` |
+| +0xF3 | bool | **`Crouch`** (→ CrouchMove / CrouchWait). Set by `IHumanGround::SetCrouch` [0x153B994] | `LocalInit` 0x61F920 (cleared); Mac `_UpdateMoveCycle` |
+| (+0x30…+0xF2) | | the other reflected members (collision, look-at sights, combat style, block cylinder, acting, custom-action channels): section 15 | |
 | +0x154 | u8 | 2 after `LocalInit`; use unknown | `LocalInit` |
 | +0x155 / +0x156 | u8 | movement-division threshold counts (without / with high profile), 3 after `LocalInit` | `LocalInit`; Mac `GetMovementDivisionFromSpeedRatio` 0x1119F44 |
 | +0x158 / +0x16C | float[5] | movement-division thresholds, {0, 0.9, 1} after `LocalInit` | same |
@@ -155,7 +160,7 @@ code constants.
 
 1. **Target ratio** *t*:
    - AI override on (+0x8A8): *t* = +0x7C0;
-   - else *t* = stick × 0.2 + base, base = 0 (walk), 0.2 (Sprint), 0.6 (high profile), 0.8 (high profile and
+   - else *t* = `DestSpeedRatio` × 0.2 + base, base = 0 (walk), 0.2 (Sprint), 0.6 (high profile), 0.8 (high profile and
      Sprint; the player also emits witness event 26 at most every 0.5 s);
    - clamped to ≤ 1.
 2. **When the current action isn't the move cycle** (action id != 93469659 and not finishing): non-player humans
@@ -179,8 +184,8 @@ code constants.
 | 0.6 – 0.8 | 9 → 13 (+ slot 12 weighted by +0x8AC) | 2 | 1 |
 | 0.8 – 1.0 | 13 → 16 (+ slot 19 weighted by +0x8B0, fading out at full sprint) | 2 | 1 |
 
-   Each band's base slot has left / right turn variants at +1 / +2, weighted by the turn angles in
-   `HumanGroundData` +0xB4 / +0xB8 (normalised by π/2, clamped to 1).
+   Each band's base slot has left / right turn variants at +1 / +2, weighted by `CurrentBodyAngle` /
+   `CurrentBodyBankingAngle` (`HumanGroundData` +0xB4 / +0xB8, normalised by π/2, clamped to 1).
 5. At ratio ≥ 0.8 the upper body's action is ended; below 0.6 the upper body may start a "cycle breaker"
    (random delay from `HumanData` +0x120..+0x12C).
 
@@ -190,9 +195,11 @@ code constants.
 `UpdateTurnAngle` 0x5FE6A0, `UpdateOrientation` 0x5FFC40 when the gait level is non-zero, then the push handler.
 
 **Movement division** (`UpdateMovementIntention`): with the AI override, 2 if the AI ratio > 0 else 0. Otherwise
-`HumanGroundData::GetMovementDivisionFromSpeedRatio(highProfile, stick)` (0x90E190) returns the first index *i*
-below the table's count whose threshold ≥ stick (0 if none); index 0 → division 0, 1 or 2 → division 2 (other
-indices leave it unchanged). With the {0, 0.9, 1} tables this is **0 when the stick is exactly 0, else 2**.
+`HumanGroundData::GetMovementDivisionFromSpeedRatio(highProfile, DestSpeedRatio)` (0x90E190) returns the first index
+*i* below the table's count whose threshold ≥ DestSpeedRatio (0 if none); index 0 → division 0, 1 or 2 → division 2
+(other indices leave it unchanged). With the {0, 0.9, 1} tables this is **0 when DestSpeedRatio is exactly 0, else
+2**. The indices are `HumanGroundData::MvtDivisions` (0 WaitLow, 1 WaitHigh, 2 WalkVerySlow, 3 Walk, 4 Jog, 5 Run,
+6 Crouch).
 
 **Can an action be cut by movement** (`IsActionInterruptibleByMovement` 0x5ECD30): never if the current action item's
 flags (+0xC) have 0x20; else the flag bit chosen by (division, high profile): (0, off) 6, (0, on) 7, (1, off) 8,
@@ -221,7 +228,7 @@ flags (+0xC) have 0x20; else the flag bit chosen by (division, high profile): (0
 Each state's tests run in the table's order and the first that passes wins.
 
 ## 7. Turning (`UpdateOrientation` PC 0x5FFC40 [0xFB4E32])
-Ground turning rotates the entity's **sight** (its facing) towards the desired move direction (`HumanGroundData`
+Ground turning rotates the entity's **sight** (its facing) towards `DestHeading` (`HumanGroundData`
 +0x20), every frame the gait level is non-zero:
 
 1. rotation ratio *r* = min(1, `HumanGroundData`+0x21C + dt × +0x220), stored back (`SetRotationRatio`);
@@ -246,8 +253,8 @@ values are open (live row 6).
 ## 8. Construction and `LocalInit` defaults
 - ctor (0x6317A0): heading speeds / angles 0, `HeadingRotationDirection` 0, `TurnOnMovementMinAngle` π/2,
   speed restriction 1, +0x8C8 15.0, +0x8CC 12.5.
-- `LocalInit` (0x61F920): `HumanGroundData` movement mode, move direction, +0x84, +0x88, +0x8C, +0x94, +0x98
-  zeroed; the
+- `LocalInit` (0x61F920): `HumanGroundData` `SubState`, `DestHeading`, `CurSpeedRatio`, `DestSpeedRatio`,
+  `HeadingLinearRotationSpeed`, `ParamFlags`, `InternalFlags` zeroed; the
   movement-division tables and the slow-down curve above; +0xED / +0xEE / +0xF3 / +0x180 / +0x181 cleared;
   turn angle 0. The character capsule: height 1.8, radius 0.4, and two offsets at height − 0.4 and one at
   height − 0.15 (`CharacterComponent` +0x64 / +0x68 / +0x6C from +0x78) **(hypothesis: capsule fields)**.
@@ -262,7 +269,7 @@ values are open (live row 6).
       (`12_in_air.md`); EdgeLanding.
 - [ ] Who sends the jump / edge / obstacle interface commands (the free-run / guidance system); `CanWallingVertical`,
       `TestForPotentialObstacleCollision`, `IsNarrowEdge`.
-- [ ] `HumanGroundData`'s property names: crack the hashes in its reflection table (section 15).
+- [x] `HumanGroundData`'s property names (section 15, 2026-10-21).
 - [ ] The actions' animations: root-motion speeds and turns, lengths (needed for the port's speeds, turns and the
       animation-driven states).
 
@@ -320,7 +327,8 @@ and `TransitionToMotionType` to 1; `EnterMoveCycle` calls it after copying the m
 restriction mode.
 
 `EnterMove` (PC 0x60C610 [0xFA3D06]) runs when Move is entered: `PushState(4)`, `HumanGroundData`+0x150 := 1,
-movement mode := 0, the move direction := the entity's sight, stick := 0, then a switch on **MovementState**
+`SubState` := Movement, `DestHeading` := the entity's sight, `CurSpeedRatio` / `DestSpeedRatio` := 0,
+`ParamFlags` / `InternalFlags` |= 1, then a switch on **MovementState**
 (+0x1A0) picks Move's first child and seeds the gait fields; afterwards high profile := running and division :=
 gait level. `_EnterMove` (PC 0x621720 [0xFD43E0]) then enters that child (PC inlines most children's Enter).
 
@@ -339,8 +347,8 @@ gait level. `_EnterMove` (PC 0x621720 [0xFD43E0]) then enters that child (PC inl
 | 13 | HandPassOverReception | 1 | 2 | 0.6 |
 | 14 (default) | Wait (+0x224 := 1) | 0 | 0 | 0 |
 
-The names 0–6 are a guess from the reflected enum `ActingClip::ExitMovementState` (WaitLow, WaitHigh,
-WalkVerySlow, Walk, Jog, Run, Sprint), which fits the table. A separate reflected enum `LandingType` (Safe,
+`MovementState` isn't reflected; the names 0–6 are a guess from the reflected enum
+`ActingClip::ExitMovementState` (WaitLow, WaitHigh, WalkVerySlow, Walk, Jog, Run, Sprint), which fits the table. A separate reflected enum `LandingType` (Safe,
 SmallDamage, HeavyDamage, Fatal) is InAir's, and most likely what picks 10 / 11 / 12.
 
 **The landing states** play the action the handing-over context set up and leave when it ends:
@@ -421,7 +429,7 @@ there is time for the next animation, else returns to Wait when the action has f
 ## 14. ObstacleCollision, WallingImpulsion, JumpImpulsionForwardFromIdle
 - **ObstacleCollision** (Navigation's child) is entered by interface transition from Move when
   `Human::TestForPotentialObstacleCollision` [0x12EACEC] reports one ([0xF99344]). It leaves to Move when the
-  movement mode (`HumanGroundData`+0x80) is 0 [0xF984D0], to the NarrowObject context when a byte (Mac +0x6EA) is set
+  `SubState` (`HumanGroundData`+0x80) is `SubState_Movement` [0xF984D0], to the NarrowObject context when a byte (Mac +0x6EA) is set
   [0xF96AA8], to InAir by interface unless the action item flag 0x20 is set [0xF9D314], to Push or Riding by
   interface, or to WallingImpulsion on `EnterWallingVertical`. `EnterObstacleCollision` [0xFCA224] is large (the
   bump reaction); not decoded.
@@ -432,10 +440,49 @@ there is time for the next animation, else returns to Wait when the action has f
   an action other than the move cycle / 228159995 / 228159996 under 75 %, factor = ratio / 0.75, stored at +0x45C
   [0xFB5A9E]; or from JumpImpulsion): → **InAir** when its action has finished [0xF9DEB6].
 
-## 15. The reflection table (for `22_reflection.md`)
-`HumanGroundData_ClassData::m_Properties` (Mac 0x2C6C000; the PC copy is still to be found) is an array of 36-byte
-property descriptors: +0x04 the CRC-32 of the property's name, +0x08 a type hash for struct members, +0x0E a type
-code (0x0A float, 0x0D int, 0x19 struct), +0x12 the member's offset. The first entries: 0x87954054 float @0x320,
-0xBD94B0BC float @0x330, 0xE5E3E4DE int @0x340, 0xE1977073 struct (type 0x2CF49A65) @0x200, 0x8B89ADEC int @0x80
-(the movement mode), 0x9E77B818 float @0x210, 0x0CBE043C float @0x220. The names come from cracking the hashes
-(AC1: `reference/ac1/re_tools/crack.py`).
+## 15. The reflection table
+Recovered with `RE/tools/refl.py` (format and tool: `22_reflection.md`); names come from the hash list (standard
+zlib CRC-32 of the name).
+
+Enums: `HumanGroundSubState` (0 SubState_Movement, 1 SubState_Fight, 2 SubState_FreeRun, 3 SubState_OrientedMove,
+4 SubState_Hurt, 5 SubState_ObstacleCollision); `MvtDivisions` (0 WaitLow, 1 WaitHigh, 2 WalkVerySlow, 3 Walk, 4 Jog,
+5 Run, 6 Crouch, 7 MAX, 8 Invalid); `CombatStyle` (0 Normal, 1 Assassin, 2 MAX); `ObstacleLeanType` (0 Hands, 1 Feet).
+
+| Offset | Name | Type |
+|---|---|---|
+| +0x010 | `DestGlobalBodyOrientation` | vec4 |
+| +0x020 | `DestHeading` | vec4 |
+| +0x030 | `CollidePosition` | vec4 |
+| +0x040 | `CollideNormal` | vec4 |
+| +0x050 | `LCOActorSight` | vec4 |
+| +0x060 | `LCOPelvisSight` | vec4 |
+| +0x070 | `LCOFootSight` | vec4 |
+| +0x080 | `SubState` | enum HumanGroundData::HumanGroundSubStatev2 |
+| +0x084 | `CurSpeedRatio` | float |
+| +0x088 | `DestSpeedRatio` | float |
+| +0x08c | `HeadingLinearRotationSpeed` | float |
+| +0x090 | `HeadingEasedOutRotationSpeedRatio` | float |
+| +0x094 | `ParamFlags` | u32 flags |
+| +0x098 | `InternalFlags` | u32 flags |
+| +0x09c | `EntityToAvoid` | handle Entity |
+| +0x0a0 | `CombatStyle` | enum HumanGroundData::CombatStyle |
+| +0x0a4 | `CarryObjectData` | struct HumanGroundCarryObjectData |
+| +0x0b4 | `CurrentBodyAngle` | float |
+| +0x0b8 | `CurrentBodyBankingAngle` | float |
+| +0x0bc | `ObstacleLeanType` | enum HumanGroundData::ObstacleLeanTypev2 |
+| +0x0c0 | `CollideHeight` | float |
+| +0x0c4 | `CollideEntity` | handle Entity |
+| +0x0c8 | `BlockCylinderRadius` | float |
+| +0x0cc | `BlockCylinderLength` | float |
+| +0x0d0 | `BlockCylinderOffset` | vec4 |
+| +0x0e0 | `CustomActionControlChannel` | u32 |
+| +0x0e4 | `CustomActionSecondaryChannel` | u32 |
+| +0x0e8 | `IdleBreakerActionBlock` | handle ActionBlock |
+| +0x0ec | `IsSet` | bool |
+| +0x0ed | `BreakHard` | bool |
+| +0x0ee | `Sprint` | bool |
+| +0x0ef | `ForceFallFromGrabThrow` | bool |
+| +0x0f0 | `ForceRemainStandingOnAnyWallImpact` | bool |
+| +0x0f1 | `ActingPlaying` | bool |
+| +0x0f2 | `ActingInterrupted` | bool |
+| +0x0f3 | `Crouch` | bool |
