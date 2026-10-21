@@ -2543,7 +2543,7 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 5DF6D0	jpt_5DF675
 5E03E0	scimitar::ac2::HumanGround::UpdateMovementIntention
 5E0B30	scimitar::ac2::HumanGround::HandleAnimDeath
-5E1920	scimitar::ac2::HumanGround::unk_TurnAnimationActionId
+5E1920	scimitar::ac2::HumanGround::GetTurnOnSpotAnimation
 5E197A	def_5E192B
 5E1984	jpt_5E192B
 5E1EC0	scimitar::ac2::HumanGround::UpdateCrouchWaitMain
@@ -2566,6 +2566,7 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 5E8ED0	scimitar::ac2::HumanGround::BreakOther
 5E8FC0	scimitar::ac2::HumanGround::UpdateEdgeStopMain
 5EA850	scimitar::ac2::HumanGround::PlayTurnAnimation
+5EA930	scimitar::ac2::HumanGround::ExecTurnOnSpotStepToWaitMain
 5EAAF0	scimitar::ac2::HumanGround::TestMoveCycleToMoveStopMain
 5EAB90	scimitar::ac2::HumanGround::TestMoveCycleToWaitMain
 5EADA0	scimitar::ac2::HumanGround::EnterRoll
@@ -2589,6 +2590,7 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 5F13E0	scimitar::ac2::HumanGround::_TransitFromVulnerableToInAirMain
 5F1450	scimitar::ac2::HumanGround::_TransitFromVulnerableToHayStackMain
 5F14C0	scimitar::ac2::HumanGround::_TransitFromMoveToInAirMain
+5F2320	scimitar::ac2::HumanGround::GetCurrentCustomActionOrientation
 5F3A30	scimitar::ac2::HumanGround::EmitPresentationMovementType
 5F4E70	scimitar::ac2::HumanGround::TestWaitToMoveCycleMain
 5F4EC0	scimitar::ac2::HumanGround::TestWaitToTurnStartMain
@@ -2628,10 +2630,12 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 609730	scimitar::EventFactory::Instanciate<scimitar::ac2::DamageEvent>
 609950	scimitar::EventFactory::Instanciate<scimitar::ac2::FightDamageEvent>
 60B220	_DllMain@12_85
+60B960	scimitar::ac2::HumanGround::_TransitFromTurnOnSpotStepToTurnOnSpotStepMain
 60BBA0	scimitar::ac2::HumanGround::DoBreak
 60C610	scimitar::ac2::HumanGround::EnterMove
 60CE67	def_60CE4D
 60CED0	jpt_60CE4D
+60D7A0	scimitar::ac2::HumanGround::ExitTurnOnSpot
 60DB70	scimitar::ac2::HumanGround::ExitMoveCycle
 610DB0	scimitar::ac2::HumanGround::_TransitFromMoveStopToRunTurnMain
 614370	scimitar::ac2::HumanGround::EnterMoveStop
@@ -2659,6 +2663,7 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 61F200	scimitar::ac2::HumanGround::_TransitFromMoveStopToWaitMain
 61F2B0	scimitar::ac2::HumanGround::_TransitFromLandingToWaitMain
 61F300	scimitar::ac2::HumanGround::_TransitFromLandingHardToWaitMain
+61F3F0	scimitar::ac2::HumanGround::_TransitFromTurnOnSpotStepToWaitMain
 61F920	scimitar::ac2::HumanGround::LocalInit
 620E10	?SetExecutingCollection@ContextBase@details@Concurrency@@QAEXPAV_TaskCollectionBase@23@@Z_1
 620E70	?SetQueueLength@SchedulerProxy@details@Concurrency@@QAEXI@Z_0
@@ -2670,6 +2675,7 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 621DB0	scimitar::ac2::HumanGround::_UpdateHandPassOverReception
 621E60	scimitar::ac2::HumanGround::_UpdateRunTurn
 621EE0	scimitar::ac2::HumanGround::_UpdateTurnStart
+621F90	scimitar::ac2::HumanGround::_UpdateTurnOnSpotStep
 622580	scimitar::ac2::HumanGround::_TransitFromCrouchWaitToJumpImpulsionMain
 6225E0	scimitar::ac2::HumanGround::_TransitFromJumpImpulsionStraightToMoveMain
 622690	scimitar::ac2::HumanGround::_TransitFromEdgeStopToMoveMain
@@ -2745,6 +2751,7 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 63C7C0	_DllMain@12_109
 63C88B	__cfltcvt_init_18
 63C8F3	__cfltcvt_init_19
+6408E0	scimitar::ac2::HumanUpperBody::GetCustomActionTargetDirection
 64D220	?SetScheduler@?$ListArray@VScheduleGroupBase@details@Concurrency@@@details@Concurrency@@QAEXPAVSchedulerBase@23@@Z_5
 64D310	?SetScheduler@?$ListArray@VScheduleGroupBase@details@Concurrency@@@details@Concurrency@@QAEXPAVSchedulerBase@23@@Z_6
 64D3C0	_DllMain@12_110

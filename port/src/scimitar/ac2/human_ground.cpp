@@ -325,9 +325,91 @@ bool HumanGround::ActorCanPhysicallyStandUp() const {
 }
 
 bool HumanGround::TestWaitToTurnOnSpotMain() const {
-    // PORT: the custom-action orientation check is left out (no custom actions).
-    return m_TurnMode == 1 && PortIsActionInterruptibleByMovement() && m_IntentionMvtState == 0 &&
-           std::fabs(m_TurnAngle) >= 0.017453292f;
+    // NPC turn mode; not in a custom action that orients the character; the current action finishing or
+    // interruptible (PORT: one stand-in check); no movement intent; at least 1 degree to turn.
+    if (m_TurnMode != 1) return false;
+    if (IsInCustomAction() && GetCurrentCustomActionOrientation() != 2) return false;  // 2 = CustomActionOrientation_None
+    return PortIsActionInterruptibleByMovement() && m_IntentionMvtState == 0 && std::fabs(m_TurnAngle) >= 0.017453292f;
+}
+
+bool HumanGround::IsInCustomAction() const {
+    // The game: the CustomAction state is active, or the upper body (+0x790) plays a custom action (its +0x24 == 11).
+    // PORT: the port has neither.
+    return false;
+}
+
+int HumanGround::GetCurrentCustomActionOrientation() const {
+    // The game: 2 (None) unless the upper body plays a custom action, then that action's orientation (0 Aggressive,
+    // 1 Progressive, 2 None; WaitCustomActionUnit::CustomActionOrientation). PORT: no upper body.
+    return 2;
+}
+
+bool HumanGround::TestTurnOnSpotDeadZone(const Vec3& direction, float minAngle) const {
+    // The angle about +Z from the sight to `direction` (flattened; the sight itself if that is null) is >= minAngle.
+    const Vec3 sight = forwardFromYaw(m_Human.m_Yaw);
+    Vec3 dir{direction.x, direction.y, 0};
+    if (std::fabs(dir.x) + std::fabs(dir.y) < 1e-6f) dir = sight;
+    const float angle = yawFromDirection(dir) - yawFromDirection(sight);
+    return minAngle <= std::fabs(std::remainder(angle, 2.0f * kPi));
+}
+
+bool HumanGround::CanTurnOnSpot(const Vec3& direction, float minAngle) {
+    // Interface command 155 is offered by Wait only (TestWaitToTurnOnSpotOnHumanGroundInterfaceCommand_TurnOnSpot
+    // Mac 0xFB3B88: 3 - TestTurnOnSpotDeadZone, i.e. 2 = allowed). PORT: the FSM's interface-command dispatch is
+    // reduced to that one transition.
+    return m_MoveState == State::Wait && TestTurnOnSpotDeadZone(direction, minAngle);
+}
+
+void HumanGround::DoTurnOnSpot(const Vec3& direction) {
+    // _TransitFromWaitToTurnOnSpotOnHumanGroundInterfaceCommand_TurnOnSpot (Mac 0xFBB7C2): ExecWaitToTurnOnSpot...
+    // (Mac 0xF98D70) takes the direction as the target, then TurnOnSpot is entered. PORT: as CanTurnOnSpot.
+    if (m_MoveState != State::Wait) return;
+    m_TurnOnSpotDir = direction;
+    SwitchMoveState(State::TurnOnSpot);
+}
+
+void HumanGround::SetUseTurnOnSpotCycle(bool use) {
+    if (IsInTurnOnSpotTurn()) m_TurnOnSpotCycle = use;  // Mac 0xF979FE: only while turning on the spot
+}
+
+bool HumanGround::TestTurnOnSpotStepToTurnOnSpotStepMain() const {
+    // PC 0x5FE0A0: with the cycle flag set and the step's action finished, chain another step when channel 1 is busy
+    // and its action has more time left than the next turn animation lasts (else the game clears the flag).
+    // PORT: no channel 1 (the action system isn't ported), so it never chains; like the game when channel 1 is idle,
+    // the flag is left set and the step holds until SetUseTurnOnSpotCycle(false).
+    if (!m_TurnOnSpotCycle || !m_PortAction.HasFinished()) return false;
+    const bool channel1Busy = false;
+    return channel1Busy;
+}
+
+bool HumanGround::TestTurnOnSpotStepToWaitMain() const {
+    return !m_TurnOnSpotCycle && m_PortAction.HasFinished();
+}
+
+void HumanGround::StartTurnOnSpotAnim(const Vec3& target) {
+    // PC 0x606B70: the turn animation for the angle from the sight to `target` (GetTurnAnimation), weighted by the
+    // angle over its size; PORT: the stand-in action spreads that angle over the animation's stand-in length.
+    const float angle =
+        std::remainder(yawFromDirection({target.x, target.y, 0}) - m_Human.m_Yaw, 2.0f * kPi);
+    const int anim = GetTurnAnimation(angle);
+    m_PortAction.Start(m_Human.GetPortActionLengths().turnOnSpot[anim / 2]);
+    m_PortTurnToApply = angle;
+}
+
+void HumanGround::ExitTurnOnSpot() {
+    // PC 0x60D7A0: DestHeading := the sight; the cycle flag is cleared. (The presentation event isn't mirrored.)
+    m_Human.GetGroundData().m_DestHeading = forwardFromYaw(m_Human.m_Yaw);
+    m_TurnOnSpotCycle = false;
+}
+
+void HumanGround::ExecTurnOnSpotStepToWaitMain() {
+    // PC 0x5EA930: DestHeading and HeadingBeforeRotationUpdate := the sight; movement state Wait, ratio 0; the
+    // intended movement type keeps the current one. (HeadingBeforeRotationUpdate isn't mirrored.)
+    m_Human.GetGroundData().m_DestHeading = forwardFromYaw(m_Human.m_Yaw);
+    m_CurrentMvtState = 0;
+    m_CurrentSpeedRatio = 0;
+    m_IntentionMvtType = m_CurrentMvtType;
+    m_IntentionMvtState = 0;
 }
 
 bool HumanGround::TestWaitToCrouchWaitMain() const {
@@ -556,6 +638,7 @@ bool HumanGround::TestRollToMoveCycleMain(float dt) const {
 }
 
 void HumanGround::SwitchMoveState(State next) {
+    if (m_MoveState == State::TurnOnSpot && next != State::TurnOnSpot) ExitTurnOnSpot();
     if (next != State::MoveCycle) {
         if (m_MoveState == State::MoveCycle) ExitMoveCycle();
         m_PortMoveCycleEntryPending = false;
@@ -588,12 +671,9 @@ void HumanGround::SwitchMoveState(State next) {
             m_PortAction.Start(m_Human.GetPortActionLengths().crouchTurn);
             m_PortTurnToApply = m_TurnAngle;
             break;
-        case State::TurnOnSpot: {  // StartTurnOnSpotAnim PC 0x606B70: one turn animation towards the target
-            const int anim = GetTurnAnimation(m_TurnAngle);
-            m_PortAction.Start(m_Human.GetPortActionLengths().turnOnSpot[anim / 2]);
-            m_PortTurnToApply = m_TurnAngle;
+        case State::TurnOnSpot:  // _EnterTurnOnSpot: TurnOnSpotStep's StartTurnOnSpotAnim towards the target
+            StartTurnOnSpotAnim(m_TurnOnSpotDir);
             break;
-        }
         default: break;
     }
 }
@@ -627,8 +707,10 @@ void HumanGround::Update(const port::MoveInput&, const port::World& world, float
                 SwitchMoveState(State::TurnStart);
             else if (TestWaitToMoveCycleMain())
                 SwitchMoveState(State::MoveCycle);
-            else if (TestWaitToTurnOnSpotMain())
+            else if (TestWaitToTurnOnSpotMain()) {
+                m_TurnOnSpotDir = m_Human.GetGroundData().m_DestHeading;  // ExecWaitToTurnOnSpotMain, inlined in PC 0x61F0D0
                 SwitchMoveState(State::TurnOnSpot);
+            }
             else if (TestWaitToCrouchWaitMain())
                 SwitchMoveState(State::CrouchWait);
             break;
@@ -694,8 +776,17 @@ void HumanGround::Update(const port::MoveInput&, const port::World& world, float
         case State::LandingBalanceFall:  // _UpdateLandingBalanceFall PC 0x630940
             if (TestLandingBalanceFallToWaitMain(dt)) SwitchMoveState(State::Wait);
             break;
-        case State::TurnOnSpot:  // TurnOnSpotStep (PORT: one step; the game chains steps while its cycle flag is set)
-            if (m_PortAction.HasFinished()) SwitchMoveState(State::Wait);
+        case State::TurnOnSpot:  // _UpdateTurnOnSpotStep PC 0x621F90 (TurnOnSpot's only child, TurnOnSpotStep)
+            if (TestTurnOnSpotStepToTurnOnSpotStepMain()) {
+                // _TransitFrom...ToTurnOnSpotStepMain PC 0x60B960: the target becomes the upper body's custom-action
+                // direction (HumanUpperBody::GetCustomActionTargetDirection, PC 0x6408E0), then the next animation.
+                StartTurnOnSpotAnim(m_TurnOnSpotDir);
+            } else if (TestTurnOnSpotStepToWaitMain()) {
+                // _TransitFromTurnOnSpotStepToWaitMain PC 0x61F3F0: ExitTurnOnSpot (in SwitchMoveState), the Exec,
+                // then Wait.
+                SwitchMoveState(State::Wait);
+                ExecTurnOnSpotStepToWaitMain();
+            }
             break;
         case State::CrouchWait:  // _UpdateCrouchWait PC 0x623FA0
             if (TestCrouchWaitToWaitMain())

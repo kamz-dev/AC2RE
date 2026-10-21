@@ -130,7 +130,11 @@ struct HumanGround {
     float savedBodySpeed;           // 0x8CC  m_SavedBodySpeed: 12.5 at construction
     std::int32_t headingRotationDirection;  // 0x8D0  IHumanGround::RotationDirection, -1 / 0 / 1
     std::uint8_t forceTurnAround;   // 0x8D4  bit 0: m_ForceTurnAround (a bitfield); Has180TurnIntention
-    AC2_PAD(0x990 - 0x8D5);         // 0x8D5
+    AC2_PAD(0x8DD - 0x8D5);         // 0x8D5
+    std::uint8_t turnOnSpotCycle;   // 0x8DD  m_TurnOnSpotCycle; SetUseTurnOnSpotCycle, TurnOnSpotStep -> Step
+    AC2_PAD(0x8E0 - 0x8DE);         // 0x8DE
+    float turnOnSpotDir[4];         // 0x8E0  m_TurnOnSpotDir: the direction TurnOnSpot turns to
+    AC2_PAD(0x990 - 0x8F0);         // 0x8F0
     float turnOnMovementMinAngle;   // 0x990  pi/2 at construction; Wait / MoveCycle -> TurnStart
     std::int32_t transitionToMotionTypeInternal;  // 0x994  m_TransitionToMotionTypeInternal (TransitionToMotionType)
     std::uint8_t doubleTransitionToMotionSpeed;   // 0x998  m_DoubleTransitionToMotionSpeed (bit 0)
@@ -145,6 +149,8 @@ AC2_ASSERT_OFFSET(HumanGround, intendedTurnAngle, 0x480);
 AC2_ASSERT_OFFSET(HumanGround, walkingOnHorse, 0x6F9);
 AC2_ASSERT_OFFSET(HumanGround, onlyUseTurnOnSpot, 0x7A0);
 AC2_ASSERT_OFFSET(HumanGround, forceTurnAround, 0x8D4);
+AC2_ASSERT_OFFSET(HumanGround, turnOnSpotCycle, 0x8DD);
+AC2_ASSERT_OFFSET(HumanGround, turnOnSpotDir, 0x8E0);
 AC2_ASSERT_OFFSET(HumanGround, upperBody, 0x790);
 AC2_ASSERT_OFFSET(HumanGround, currentMvtState, 0x7A8);
 AC2_ASSERT_OFFSET(HumanGround, intentionMvtState, 0x7AC);

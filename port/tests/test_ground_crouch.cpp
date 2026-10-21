@@ -90,3 +90,42 @@ TEST(ground_turn_on_spot_needs_turn_mode_1) {
     CHECK(ground.GetMoveState() == State::Wait);
     CHECK(std::fabs(human.m_Yaw + 1.0f) < 0.1f);
 }
+
+TEST(ground_do_turn_on_spot_turns_to_the_requested_direction) {
+    // Interface command 155 (CanTurnOnSpot / DoTurnOnSpot): from Wait, for any turn mode; the dead zone is the angle
+    // from the sight (Mac TestTurnOnSpotDeadZone 0xFB3A6C).
+    port::BoxWorld world;
+    Human human;
+    HumanGround& ground = human.GetContextBundle().GetGround();
+    human.Update({}, world, kDt);
+    CHECK(ground.GetMoveState() == State::Wait);
+    const scimitar::Vec3 left = scimitar::forwardFromYaw(1.5f);
+    CHECK(ground.CanTurnOnSpot(left, 0.5f));
+    CHECK(!ground.CanTurnOnSpot(scimitar::forwardFromYaw(0.2f), 0.5f));  // inside the dead zone
+
+    ground.DoTurnOnSpot(left);
+    CHECK(ground.GetMoveState() == State::TurnOnSpot);
+    CHECK(ground.IsInTurnOnSpotTurn());
+    CHECK(!ground.CanTurnOnSpot(left, 0.0f));  // only offered from Wait
+    for (int i = 0; i < 90 && ground.GetMoveState() == State::TurnOnSpot; ++i) human.Update({}, world, kDt);
+    CHECK(ground.GetMoveState() == State::Wait);
+    CHECK(std::fabs(human.m_Yaw - 1.5f) < 0.1f);
+}
+
+TEST(ground_turn_on_spot_cycle_holds_the_step_until_cleared) {
+    // SetUseTurnOnSpotCycle only takes while turning on the spot (Mac 0xF979FE). With the flag set the step doesn't
+    // return to Wait (TestTurnOnSpotStepToWaitMain); with no channel-1 action to time a next step it holds, as the
+    // game does, until the flag is cleared.
+    port::BoxWorld world;
+    Human human;
+    HumanGround& ground = human.GetContextBundle().GetGround();
+    human.Update({}, world, kDt);
+    ground.SetUseTurnOnSpotCycle(true);  // ignored: not turning
+    ground.DoTurnOnSpot(scimitar::forwardFromYaw(-1.0f));
+    ground.SetUseTurnOnSpotCycle(true);
+    for (int i = 0; i < 90; ++i) human.Update({}, world, kDt);
+    CHECK(ground.GetMoveState() == State::TurnOnSpot);
+    ground.SetUseTurnOnSpotCycle(false);
+    human.Update({}, world, kDt);
+    CHECK(ground.GetMoveState() == State::Wait);
+}

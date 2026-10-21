@@ -275,8 +275,8 @@ values are open (live row 6).
 - [ ] Who calls `IHumanGround`'s heading setters, `SetBreakHard` and `SetSprint` for the player. *What* they set is
       known from the live session (rows 5–7, 2026-10-21); the caller is the player's controller (`21_input.md`).
 - [x] The hold of the speed ratio after MoveCycle starts: the restricted branch while the move cycle action isn't current (section 5, live row 8, 2026-10-21). Still open: which action is current during it.
-- [ ] The custom-action orientation check in TurnOnSpot; `SetTurnMode`'s target (+0x464?) and
-      `SetUseTurnOnSpotCycle` (the TurnOnSpot cycle flag); who sets the turn-on-spot target (+0x8C0 Mac).
+- [x] TurnOnSpot: the custom-action check, `m_TurnMode`, the cycle flag and the target (section 13, 2026-10-21).
+      Still open: who calls `DoTurnOnSpot` / `SetUseTurnOnSpotCycle` (the look-at and custom-action systems).
 - [ ] CrouchWait's transition-animation check (flag Mac +0x8B5); `ActorCanPhysicallyStandUp`'s collision query.
 - [ ] InAir's side of the hand-over: which `MovementState` / landing action it sets from `LandingType`
       (`12_in_air.md`); EdgeLanding.
@@ -445,11 +445,33 @@ guidance code) are outside this doc.
 `LocalInit`), running 0, gait 0 / 1, and restart a timer (0.5 s; `UpdateCrouchWaitMain` PC 0x5E1EC0 calls a
 virtual every 0.5 s, `UpdateCrouchMoveMain` restarts it at 1 s). CrouchTurn plays `g_CrouchTurnActionMap`.
 
-**TurnOnSpot** (from Wait, `TestWaitToTurnOnSpotMain` PC 0x5F4F30): turn mode (+0x464) == 1, the custom-action
-orientation check, free, no movement intended, \|turn angle\| ≥ 1°. So it serves turns asked for without
-movement (AI, scripted look-at turns), not the stick. `StartTurnOnSpotAnim` (section 10) plays one of the 8 turn
-animations; TurnOnSpotStep chains further steps while the cycle flag (Mac +0x8BD, `SetUseTurnOnSpotCycle`) is set and
-there is time for the next animation, else returns to Wait when the action has finished.
+**TurnOnSpot** turns on the spot to `m_TurnOnSpotDir` (+0x8E0 [+0x8C0]). Its only child is TurnOnSpotStep (one turn
+animation per step). Two ways in, both from Wait:
+- **On its own** (`TestWaitToTurnOnSpotMain` PC 0x5F4F30 [0xF9E9F8]): `m_TurnMode` is NPC (1); not in a custom action
+  that orients the character (`IsInCustomAction` [0xF9BC40]: the CustomAction state is active or the upper body,
+  +0x790, plays a custom action; `GetCurrentCustomActionOrientation` PC 0x5F2320 [0xF9BDE0] must then be 2,
+  `CustomActionOrientation_None`, not Aggressive / Progressive); the current action finishing or interruptible by
+  movement; `m_IntentionMvtState` Wait; \|`m_TurnAngle`\| ≥ 1°. The target is `DestHeading`
+  (`ExecWaitToTurnOnSpotMain` [0xF9939E], inlined in `_TransitFromWaitToTurnOnSpotMain` PC 0x61F0D0). The player's
+  turn mode is MainCharacter, so this serves NPCs.
+- **On request**: interface command 155 through `IHumanGround::CanTurnOnSpot(dir, minAngle)` [0xFDB938] and
+  `DoTurnOnSpot(dir)` [0xFEBEDE]. Its test (Wait only, [0xFB3B88]) passes when the angle about +Z from the sight to
+  `dir` is ≥ `minAngle` (`TestTurnOnSpotDeadZone` [0xFB3A6C]); its Exec [0xF98D70] takes `dir` as the target.
+
+`StartTurnOnSpotAnim` (PC 0x606B70 [0xFB37D0], section 10) plays the turn animation for the angle to the target
+(`GetTurnOnSpotAnimation` PC 0x5E1920 [0xF97B1C]). `_UpdateTurnOnSpotStep` (PC 0x621F90 [0xFD185A]):
+- **→ TurnOnSpotStep** (`TestTurnOnSpotStepToTurnOnSpotStepMain` PC 0x5FE0A0 [0xFB3684]): the cycle flag
+  `m_TurnOnSpotCycle` (+0x8DD [+0x8BD]) is set, channel 0's action has finished, channel 1 is busy and its action has
+  more time left than the next turn animation lasts; then the target becomes the upper body's custom-action
+  direction (`HumanUpperBody::GetCustomActionTargetDirection` PC 0x6408E0) and the next animation starts. When the
+  time left is too short the flag is cleared instead; when channel 1 is idle nothing happens (the step holds).
+- **→ Wait** ([0xF9D8FE]): the cycle flag is clear and channel 0's action has finished. `ExitTurnOnSpot` (PC
+  0x60D7A0 [0xFA0944]: `DestHeading` := sight, flag cleared), then `ExecTurnOnSpotStepToWaitMain` (PC 0x5EA930
+  [0xF98EFE]: `DestHeading` and `m_HeadingBeforeRotationUpdate` := sight, `m_CurrentMvtState` Wait, ratio 0,
+  `m_IntentionMvtType` := `m_CurrentMvtType`, `m_IntentionMvtState` Wait).
+
+`SetUseTurnOnSpotCycle` [0xF979FE] only takes while `IsInTurnOnSpotTurn` [0xF9BC7A] (TurnOnSpot active). So a caller
+(the look-at / custom-action code) keeps the character turning in steps while an upper-body action plays.
 
 **Idle** (Wait's child) alternates IdleStill (id 6) and IdleBreaker (id 7): a breaker plays when `HumanData`+0x133
 [Mac] allows it, a timer (Mac +0x31C) has run out and `g_IdleBreakerActions` has a block for the actor

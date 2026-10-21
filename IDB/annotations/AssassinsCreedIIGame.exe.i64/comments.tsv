@@ -17451,6 +17451,8 @@ FFF84	c	char *
 5E0C57	c	void *
 5E1789	c	float
 5E179E	c	float
+5E1920	F	Mac GetTurnOnSpotAnimation 0xF97B1C: TurnAnimation 0..7 -> action id (788325963 ... 660761271), else -1.
+5E1920	c	Mac GetTurnOnSpotAnimation 0xF97B1C: TurnAnimation 0..7 -> action id (788325963 ... 660761271), else -1.
 5E1926	c	switch 8 cases
 5E192B	c	switch jump
 5E1932	r	jumptable 005E192B case 0
@@ -17485,6 +17487,8 @@ FFF84	c	char *
 5EA02D	c	int
 5EA03D	c	float
 5EA8D6	c	float
+5EA930	F	Mac ExecTurnOnSpotStepToWaitMain 0xF98EFE: DestHeading / +0x7E0 := sight; +0x7A8 := 0, ratio +0x7BC := 0, +0x7B4 := +0x7B0, +0x7AC := 0.
+5EA930	c	Mac ExecTurnOnSpotStepToWaitMain 0xF98EFE: DestHeading / +0x7E0 := sight; +0x7A8 := 0, ratio +0x7BC := 0, +0x7B4 := +0x7B0, +0x7AC := 0.
 5EAAF0	F	Mac 0xFB5CAE: running +0x7B0 == 1, gait +0x7A8 != 0, item flag 0x20 clear, data+0xED, and action in {93469659, 96, 97} or action ratio > 0.33.
 5EAAF0	c	Mac 0xFB5CAE: running +0x7B0 == 1, gait +0x7A8 != 0, item flag 0x20 clear, data+0xED, and action in {93469659, 96, 97} or action ratio > 0.33.
 5EAB90	F	Mac 0xFB5D7A: division +0x7AC == 0 and (running +0x7B0 == 0 or current action != 93469659 MoveCycle).
@@ -17541,6 +17545,8 @@ FFF84	c	char *
 5F1330	c	float
 5F1B5E	c	int
 5F1B61	c	float
+5F2320	F	Mac GetCurrentCustomActionOrientation 0xF9BDE0: 2 (CustomActionOrientation_None) unless the upper body (+0x790) plays a custom action (+0x24 == 11), then its orientation (0 Aggressive, 1 Progressive).
+5F2320	c	Mac GetCurrentCustomActionOrientation 0xF9BDE0: 2 (CustomActionOrientation_None) unless the upper body (+0x790) plays a custom action (+0x24 == 11), then its orientation (0 Aggressive, 1 Progressive).
 5F2756	c	int
 5F2758	c	int
 5F275D	c	float
@@ -17557,8 +17563,8 @@ FFF84	c	char *
 5F4E70	c	Mac 0xF9EAE6: division +0x7AC in {1,2} and (WillActionFinish or IsActionInterruptibleByMovement).
 5F4EC0	F	Mac 0xF9EA82: (WillActionFinish or interruptible) and |turn angle +0x7D8| > TurnOnMovementMinAngle +0x990 and not byte +0x7A0 [Mac +0x780].
 5F4EC0	c	Mac 0xF9EA82: (WillActionFinish or interruptible) and |turn angle +0x7D8| > TurnOnMovementMinAngle +0x990 and not byte +0x7A0 [Mac +0x780].
-5F4F30	F	Mac 0xF9E9F8: +0x464 == 1, custom-action orientation check, (WillActionFinish or interruptible), division == 0, |turn angle +0x7D8| >= 1 deg.
-5F4F30	c	Mac 0xF9E9F8: +0x464 == 1, custom-action orientation check, (WillActionFinish or interruptible), division == 0, |turn angle +0x7D8| >= 1 deg.
+5F4F30	F	Mac 0xF9E9F8: m_TurnMode (+0x464) == 1 (NPC); !IsInCustomAction (IHumanGround vfunc +1236) or GetCurrentCustomActionOrientation == 2 (None); WillActionFinish or interruptible; m_IntentionMvtState == 0; |m_TurnAngle| >= 1 deg.
+5F4F30	c	Mac 0xF9E9F8: m_TurnMode (+0x464) == 1 (NPC); !IsInCustomAction (IHumanGround vfunc +1236) or GetCurrentCustomActionOrientation == 2 (None); WillActionFinish or interruptible; m_IntentionMvtState == 0; |m_TurnAngle| >= 1 deg.
 5F5B00	F	Mac 0xF9E8DA: running == 0 and |turn angle +0x7D8| > TurnOnMovementMinAngle +0x990 and (WillActionFinish or interruptible).
 5F5B00	c	Mac 0xF9E8DA: running == 0 and |turn angle +0x7D8| > TurnOnMovementMinAngle +0x990 and (WillActionFinish or interruptible).
 5F5C96	c	float
@@ -17658,6 +17664,8 @@ FFF84	c	char *
 60B00C	c	lpvReserved
 60B00D	c	fdwReason
 60B00E	c	hinstDLL
+60B960	F	Mac _TransitFromTurnOnSpotStepToTurnOnSpotStepMain 0xFB39D4: target +0x8E0 := HumanUpperBody::GetCustomActionTargetDirection (Mac ExecTurnOnSpotStepToTurnOnSpotStepMain 0xF98E10), StartTurnOnSpotAnim.
+60B960	c	Mac _TransitFromTurnOnSpotStepToTurnOnSpotStepMain 0xFB39D4: target +0x8E0 := HumanUpperBody::GetCustomActionTargetDirection (Mac ExecTurnOnSpotStepToTurnOnSpotStepMain 0xF98E10), StartTurnOnSpotAnim.
 60BCDD	c	int
 60BCDF	c	int
 60BCE1	c	int
@@ -17677,6 +17685,8 @@ FFF84	c	char *
 60D5A9	c	float
 60D659	c	float
 60D768	c	float
+60D7A0	F	Mac ExitTurnOnSpot 0xFA0944: data DestHeading := sight, cycle flag +0x8DD := 0, presentation event 122, PopState(28).
+60D7A0	c	Mac ExitTurnOnSpot 0xFA0944: data DestHeading := sight, cycle flag +0x8DD := 0, presentation event 122, PopState(28).
 60DB29	c	float
 60DB30	c	float
 60DB41	c	float
@@ -17762,6 +17772,8 @@ FFF84	c	char *
 61E666	c	float
 61F200	F	Mac _TransitFromMoveStopToWaitMain 0xFD1C64 with ExecMoveStopToWaitMain (Mac 0xF9748A) inlined: +0x7B4 := 1, speed ratio +0x7BC := 0. Live 2026-10-21: ratio 0 after MoveStop->Wait.
 61F200	c	Mac _TransitFromMoveStopToWaitMain 0xFD1C64 with ExecMoveStopToWaitMain (Mac 0xF9748A) inlined: +0x7B4 := 1, speed ratio +0x7BC := 0. Live 2026-10-21: ratio 0 after MoveStop->Wait.
+61F3F0	F	Mac _TransitFromTurnOnSpotStepToWaitMain 0xFD1826: ExitTurnOnSpot, ExecTurnOnSpotStepToWaitMain, _EnterWait.
+61F3F0	c	Mac _TransitFromTurnOnSpotStepToWaitMain 0xFD1826: ExitTurnOnSpot, ExecTurnOnSpotStepToWaitMain, _EnterWait.
 61F802	c	float
 61F920	F	Mac HumanGround::LocalInit 0xFA71B0. Movement-division tables data+0x155/+0x156 = 3, thresholds {0, 0.9, 1} at +0x158 and +0x16C; slow-down ResponseCurve +0x81C keys (0,1) (0.333,1) (0.4,0.3) (0.666,0.2) (1,1); capsule height 1.8, radius 0.4.
 61F920	c	Mac HumanGround::LocalInit 0xFA71B0. Movement-division tables data+0x155/+0x156 = 3, thresholds {0, 0.9, 1} at +0x158 and +0x16C; slow-down ResponseCurve +0x81C keys (0,1) (0.333,1) (0.4,0.3) (0.666,0.2) (1,1); capsule height 1.8, radius 0.4.
@@ -17774,6 +17786,8 @@ FFF84	c	char *
 621E60	c	Mac _UpdateRunTurn 0xFD197C. Division 0 and HasActionFinished -> Wait; TestRunTurnToMoveCycleMain (division != 0 and (HasActionFinished or no 180 intention)) -> MoveCycle.
 621EE0	F	Mac _UpdateTurnStart 0xFD18F6. UpdateTurnStartMain (x2 time scale in high profile except the 4 running turn ids), then division 0 and WillActionFinish -> Wait, division != 0 and WillActionFinish -> MoveCycle.
 621EE0	c	Mac _UpdateTurnStart 0xFD18F6. UpdateTurnStartMain (x2 time scale in high profile except the 4 running turn ids), then division 0 and WillActionFinish -> Wait, division != 0 and WillActionFinish -> MoveCycle.
+621F90	F	Mac _UpdateTurnOnSpotStep 0xFD185A. Step->Step (PC 0x5FE0A0) else Step->Wait (cycle flag +0x8DD clear and HasActionFinished).
+621F90	c	Mac _UpdateTurnOnSpotStep 0xFD185A. Step->Step (PC 0x5FE0A0) else Step->Wait (cycle flag +0x8DD clear and HasActionFinished).
 6225E0	c	int
 6225E6	c	int
 6225E7	c	int
@@ -18492,6 +18506,8 @@ FFF84	c	char *
 63E106	c	int
 63E120	c	float
 63FF68	c	Source
+6408E0	F	Mac HumanUpperBody::GetCustomActionTargetDirection 0x13813F6 (called at the same place in TurnOnSpotStep->Step).
+6408E0	c	Mac HumanUpperBody::GetCustomActionTargetDirection 0x13813F6 (called at the same place in TurnOnSpotStep->Step).
 640961	c	float
 64096B	c	float
 6409C5	c	float

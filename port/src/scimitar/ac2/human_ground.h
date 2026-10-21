@@ -25,7 +25,7 @@ public:
     virtual void SetHeadingMaxRotationSpeed(float radPerSecond) = 0;  // Mac 0xF9772E
     virtual void SetHeadingMinRotationAngle(float radians) = 0;       // Mac 0xF97740
     virtual void SetHeadingMaxRotationAngle(float radians) = 0;       // Mac 0xF97752
-    // IHumanGround::RotationDirection in the game; 0 = the short way, -1 / 1 force a side (values' names unknown).
+    // IHumanGround::RotationDirection: 0 Shortest, -1 Left, 1 Right (Revelations PDB).
     virtual void SetHeadingRotationDirection(int direction) = 0;      // Mac 0xF97764
     virtual void SetTurnOnMovementMinAngle(float radians) = 0;        // Mac 0xF9825E
     virtual void SetForceTurnAround(bool force) = 0;                  // Mac 0x153B89A
@@ -34,6 +34,12 @@ public:
     virtual void SetCrouch(bool crouch) = 0;                          // Mac 0x153B994
     // IHumanGround::TurnMode: 0 MainCharacter, 1 NPC (Revelations PDB); TurnOnSpot needs NPC. Sets m_TurnMode (+0x464).
     virtual void SetTurnMode(int mode) = 0;                           // Mac 0x153B87E
+    // Turning on the spot on request (AI, look-at). CanTurnOnSpot / DoTurnOnSpot test and run interface command 155
+    // (TurnOnSpot, from Wait) with the direction to face; RE/11_ground.md 13.
+    virtual bool CanTurnOnSpot(const Vec3& direction, float minAngle) = 0;  // Mac 0xFDB938
+    virtual void DoTurnOnSpot(const Vec3& direction) = 0;                   // Mac 0xFEBEDE
+    virtual bool IsInTurnOnSpotTurn() const = 0;                            // Mac 0xF9BC7A
+    virtual void SetUseTurnOnSpotCycle(bool use) = 0;                       // Mac 0xF979FE
 };
 
 // Mac 0xFB4A3C, PC 0x5FF930. Turns `from` towards `to` (about +Z) by one frame at an angular speed that grows with
@@ -65,6 +71,10 @@ public:
     void SetSprint(bool v) override;
     void SetCrouch(bool v) override;
     void SetTurnMode(int v) override { m_TurnMode = v; }
+    bool CanTurnOnSpot(const Vec3& direction, float minAngle) override;
+    void DoTurnOnSpot(const Vec3& direction) override;
+    bool IsInTurnOnSpotTurn() const override { return m_MoveState == State::TurnOnSpot; }  // IsStateActive(TurnOnSpot)
+    void SetUseTurnOnSpotCycle(bool use) override;
 
     // Mac 0xFB3550, PC 0x5FDF00: which of the 8 turn-on-spot animations turns the sight towards `target`; the
     // signed angle sight -> target about +Z picks the size (25 / 70 / 135 degrees) and the side (even = positive).
@@ -129,6 +139,14 @@ private:
     bool TestRollToMoveCycleMain(float dt) const;     // Mac 0xF9DAF6
 
     bool TestWaitToTurnOnSpotMain() const;            // PC 0x5F4F30, Mac 0xF9E9F8
+    bool TestTurnOnSpotDeadZone(const Vec3& direction, float minAngle) const;  // Mac 0xFB3A6C
+    bool TestTurnOnSpotStepToTurnOnSpotStepMain() const;  // PC 0x5FE0A0, Mac 0xFB3684
+    bool TestTurnOnSpotStepToWaitMain() const;        // inlined in PC 0x621F90, Mac 0xF9D8FE
+    void StartTurnOnSpotAnim(const Vec3& target);     // PC 0x606B70, Mac 0xFB37D0
+    void ExitTurnOnSpot();                            // PC 0x60D7A0, Mac 0xFA0944
+    void ExecTurnOnSpotStepToWaitMain();              // PC 0x5EA930, Mac 0xF98EFE
+    bool IsInCustomAction() const;                    // Mac 0xF9BC40 (IHumanGround virtual)
+    int GetCurrentCustomActionOrientation() const;    // PC 0x5F2320, Mac 0xF9BDE0
     bool TestWaitToCrouchWaitMain() const;            // PC 0x5F4FC0, Mac 0xF9E9C2
     bool TestMoveCycleToCrouchMoveMain() const;       // inlined in Mac 0xFE05A2 (PC 0x5E1AC0)
     bool TestCrouchWaitToWaitMain() const;            // inlined in PC 0x623FA0, Mac 0xFDEBB8
@@ -187,6 +205,8 @@ private:
     // +0x998 bit 0: set by ExecTurnStartToMoveCycleMain's high-profile branch; while the move-cycle action isn't
     // current yet, UpdateMoveCycleMain then plays the current action at 2 - its ratio. Cleared by ExitMoveCycle.
     std::uint8_t m_DoubleTransitionToMotionSpeed = 0;
+    bool m_TurnOnSpotCycle = false;      // +0x8DD SetUseTurnOnSpotCycle: chain turn-on-spot steps while set
+    Vec3 m_TurnOnSpotDir;                // +0x8E0 the direction TurnOnSpot turns to (PDB m_TurnOnSpotDir)
 
     PortAction m_PortAction;
     float m_PortSpeed = 0;           // PORT: the stand-in speed this frame
