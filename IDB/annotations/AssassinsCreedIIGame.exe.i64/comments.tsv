@@ -17495,6 +17495,8 @@ FFF84	c	char *
 5EB74B	c	int
 5EB74E	c	float
 5EB843	c	float
+5EB850	F	Mac TestJumpImpulsionToMoveMain 0xF989A8: crouch (data+0xF3) without HP, or the 0.2 s timer at +0x2C0 expired with division 2.
+5EB850	c	Mac TestJumpImpulsionToMoveMain 0xF989A8: crouch (data+0xF3) without HP, or the 0.2 s timer at +0x2C0 expired with division 2.
 5EBC12	c	float
 5EBC7E	c	float
 5EBD3D	c	float
@@ -17661,6 +17663,8 @@ FFF84	c	char *
 60BCE7	c	int
 60BCEC	c	int
 60C4B5	c	float
+60C610	F	Mac HumanGround::EnterMove 0xFA3D06. Switch on HumanGroundData+0x1A0 (HumanGroundData::MovementState, from TransitionSetupDataToMovement) picks Move's first child and seeds running +0x7B0 / gait +0x7A8 / speed ratio +0x7BC: 0 Wait; 1 Wait running; 2 MoveCycle gait 1; 3 MoveCycle 0.2; 4/5 MoveCycle running 0.6; 6 MoveCycle running 1.0 (data+0x228 1->5); 7 CrouchWait; 10 Landing; 11 LandingHard; 12 LandingBalanceFall running; 13 HandPassOverReception running 0.6; 14 Wait. Then HP := running, division := gait. RE/11_ground.md 11
+60C610	c	Mac HumanGround::EnterMove 0xFA3D06. Switch on HumanGroundData+0x1A0 (HumanGroundData::MovementState, from TransitionSetupDataToMovement) picks Move's first child and seeds running +0x7B0 / gait +0x7A8 / speed ratio +0x7BC: 0 Wait; 1 Wait running; 2 MoveCycle gait 1; 3 MoveCycle 0.2; 4/5 MoveCycle running 0.6; 6 MoveCycle running 1.0 (data+0x228 1->5); 7 CrouchWait; 10 Landing; 11 LandingHard; 12 LandingBalanceFall running; 13 HandPassOverReception running 0.6; 14 Wait. Then HP := running, division := gait. RE/11_ground.md 11
 60CE48	c	switch 4 cases
 60CE4D	c	switch jump
 60CE54	r	jumptable 0060CE4D case 0
@@ -18427,6 +18431,8 @@ FFF84	c	char *
 630520	c	lpvReserved
 630522	c	fdwReason
 630524	c	hinstDLL
+630800	F	Mac _UpdateLanding 0xFD1B0E. Poisoned check, then TestLandingToWaitMain (action finished and it is one of the standing landings 1855747402/1855747404/1855747415) or TestLandingToMoveCycleMain (finished, any other).
+630800	c	Mac _UpdateLanding 0xFD1B0E. Poisoned check, then TestLandingToWaitMain (action finished and it is one of the standing landings 1855747402/1855747404/1855747415) or TestLandingToMoveCycleMain (finished, any other).
 6327B6	c	void *
 6327C5	c	Defaults: +0x8B8..+0x8C4 heading rotation speeds/angles 0, +0x8D0 direction 0, +0x8C8 15.0, +0x8CC 12.5, +0x990 TurnOnMovementMinAngle pi/2, +0x994 speed restriction 1.
 632E20	F	IHumanGround slot 30 (vftable 0x19BF390), this = HumanGround+0x14: HumanGroundData+0xED = BreakHard. Mac SetBreakHard 0x153B958. BreakHard while running -> MoveStop.

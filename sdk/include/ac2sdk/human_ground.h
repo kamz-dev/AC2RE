@@ -184,9 +184,14 @@ struct HumanGroundData {
     float movementDivisionThresholds[2][5];       // 0x158  GetMovementDivisionFromSpeedRatio 0x90E190
     AC2_PAD(0x181 - 0x180);                       // 0x180
     std::uint8_t highProfileRequest;              // 0x181
-    AC2_PAD(0x21C - 0x182);                       // 0x182
+    AC2_PAD(0x1A0 - 0x182);                       // 0x182
+    std::int32_t movementState;                   // 0x1A0  HumanGroundData::MovementState; EnterMove 0x60C610
+    AC2_PAD(0x21C - 0x1A4);                       // 0x1A4  (+0x1A8 ActionTransition, +0x204 flag, +0x214 blends)
     float rotationRatio;                          // 0x21C  SetRotationRatio 0x90E250
     float rotationRatioStep;                      // 0x220  per second
+    std::uint8_t transitionFlag224;               // 0x224
+    AC2_PAD(0x03);                                // 0x225
+    std::int32_t transitionToMotionType;          // 0x228  -> HumanGround speed restriction mode in EnterMoveCycle
 };
 
 AC2_ASSERT_OFFSET(HumanGroundData, direction, 0x010);
@@ -200,7 +205,9 @@ AC2_ASSERT_OFFSET(HumanGroundData, crouch, 0x0F3);
 AC2_ASSERT_OFFSET(HumanGroundData, movementDivisionCount, 0x155);
 AC2_ASSERT_OFFSET(HumanGroundData, movementDivisionThresholds, 0x158);
 AC2_ASSERT_OFFSET(HumanGroundData, highProfileRequest, 0x181);
+AC2_ASSERT_OFFSET(HumanGroundData, movementState, 0x1A0);
 AC2_ASSERT_OFFSET(HumanGroundData, rotationRatio, 0x21C);
+AC2_ASSERT_OFFSET(HumanGroundData, transitionToMotionType, 0x228);
 AC2_ASSERT_OFFSET(HumanGroundData, rotationRatioStep, 0x220);
 
 }  // namespace ac2sdk

@@ -30,7 +30,7 @@ Status: `open` / `claimed` / `partial` / `done`.
 ## P2: Contexts (one RE doc + port module + sim tests each)
 | Context | Owner | Status | RE doc |
 |---|---|---|---|
-| Ground (locomotion only) | kamz-dev (`kamz-dev/ground-re`, PR #1) | partial | `11_ground.md`: class, vftable, FSM tree, MoveCycle speed model, Wait / MoveCycle / MoveStop / TurnStart / RunTurn transitions, TurnOnSpot selection, turning, action maps done 2026-10-21; Idle, crouch, landings, jumps, edges open |
+| Ground (locomotion only) | kamz-dev (`kamz-dev/ground-re`, PR #1) | partial | `11_ground.md`: class, vftable, FSM, speed model, turning, Wait / MoveCycle / MoveStop / TurnStart / RunTurn, TurnOnSpot selection, action maps, entering Move (MovementState), landings, Roll, jump / edge entry points done 2026-10-21; Idle, crouch, ObstacleCollision, WallingImpulsion, HumanGroundData reflection open |
 | InAir (jumps, falls, catches, landings) | | open | `12_in_air.md` |
 | Ledge + Climb | | open | `13_ledge_climb.md` |
 | NarrowObject (beams, poles) | | open | `14_narrow_object.md` |
@@ -52,11 +52,11 @@ against the game, or still to decode. Regenerate the list with `git grep -n "POR
 | Where | What | Class |
 |---|---|---|
 | `scimitar/ac2/human_data.h` | `PortGroundSpeeds`: ratio → m/s stand-in for MoveCycle's root motion; step-down; gravity | to decode (animations) |
-| `scimitar/ac2/human_ground.cpp` | no action system: `PortAction` stands in for the actions (stand-in lengths in `PortActionLengths`), "interruptible by movement" is never true, item flags and the restriction-mode branch are skipped; TurnOnSpot / Crouch / Idle missing; moves along the facing at stand-in speeds and spreads turn / run-turn animations' rotation; LocalInit called from the ctor; direct switch to InAir | to decode (11_ground.md 9; animations) |
+| `scimitar/ac2/human_ground.cpp` | no action system: `PortAction` stands in for the actions (stand-in lengths in `PortActionLengths`), "interruptible by movement" is never true, item flags and the restriction-mode branch are skipped; TurnOnSpot / Crouch / Idle / HandPassOverReception and the jump / edge states missing (no free-run system sends their commands); a landing counts as standing when no movement is intended at its end; moves along the facing at stand-in speeds and spreads turn / run-turn animations' rotation; LocalInit called from the ctor; direct switch to InAir | to decode (11_ground.md 9; animations) |
 | `scimitar/ac2/human_ground.cpp` (turning) | opposite vectors turn counter-clockwise; the sign of `Gear::GetAngle` | to decode |
 | `scimitar/ac2/human_data.h` / `human.cpp` | `PortHeadingSettings` (the player's heading rotation); SetSprint from the legs button; SetBreakHard when the stick is released; initial rotation ratio / step | live rows 5, 6, 7 |
 | `scimitar/ac2/human.cpp` (input) | HumanGroundData filled straight from the input | live rows 3, 5 |
-| `scimitar/ac2/human_in_air.cpp` | ballistic fall, no catches | to decode (InAir FSM) |
+| `scimitar/ac2/human_in_air.cpp` | ballistic fall, no catches; always hands over a plain Landing (MovementState 10) | to decode (InAir FSM, LandingType) |
 | `scimitar/ac2/human.cpp` / `human.h` | context switching; Update's arguments; position / velocity stand-ins | to decode (P0) |
 | `scimitar/ac2/human_context.h` | context id order; `ActorContext` has only Enter / Exit / Update | to decode (P0) |
 | `scimitar/math.h` | vector type and yaw convention | live row 1 |

@@ -169,9 +169,46 @@ void HumanGround::LocalInit() {
 }
 
 void HumanGround::Enter() {
-    // PORT: the game enters the FSM's initial states (Vulnerable > Navigation > Move > Wait, from LinkFSM's initial
-    // children); the port only tracks Move's child.
-    m_MoveState = State::Wait;
+    // PORT: the game enters the FSM's initial states (Vulnerable > Navigation > Move); the port enters Move directly.
+    EnterMove();
+}
+
+void HumanGround::EnterMove() {
+    // PC 0x60C610, Mac 0xFA3D06: HumanGroundData's MovementState (left by the context handing over, through
+    // TransitionSetupDataToMovement) picks Move's first child and seeds the gait fields.
+    HumanGroundData& data = m_Human.GetGroundData();
+    data.m_MovementMode = 0;
+    data.m_MoveDirection = forwardFromYaw(m_Human.m_Yaw);  // +0x20 := the sight
+    data.m_StickMagnitude = 0;
+    State first = State::Wait;  // PORT: for other values the game keeps Move's previous initial child
+    auto seed = [this](int running, int gait, float ratio) {
+        m_Running = running;
+        m_GaitLevel = gait;
+        m_SpeedRatio = ratio;
+    };
+    switch (data.m_MovementState) {
+        case movement_state::Default: first = State::Wait; seed(0, 0, 0.0f); break;  // (+0x224 := 1, not mirrored)
+        case movement_state::HandPassOverReception: first = State::HandPassOverReception; seed(1, 2, 0.6f); break;
+        case movement_state::Landing: first = State::Landing; seed(0, 0, 0.0f); break;
+        case movement_state::LandingHard: first = State::LandingHard; seed(0, 0, 0.0f); break;
+        case movement_state::LandingBalanceFall: first = State::LandingBalanceFall; seed(1, 0, 0.0f); break;
+        case movement_state::WaitLow: first = State::Wait; seed(0, 0, 0.0f); break;
+        case movement_state::WaitHigh: first = State::Wait; seed(1, 0, 0.0f); break;
+        case movement_state::WalkVerySlow: first = State::MoveCycle; seed(0, 1, 0.0f); break;
+        case movement_state::Walk: first = State::MoveCycle; seed(0, 2, 0.2f); break;
+        case movement_state::Jog:
+        case movement_state::Run: first = State::MoveCycle; seed(1, 2, 0.6f); break;
+        case movement_state::Sprint:
+            first = State::MoveCycle;
+            seed(1, 2, 1.0f);
+            if (data.m_TransitionToMotionType == 1) data.m_TransitionToMotionType = 5;
+            break;
+        case movement_state::Crouch: first = State::CrouchWait; seed(0, 0, 0.0f); break;
+        default: break;
+    }
+    m_HighProfileIntention = m_Running;
+    m_MovementDivision = m_GaitLevel;
+    SwitchMoveState(first);
 }
 
 void HumanGround::UpdateMovementIntention() {
@@ -305,9 +342,12 @@ bool HumanGround::TestRunTurnToMoveCycleMain() const {
 void HumanGround::EnterMoveCycle() {
     // Mac 0xFBE706: the gait level takes the movement division and running takes the high-profile intention; the
     // blend weights and HumanGroundData's turn angle are reset. (The action set-up is left to the animation layer.)
+    HumanGroundData& data = m_Human.GetGroundData();
     m_GaitLevel = m_MovementDivision;
     m_Running = m_HighProfileIntention;
-    m_Human.GetGroundData().m_TurnAngle = 0;
+    m_SpeedRestriction = data.m_TransitionToMotionType;  // this[605] = HumanGroundData +0x228
+    TransitionSetupDataToMovement::ResetTransitionData(data);
+    data.m_TurnAngle = 0;
 }
 
 void HumanGround::EnterTurnStart() {
@@ -341,6 +381,54 @@ void HumanGround::EnterRunTurn() {
     m_PortTurnToApply = m_TurnAngle;
 }
 
+// --- Landings and Roll (RE/11_ground.md 11). PORT: the landing actions are chosen by InAir in the game; the
+// port's "standing landing" (the three ids TestLandingToWaitMain accepts) is a landing with no movement intended. ---
+
+bool HumanGround::TestLandingToWaitMain() const {
+    return m_PortAction.HasFinished() && m_MovementDivision == 0;
+}
+
+bool HumanGround::TestLandingToMoveCycleMain() const {
+    return m_PortAction.HasFinished() && m_MovementDivision != 0;
+}
+
+void HumanGround::ExecLandingToMoveCycleMain() {
+    HumanGroundData& data = m_Human.GetGroundData();
+    int state;
+    if (m_HighProfileIntention) {
+        m_SpeedRatio = data.m_Sprint ? 1.0f : 0.6f;
+        state = data.m_Sprint ? movement_state::Sprint : movement_state::Jog;
+        m_HighProfileIntention = 1;
+    } else {
+        m_SpeedRatio = 0.2f;
+        state = movement_state::Walk;
+        m_HighProfileIntention = 0;
+    }
+    m_MovementDivision = 2;
+    TransitionSetupDataToMovement{state, 0.0f, 0.5f, 1}.SetupTransitionData(data);
+    data.m_TransitionToMotionType = 6;
+}
+
+bool HumanGround::TestLandingHardToWaitMain(float dt) const {
+    return m_MovementDivision == 0 && m_PortAction.WillFinish(dt);
+}
+
+bool HumanGround::TestLandingHardToMoveCycleMain(float dt) const {
+    return m_MovementDivision != 0 && m_PortAction.WillFinish(dt);
+}
+
+bool HumanGround::TestLandingBalanceFallToWaitMain(float dt) const {
+    return m_PortAction.WillFinish(dt);
+}
+
+bool HumanGround::TestRollToWaitMain(float dt) const {
+    return m_PortAction.WillFinish(dt) && m_MovementDivision == 0;
+}
+
+bool HumanGround::TestRollToMoveCycleMain(float dt) const {
+    return m_PortAction.WillFinish(dt) && m_MovementDivision != 0;
+}
+
 void HumanGround::SwitchMoveState(State next) {
     m_MoveState = next;
     m_PortActionTimeScale = 1;
@@ -349,6 +437,15 @@ void HumanGround::SwitchMoveState(State next) {
         case State::TurnStart: EnterTurnStart(); break;
         case State::MoveStop: EnterMoveStop(); break;
         case State::RunTurn: EnterRunTurn(); break;
+        case State::Landing: m_PortAction.Start(m_Human.GetPortActionLengths().landing); break;
+        case State::LandingHard: m_PortAction.Start(m_Human.GetPortActionLengths().landingHard); break;
+        case State::LandingBalanceFall:
+            m_PortAction.Start(m_Human.GetPortActionLengths().landingBalanceFall);
+            break;
+        case State::Roll:
+            m_PortAction.Start(m_Human.GetPortActionLengths().roll);
+            m_PortEntrySpeed = m_PortSpeed;
+            break;
         default: break;
     }
 }
@@ -415,6 +512,40 @@ void HumanGround::Update(const port::MoveInput&, const port::World& world, float
             else if (TestRunTurnToMoveCycleMain())
                 SwitchMoveState(State::MoveCycle);
             break;
+        case State::Landing:  // _UpdateLanding PC 0x630800 (the Poisoned exit is left out)
+            if (TestLandingToWaitMain()) {
+                SwitchMoveState(State::Wait);
+            } else if (TestLandingToMoveCycleMain()) {
+                ExecLandingToMoveCycleMain();
+                SwitchMoveState(State::MoveCycle);
+            }
+            break;
+        case State::LandingHard:  // _UpdateLandingHard PC 0x630890
+            if (TestLandingHardToWaitMain(dt)) {
+                SwitchMoveState(State::Wait);
+            } else if (TestLandingHardToMoveCycleMain(dt)) {
+                // ExecLandingHardToMoveCycleMain (Mac 0xFA911E)
+                m_SpeedRatio = m_HighProfileIntention ? 0.6f : 0.2f;
+                TransitionSetupDataToMovement{m_HighProfileIntention ? movement_state::Jog : movement_state::Walk,
+                                              0.0f, 0.5f, 1}
+                    .SetupTransitionData(m_Human.GetGroundData());
+                SwitchMoveState(State::MoveCycle);
+            }
+            break;
+        case State::LandingBalanceFall:  // _UpdateLandingBalanceFall PC 0x630940
+            if (TestLandingBalanceFallToWaitMain(dt)) SwitchMoveState(State::Wait);
+            break;
+        case State::Roll:  // _UpdateRoll PC 0x621D10
+            if (TestRollToWaitMain(dt)) {
+                SwitchMoveState(State::Wait);
+            } else if (TestRollToMoveCycleMain(dt)) {
+                // ExecRollToMoveCycleMain (Mac 0xFAE818)
+                m_SpeedRatio = 0.6f;
+                TransitionSetupDataToMovement{movement_state::Jog, 0.0f, 0.5f, 1}.SetupTransitionData(
+                    m_Human.GetGroundData());
+                SwitchMoveState(State::MoveCycle);
+            }
+            break;
         default:
             break;
     }
@@ -429,6 +560,7 @@ void HumanGround::Update(const port::MoveInput&, const port::World& world, float
             break;
         case State::MoveStop:
         case State::RunTurn:
+        case State::Roll:
             m_PortSpeed = m_PortEntrySpeed * (1.0f - m_PortAction.Progress());
             break;
         default:

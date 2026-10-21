@@ -43,6 +43,7 @@ public:
     void run(float seconds, const std::function<MoveInput(float t)>& script);
 
     const Human& human() const { return human_; }
+    Human& human() { return human_; }
     const std::vector<Frame>& timeline() const { return timeline_; }
     float time() const { return time_; }
 

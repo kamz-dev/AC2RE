@@ -22,8 +22,14 @@ struct HumanGroundData {
     unsigned char m_MovementDivisionCount[2] = {3, 3};
     float m_MovementDivisionThresholds[2][5] = {{0.0f, 0.9f, 1.0f}, {0.0f, 0.9f, 1.0f}};
     bool m_HighProfileRequest = false;  // +0x181 (LIVE row 5)
+    // +0x1A0 HumanGroundData::MovementState: how HumanGround::EnterMove starts (RE/11_ground.md 11). Value names
+    // (hypothesis, from ActingClip::ExitMovementState): 0 WaitLow, 1 WaitHigh, 2 WalkVerySlow, 3 Walk, 4/5 Jog/Run,
+    // 6 Sprint; 7 crouch, 10 Landing, 11 LandingHard, 12 LandingBalanceFall, 13 HandPassOverReception, 14 Wait (the
+    // value ResetTransitionData leaves).
+    int m_MovementState = 14;
     float m_RotationRatio = 1.0f;       // +0x21C scales the heading rotation angles; PORT: initial value not seen
     float m_RotationRatioStep = 0.5f;   // +0x220 per second; PORT: initial value not seen (ExitMove sets 1 / 0.5)
+    int m_TransitionToMotionType = 1;   // +0x228 EnterMoveCycle copies it into the speed restriction mode
 
     // Mac 0x1119F44, PC 0x90E190: the first index below the count whose threshold is >= value, else 0.
     int GetMovementDivisionFromSpeedRatio(bool highProfile, float value) const {
@@ -35,6 +41,29 @@ struct HumanGroundData {
     }
     void SetRotationRatio(float ratio) { m_RotationRatio = ratio; }      // Mac 0x1119F9C, PC 0x90E250
     void SetRotationRatioStep(float step) { m_RotationRatioStep = step; }  // Mac 0x1119FAE
+};
+
+// scimitar::ac2::TransitionSetupDataToMovement (ctor Mac 0x150EF4C): what the context handing over to HumanGround
+// leaves in HumanGroundData for EnterMove. PORT: the action transition, feet position, blend factors and the two
+// bools aren't mirrored (no animation layer yet).
+struct TransitionSetupDataToMovement {
+    int movementState = 14;
+    float rotationRatio = 0;
+    float rotationRatioStep = 0;
+    int transitionToMotionType = 1;
+
+    // Mac 0x111AAC6.
+    void SetupTransitionData(HumanGroundData& data) const {
+        data.m_MovementState = movementState;
+        data.m_RotationRatio = rotationRatio;
+        data.m_RotationRatioStep = rotationRatioStep;
+        data.m_TransitionToMotionType = transitionToMotionType;
+    }
+    // Mac 0x1119FE2.
+    static void ResetTransitionData(HumanGroundData& data) {
+        data.m_MovementState = 14;
+        data.m_TransitionToMotionType = 1;
+    }
 };
 
 // PORT: ground speed in the game is the root motion of the MoveCycle animations blended by the speed ratio
@@ -62,6 +91,10 @@ struct PortActionLengths {
     float turnStart = 0.5f;
     float moveStop = 0.4f;
     float runTurn = 0.6f;
+    float landing = 0.5f;
+    float landingHard = 0.9f;
+    float landingBalanceFall = 1.2f;
+    float roll = 0.8f;
 };
 
 struct HumanInAirData {

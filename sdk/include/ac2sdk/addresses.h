@@ -44,6 +44,13 @@ inline constexpr std::uint32_t HumanGround_StartTurnOnSpotAnim = 0x606B70;     /
 inline constexpr std::uint32_t HumanGround_GetTurnAnimation = 0x5FDF00;        // Mac 0xFB3550; static
 inline constexpr std::uint32_t HumanGround_SetBreakHard = 0x632E20;            // IHumanGround slot 30, Mac 0x153B958
 inline constexpr std::uint32_t HumanGround_SetSprint = 0x632E80;               // IHumanGround, Mac 0x153B9D0
+inline constexpr std::uint32_t HumanGround_EnterMove = 0x60C610;              // Mac 0xFA3D06; static
+inline constexpr std::uint32_t HumanGround_EnterMoveDispatch = 0x621720;      // _EnterMove, Mac 0xFD43E0; static
+inline constexpr std::uint32_t HumanGround_UpdateLanding = 0x630800;          // Mac 0xFD1B0E; static
+inline constexpr std::uint32_t HumanGround_UpdateLandingHard = 0x630890;      // Mac 0xFD1A78; static
+inline constexpr std::uint32_t HumanGround_UpdateJumpImpulsion = 0x624060;    // Mac 0xFD5078; static
+inline constexpr std::uint32_t HumanGround_UpdateJumpImpulsionStraight = 0x6240A0;  // Mac 0xFD4FF4; static
+inline constexpr std::uint32_t HumanGround_UpdateEdgeStop = 0x624150;         // Mac 0xFD4F0C; static
 inline constexpr std::uint32_t ActionComponent_WillActionFinish = 0x165C90;    // named by call shape; static
 inline constexpr std::uint32_t ActionComponent_HasActionFinished = 0x165C20;   // named by call shape; static
 

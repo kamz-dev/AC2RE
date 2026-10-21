@@ -108,6 +108,16 @@ private:
     bool TestRunTurnToWaitMain() const;         // inlined in PC 0x621E60, Mac 0xF9DD4A
     bool TestRunTurnToMoveCycleMain() const;    // PC 0x5EB690, Mac 0xF9DD88
 
+    bool TestLandingToWaitMain() const;               // PC 0x5EB330, Mac 0xFB5FA6
+    bool TestLandingToMoveCycleMain() const;          // PC 0x5EB3A0, Mac 0xFB602A
+    void ExecLandingToMoveCycleMain();                // Mac 0xFA920A
+    bool TestLandingHardToWaitMain(float dt) const;   // inlined in PC 0x630890, Mac 0xF9DC58
+    bool TestLandingHardToMoveCycleMain(float dt) const;  // PC 0x5EB4C0, Mac 0xF9DC96
+    bool TestLandingBalanceFallToWaitMain(float dt) const;  // Mac 0xF9DD20
+    bool TestRollToWaitMain(float dt) const;          // Mac 0xF9DAB2
+    bool TestRollToMoveCycleMain(float dt) const;     // Mac 0xF9DAF6
+
+    void EnterMove();        // PC 0x60C610, Mac 0xFA3D06
     void EnterMoveCycle();   // Mac 0xFBE706 (PC _EnterMoveCycle 0x619DD0)
     void EnterTurnStart();   // PC 0x614BB0, Mac 0xFBE3D6
     void EnterMoveStop();    // PC 0x614370, Mac 0xFB7804
@@ -156,5 +166,22 @@ private:
     float m_PortTurnToApply = 0;     // PORT: the turn a TurnStart / RunTurn animation would make, spread over it
     float m_PortActionTimeScale = 1; // PORT: ActionComponent::SetTimeScale on the stand-in action
 };
+
+// HumanGroundData::MovementState values that EnterMove understands (RE/11_ground.md 11; names partly hypothesis).
+namespace movement_state {
+inline constexpr int WaitLow = 0;
+inline constexpr int WaitHigh = 1;
+inline constexpr int WalkVerySlow = 2;
+inline constexpr int Walk = 3;
+inline constexpr int Jog = 4;
+inline constexpr int Run = 5;
+inline constexpr int Sprint = 6;
+inline constexpr int Crouch = 7;
+inline constexpr int Landing = 10;
+inline constexpr int LandingHard = 11;
+inline constexpr int LandingBalanceFall = 12;
+inline constexpr int HandPassOverReception = 13;
+inline constexpr int Default = 14;  // what ResetTransitionData leaves: Wait
+}  // namespace movement_state
 
 }  // namespace scimitar::ac2

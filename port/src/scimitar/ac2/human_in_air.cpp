@@ -2,6 +2,7 @@
 
 #include "port/world.h"
 #include "scimitar/ac2/human.h"
+#include "scimitar/ac2/human_ground.h"
 
 namespace scimitar::ac2 {
 
@@ -15,6 +16,12 @@ void HumanInAir::Update(const port::MoveInput&, const port::World& world, float 
         next.z = *ground;
         h.m_Position = next;
         h.m_Velocity = {};
+        // The game hands over through TransitionSetupDataToMovement (HumanGround::EnterMove reads the MovementState).
+        // PORT: InAir's choice of landing (LandingType: Safe / SmallDamage / HeavyDamage / Fatal) isn't decoded; the
+        // port always lands with a plain Landing.
+        TransitionSetupDataToMovement{movement_state::Landing, h.GetGroundData().m_RotationRatio,
+                                      h.GetGroundData().m_RotationRatioStep, 1}
+            .SetupTransitionData(h.GetGroundData());
         h.RequestContext(HumanContextId::Ground);
         return;
     }

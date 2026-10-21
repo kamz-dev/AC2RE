@@ -2,8 +2,9 @@
 
 Status 2026-10-21: the class, its vftable, the FSM layout and the locomotion branch of the state tree are matched
 Mac → PC; the MoveCycle speed model, the Wait / MoveCycle transitions and ground turning are decoded from both
-builds, and so are MoveStop, TurnStart, RunTurn and TurnOnSpot with the action maps they play. Landings, jumps,
-edges and crouching are next.
+builds, and so are MoveStop, TurnStart, RunTurn and TurnOnSpot with the action maps they play, entering Move
+(the hand-over from other contexts), the landings and Roll, and the jump / edge entry points. Idle, crouching,
+ObstacleCollision and WallingImpulsion are next.
 
 Addresses: **PC** first (IDB rebased to 0), Mac (`IDB/scimitar_sf.i64`) in brackets.
 
@@ -135,9 +136,16 @@ named:
 | +0x158 / +0x16C | float[5] | movement-division thresholds, {0, 0.9, 1} after `LocalInit` | same |
 | +0x180 | bool | cleared by `LocalInit`; use unknown | `LocalInit` |
 | +0x181 | bool | high-profile request (→ `this+0x7B4`) | `UpdateMovementIntention` 0x5E03E0 |
+| +0x150 | int | set to 1 by `EnterMove` | `EnterMove` 0x60C610 |
+| +0x1A0 | int | **`HumanGroundData::MovementState`**: how `EnterMove` starts (section 11) | `EnterMove` 0x60C610 |
+| +0x1A8 / +0x204 | `ActionTransition` / bool | the transition action into Move, and whether there is one | Mac `SetupTransitionData` 0x111AAC6 |
+| +0x20C / +0x210 | int | feet position / a flags word passed to `SetTargetAction` | same; Mac `EnterMoveCycle` 0xFBE706 |
+| +0x214 | float array | blend factors for the first action | same |
 | +0x21C | float | rotation ratio (scales the heading rotation angles); `SetRotationRatio` 0x90E250 | `UpdateOrientation` |
 | +0x220 | float | rotation ratio step per second; Mac `SetRotationRatioStep` 0x1119FAE; `ExitMove` sets ratio 1, step 0.5 | `UpdateOrientation`; Mac `ExitMove` 0xFAFB48 |
-| +0x224 | u8 | 1 after `LocalInit`; use unknown | `LocalInit` |
+| +0x224 | u8 | a transition flag (1 after `LocalInit` and for MovementState 14); use unknown | `LocalInit`, `EnterMove` |
+| +0x228 | int | **`TransitionToMotionType`**: `EnterMoveCycle` copies it into the speed restriction mode (+0x994); reset to 1 | Mac `EnterMoveCycle`, `ResetTransitionData` 0x1119FE2 |
+| +0x22C | u8 | a transition flag; when set, `EnterMove` zeroes the character controller's local offset | `EnterMove` |
 
 ## 5. MoveCycle: the speed model (`UpdateMoveCycleMain` PC 0x61BB60 [0xFCD20A])
 Ground speed is **animation-driven**: the code computes a speed ratio and blends the MoveCycle action's items; the
@@ -249,9 +257,10 @@ values are open (live row 6).
 - [ ] Wait → CrouchWait (0x5F4FC0), the crouch states, and the custom-action orientation check in TurnOnSpot.
 - [ ] `IHumanGround::SetTurnMode` (+0x464?) and `SetUseTurnOnSpotCycle` (the TurnOnSpot cycle flag).
 - [ ] Idle and its children (IdleStill, IdleBreaker: `g_IdleBreakerActions`).
-- [ ] Landing / LandingHard / LandingBalanceFall / Roll / EdgeLanding: what InAir hands over and how each is
-      chosen.
-- [ ] JumpImpulsion*, ObstacleCollision, EdgeStop, WallingImpulsion: the free-run entry points.
+- [ ] InAir's side of the hand-over: which `MovementState` / landing action it sets from `LandingType`
+      (`12_in_air.md`); EdgeLanding.
+- [ ] Who sends the jump / edge interface commands (the free-run / guidance system), ObstacleCollision and
+      WallingImpulsion, JumpImpulsionForwardFromIdle (`JumpToTarget`).
 - [ ] `HumanGroundData`'s full field list from its reflection properties.
 - [ ] The actions' animations: root-motion speeds and turns, lengths (needed for the port's speeds, turns and the
       animation-driven states).
@@ -280,7 +289,7 @@ where they go (section 6's table). The turn or stop itself is the animation's ro
   blend. Action ids 0–7: 788325963, 788325965, 660761273, 660761275, 660761277, 660761279, 660761269, 660761271.
 
 **The speed ratio is not reset** by `ExitMoveCycle` [0xF9FD94], `EnterWait` [0xFBEA66] or `EnterMoveCycle`, so it
-carries over a stop into the next move cycle (hypothesis: nothing else resets it either).
+carries over a stop into the next move cycle inside Move; `EnterMove` sets it whenever Move is entered (section 11).
 
 **Action maps** (filled once by `HumanGround::InitializeGlobalActions`, PC 0x633E90 [0xFA755A]; ids are either
 small aliases or hashes):
@@ -299,3 +308,81 @@ small aliases or hashes):
 | `g_CrouchWaitActionMap` (0x1E13704) | [3][2] | 17228607, … |
 | `g_CrouchTurnActionMap` (0x1E13730) | [2] | 314169075, 314169075 |
 | the move cycle | | 93469659 (0x5923BDB) |
+
+## 11. Entering Move; landings and Roll
+**The hand-over into HumanGround.** The context handing over (InAir after a fall, the climb contexts, …) builds a
+`TransitionSetupDataToMovement` (ctor Mac 0x150EF4C: `MovementState`, `ActionTransition*`, feet position, a
+flags word, blend factors, rotation ratio, rotation-ratio step, a bool, `TransitionToMotionType`, a bool) and
+`SetupTransitionData` (Mac 0x111AAC6) copies it into `HumanGroundData` (+0x1A0, +0x1A8 / +0x204, +0x20C, +0x210,
++0x214, +0x21C, +0x220, +0x224, +0x228, +0x22C). `ResetTransitionData` (Mac 0x1119FE2) puts MovementState back to 14
+and `TransitionToMotionType` to 1; `EnterMoveCycle` calls it after copying the motion type into the speed
+restriction mode.
+
+`EnterMove` (PC 0x60C610 [0xFA3D06]) runs when Move is entered: `PushState(4)`, `HumanGroundData`+0x150 := 1,
+movement mode := 0, the move direction := the entity's sight, stick := 0, then a switch on **MovementState**
+(+0x1A0) picks Move's first child and seeds the gait fields; afterwards high profile := running and division :=
+gait level. `_EnterMove` (PC 0x621720 [0xFD43E0]) then enters that child (PC inlines most children's Enter).
+
+| MovementState (name, hypothesis) | First child | Running | Gait level | Speed ratio |
+|---|---|---|---|---|
+| 0 (WaitLow) | Wait | 0 | 0 | 0 |
+| 1 (WaitHigh) | Wait | 1 | 0 | 0 |
+| 2 (WalkVerySlow) | MoveCycle | 0 | 1 | 0 |
+| 3 (Walk) | MoveCycle | 0 | 2 | 0.2 |
+| 4, 5 (Jog, Run) | MoveCycle | 1 | 2 | 0.6 |
+| 6 (Sprint) | MoveCycle (motion type 1 → 5) | 1 | 2 | 1.0 |
+| 7 | CrouchWait | 0 | 0 | 0 |
+| 10 | Landing | 0 | 0 | 0 |
+| 11 | LandingHard | 0 | 0 | 0 |
+| 12 | LandingBalanceFall | 1 | 0 | 0 |
+| 13 | HandPassOverReception | 1 | 2 | 0.6 |
+| 14 (default) | Wait (+0x224 := 1) | 0 | 0 | 0 |
+
+The names 0–6 are a guess from the reflected enum `ActingClip::ExitMovementState` (WaitLow, WaitHigh,
+WalkVerySlow, Walk, Jog, Run, Sprint), which fits the table. A separate reflected enum `LandingType` (Safe,
+SmallDamage, HeavyDamage, Fatal) is InAir's, and most likely what picks 10 / 11 / 12.
+
+**The landing states** play the action the handing-over context set up and leave when it ends:
+
+| State | Exit | Condition |
+|---|---|---|
+| Landing (PC `_UpdateLanding` 0x630800) | → Poisoned | action finished and the human is poisoned |
+| | → Wait (0x5EB330 [0xFB5FA6]) | action finished and it is one of the standing landings 1855747402 / 1855747404 / 1855747415 |
+| | → MoveCycle (0x5EB3A0 [0xFB602A]) | action finished, any other landing |
+| LandingHard (0x630890) | → Poisoned / Wait / MoveCycle (0x5EB4C0 [0xF9DC96]) | will finish; Wait with division 0, MoveCycle otherwise |
+| LandingBalanceFall (0x630940) | → Wait [0xF9DD20] | will finish |
+| Roll (0x621D10) | → Wait / MoveCycle [0xF9DAB2 / 0xF9DAF6] | will finish; by division |
+
+Into MoveCycle, the Exec functions seed the cycle and set rotation ratio 0 with step 0.5 (turning ramps back in
+over two seconds):
+- `ExecLandingToMoveCycleMain` [0xFA920A]: high profile and Sprint → ratio 1.0, MovementState 6; high profile → 0.6,
+  state 4; otherwise 0.2, state 3; division 2; then `HumanGroundData`+0x228 := 6 (the speed restriction mode for the
+  cycle).
+- `ExecLandingHardToMoveCycleMain` [0xFA911E]: high profile → 0.6 (state 4), otherwise 0.2 (state 3).
+- `ExecRollToMoveCycleMain` [0xFAE818]: 0.6 (state 4), with a transition action (alias 0x82FB27C).
+
+**Roll** is entered by interface command only, accepted from MoveCycle when running at gait level 2
+(`TestMoveCycleToRollInterface` [0xF96DB6]).
+
+## 12. Jumps and edges (entry points)
+These states start from **interface commands** sent to HumanGround (queued as member-function pointers at
+`this+0x84`; each `_ExecInterfaceTransitionX` checks whether its command is pending). The senders (the free-run /
+guidance code) are outside this doc.
+
+| Command | From → to | Accepted when |
+|---|---|---|
+| `JumpImpulsion` | Move → JumpImpulsion [0xFB5B76] | not blocked (a vfunc and the item flag 0x20 clear) and either standing (gait 0) or the current action is not the move cycle and is under 33 % (stored at +0x45C) |
+| `JumpToTarget` | Move / JumpImpulsion → JumpImpulsionForwardFromIdle [0xFB5A9E / 0xF98A14] | not decoded |
+| `StraightJump`, `OverHeadJumpToTarget` | JumpImpulsion → JumpImpulsionStraight [0xF98ADA / 0xF98A98] | not decoded |
+| `EnterWallingVertical` | JumpImpulsion / ObstacleCollision → WallingImpulsion [0xFD2AAA / 0xFD2D30] | not decoded |
+| `UnbalanceOnEdge` | Move → EdgeStop [0xFCBF64] | no hurt fall, `IsNarrowEdge` = 1, the gap's drop (+0x30) > 2 m, `Human::TestPullDownToLedgeClearance` passes |
+
+- **JumpImpulsion** (`EnterJumpImpulsion` [0xFC2CE2]): plays `g_JumpStraightAnticipationActionMap[foot]`, starts a
+  0.2 s timer (+0x2C0 PC, × the factor at +0x45C), emits witness event 14. Each frame it updates the movement
+  intention; back to Move (`TestJumpImpulsionToMoveMain` PC 0x5EB850) on crouch without high profile, or when the
+  timer runs out with division 2; otherwise a command above picks the jump.
+- **JumpImpulsionStraight** (`EnterJumpImpulsionStraight` [0xFC2EA8]: `g_JumpImpulsionStraightActionMap[foot]`):
+  → Move if the foothold (+0x51C PC) has been unloaded; → **InAir** (`TestJumpImpulsionStraightToInAirMain`
+  PC 0x5FE750) when the target action has finished.
+- **EdgeStop**: plays the unbalance action 115916159, then loops 115916157 (`UpdateEdgeStopMain` PC 0x5E8FC0); →
+  Move when the target action has finished (PC `_UpdateEdgeStop` 0x624150).
