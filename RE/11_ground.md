@@ -282,6 +282,8 @@ speeds come from `AssassinTask::UpdateGroundMovement` (`21_input.md` 8); the ang
 - [x] InAir's side of the landing hand-over (`HumanInAir::ExecMainToGroundMain`, section 11, 2026-10-21). Still open:
       EdgeLanding; `ComputeFallDamage`; the spring jump. (InAir's `m_LandingSpeedRatio`: `AssassinTask::UpdateInAir`,
       `21_input.md`.)
+- [ ] Edges outside free-run: live (2026-10-21) the player can't walk or run off an edge without high profile + legs;
+      the edge stop isn't decoded (the port walks off).
 - [ ] Who sends the jump / edge / obstacle interface commands (the free-run / guidance system); `CanWallingVertical`,
       `TestForPotentialObstacleCollision`, `IsNarrowEdge`.
 - [x] `HumanGroundData`'s property names (section 15, 2026-10-21).

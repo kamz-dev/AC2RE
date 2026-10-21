@@ -1,7 +1,8 @@
 """Read-only memory reader for the running AC2 (ReadProcessMemory; never writes, never injects).
 
 A stopgap until the lab mod exists. Addresses are PC IDB addresses (RVAs); add `Proc().base`.
-`player_human_ground(p)` follows the chain in RE/20_live_checks.md (session 1).
+`player_task(p)` finds the player's AssassinTask (vftable 0x1A23360, the player entity at +0x0C); its +0x10 is the
+player's Human (RE/21_input.md). The older entity → +0x74 → +0x54 → +0x2A4 chain stopped working in later sessions.
 """
 import ctypes
 import ctypes.wintypes as W
@@ -96,10 +97,17 @@ def player_entity(p):
     return p.u32(p.u32(p.u32(world + 0x53C) + 4) + 4 * p.u32(p.u32(p.base + 0x1E3DBC0) + 0x24))
 
 
-def player_human_ground(p):
-    """(entity, Human, HumanGround) of the player. The HumanGround is the one whose +0x08 is the Human."""
+def player_task(p):
+    """The player's AssassinTask: vftable 0x1A23360 with the player entity at +0x0C (live 2026-10-21)."""
     ent = player_entity(p)
-    human = p.u32(p.u32(p.u32(ent + 0x74) + 0x54) + 0x2A4)
+    return next(t for t in p.scan_u32(p.base + 0x1A23360) if p.u32(t + 0xC) == ent)
+
+
+def player_human_ground(p):
+    """(entity, Human, HumanGround) of the player. The Human is the AssassinTask's +0x10; the HumanGround is the
+    bundle's first slot, whose +0x08 is the Human."""
+    ent = player_entity(p)
+    human = p.u32(player_task(p) + 0x10)
     hg = p.u32(human + 0x440)  # the context bundle's first slot (RE/20 row 9)
     if p.u32(hg) != p.base + 0x19BFCD8 or p.u32(hg + 8) != human:
         hg = next(o for o in p.scan_u32(p.base + 0x19BFCD8) if p.u32(o + 8) == human)
