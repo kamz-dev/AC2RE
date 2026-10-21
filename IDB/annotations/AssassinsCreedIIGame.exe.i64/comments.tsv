@@ -17444,6 +17444,8 @@ FFF84	c	char *
 5DF6C9	r	jumptable 005DF675 default case, cases 16-41,45-47
 5DF6D0	c	jump table for switch statement
 5DF6F0	c	indirect table for switch statement
+5E03E0	F	Mac HumanGround::UpdateMovementIntention 0xF98C54. Movement division +0x7AC: AI override (+0x8A8) -> 2 if AI ratio +0x7C0 > 0 else 0; else GetMovementDivisionFromSpeedRatio(data+0x181 HP, data+0x88 stick): 0 -> 0, 1/2 -> 2 (others leave it). HP intention +0x7B4 = data+0x181 != 0.
+5E03E0	c	Mac HumanGround::UpdateMovementIntention 0xF98C54. Movement division +0x7AC: AI override (+0x8A8) -> 2 if AI ratio +0x7C0 > 0 else 0; else GetMovementDivisionFromSpeedRatio(data+0x181 HP, data+0x88 stick): 0 -> 0, 1/2 -> 2 (others leave it). HP intention +0x7B4 = data+0x181 != 0.
 5E092D	c	float
 5E0C48	c	void *
 5E0C57	c	void *
@@ -17483,6 +17485,10 @@ FFF84	c	char *
 5EA02D	c	int
 5EA03D	c	float
 5EA8D6	c	float
+5EAAF0	F	Mac 0xFB5CAE: running +0x7B0 == 1, gait +0x7A8 != 0, item flag 0x20 clear, data+0xED, and action in {93469659, 96, 97} or action ratio > 0.33.
+5EAAF0	c	Mac 0xFB5CAE: running +0x7B0 == 1, gait +0x7A8 != 0, item flag 0x20 clear, data+0xED, and action in {93469659, 96, 97} or action ratio > 0.33.
+5EAB90	F	Mac 0xFB5D7A: division +0x7AC == 0 and (running +0x7B0 == 0 or current action != 93469659 MoveCycle).
+5EAB90	c	Mac 0xFB5D7A: division +0x7AC == 0 and (running +0x7B0 == 0 or current action != 93469659 MoveCycle).
 5EAE01	c	float
 5EAEC9	c	float
 5EB0EE	c	float
@@ -17504,6 +17510,8 @@ FFF84	c	char *
 5EC80B	c	float
 5EC956	c	int
 5EC96B	c	float
+5ECD30	F	Mac HumanGround::IsActionInterruptibleByMovement 0xF9E7B0. Current action item flags (+0xC): 0x20 blocks; else bit by (division +0x7AC, HP +0x7B4): (0,0) 6, (0,1) 7, (1,0) 8, (1,1) 10, (2,0) 9, (2,1) 11.
+5ECD30	c	Mac HumanGround::IsActionInterruptibleByMovement 0xF9E7B0. Current action item flags (+0xC): 0x20 blocks; else bit by (division +0x7AC, HP +0x7B4): (0,0) 6, (0,1) 7, (1,0) 8, (1,1) 10, (2,0) 9, (2,1) 11.
 5ED9E4	c	float
 5EDA34	c	float
 5EDA83	c	float
@@ -17543,6 +17551,14 @@ FFF84	c	char *
 5F43E2	c	int
 5F441E	c	void *
 5F4AD3	c	int
+5F4E70	F	Mac 0xF9EAE6: division +0x7AC in {1,2} and (WillActionFinish or IsActionInterruptibleByMovement).
+5F4E70	c	Mac 0xF9EAE6: division +0x7AC in {1,2} and (WillActionFinish or IsActionInterruptibleByMovement).
+5F4EC0	F	Mac 0xF9EA82: (WillActionFinish or interruptible) and |turn angle +0x7D8| > TurnOnMovementMinAngle +0x990 and not byte +0x7A0 [Mac +0x780].
+5F4EC0	c	Mac 0xF9EA82: (WillActionFinish or interruptible) and |turn angle +0x7D8| > TurnOnMovementMinAngle +0x990 and not byte +0x7A0 [Mac +0x780].
+5F4F30	F	Mac 0xF9E9F8: +0x464 == 1, custom-action orientation check, (WillActionFinish or interruptible), division == 0, |turn angle +0x7D8| >= 1 deg.
+5F4F30	c	Mac 0xF9E9F8: +0x464 == 1, custom-action orientation check, (WillActionFinish or interruptible), division == 0, |turn angle +0x7D8| >= 1 deg.
+5F5B00	F	Mac 0xF9E8DA: running == 0 and |turn angle +0x7D8| > TurnOnMovementMinAngle +0x990 and (WillActionFinish or interruptible).
+5F5B00	c	Mac 0xF9E8DA: running == 0 and |turn angle +0x7D8| > TurnOnMovementMinAngle +0x990 and (WillActionFinish or interruptible).
 5F5C96	c	float
 5F5D3E	c	float
 5F5EC6	c	int
@@ -17571,6 +17587,8 @@ FFF84	c	char *
 5FC10C	c	float
 5FCB5A	c	float
 5FD67B	c	float
+5FE6A0	F	Mac HumanGround::UpdateTurnAngle 0xFB34C4: +0x7D8 = signed angle about +Z between data+0x20 (move dir) and the entity's sight.
+5FE6A0	c	Mac HumanGround::UpdateTurnAngle 0xFB34C4: +0x7D8 = signed angle about +Z between data+0x20 (move dir) and the entity's sight.
 5FE823	c	float
 5FEAB7	c	float
 5FEABA	c	int
@@ -17579,6 +17597,10 @@ FFF84	c	char *
 5FF1C2	c	int
 5FF4C3	c	int
 5FF4C8	c	float
+5FF930	F	Mac scimitar::ac2::RotateVectorToVectorWithAngularSpeed 0xFB4A3C (out, from, to, minSpeed, maxSpeed, minAngle, maxAngle, direction, dt). speed = angle < maxAngle ? (angle >= minAngle ? lerp(minSpeed..maxSpeed) : minSpeed) : maxSpeed; rotates by speed*dt, snaps when that reaches the angle. direction != 0 forces the turn side.
+5FF930	c	Mac scimitar::ac2::RotateVectorToVectorWithAngularSpeed 0xFB4A3C (out, from, to, minSpeed, maxSpeed, minAngle, maxAngle, direction, dt). speed = angle < maxAngle ? (angle >= minAngle ? lerp(minSpeed..maxSpeed) : minSpeed) : maxSpeed; rotates by speed*dt, snaps when that reaches the angle. direction != 0 forces the turn side.
+5FFC40	F	Mac HumanGround::UpdateOrientation 0xFB4E32. RotationRatio r = min(1, data+0x21C + dt*data+0x220) -> SetRotationRatio. Unless item flag 0x10: sight = RotateVectorToVectorWithAngularSpeed(sight, data+0x20 move dir, HeadingMinRotationSpeed +0x8B8, Max +0x8BC, MinAngle +0x8C0 * r, MaxAngle +0x8C4 * r, HeadingRotationDirection +0x8D0, dt); written back if changed > 0.001. RE/11_ground.md 7
+5FFC40	c	Mac HumanGround::UpdateOrientation 0xFB4E32. RotationRatio r = min(1, data+0x21C + dt*data+0x220) -> SetRotationRatio. Unless item flag 0x10: sight = RotateVectorToVectorWithAngularSpeed(sight, data+0x20 move dir, HeadingMinRotationSpeed +0x8B8, Max +0x8BC, MinAngle +0x8C0 * r, MaxAngle +0x8C4 * r, HeadingRotationDirection +0x8D0, dt); written back if changed > 0.001. RE/11_ground.md 7
 600C15	c	float
 600C18	c	int
 600CAB	c	float
@@ -17722,6 +17744,8 @@ FFF84	c	char *
 61D519	c	float
 61E666	c	float
 61F802	c	float
+61F920	F	Mac HumanGround::LocalInit 0xFA71B0. Movement-division tables data+0x155/+0x156 = 3, thresholds {0, 0.9, 1} at +0x158 and +0x16C; slow-down ResponseCurve +0x81C keys (0,1) (0.333,1) (0.4,0.3) (0.666,0.2) (1,1); capsule height 1.8, radius 0.4.
+61F920	c	Mac HumanGround::LocalInit 0xFA71B0. Movement-division tables data+0x155/+0x156 = 3, thresholds {0, 0.9, 1} at +0x158 and +0x16C; slow-down ResponseCurve +0x81C keys (0,1) (0.333,1) (0.4,0.3) (0.666,0.2) (1,1); capsule height 1.8, radius 0.4.
 61FF7E	c	void *
 620C26	c	void *
 621447	c	void *
@@ -18394,6 +18418,7 @@ FFF84	c	char *
 630522	c	fdwReason
 630524	c	hinstDLL
 6327B6	c	void *
+6327C5	c	Defaults: +0x8B8..+0x8C4 heading rotation speeds/angles 0, +0x8D0 direction 0, +0x8C8 15.0, +0x8CC 12.5, +0x990 TurnOnMovementMinAngle pi/2, +0x994 speed restriction 1.
 633821	c	void *
 634D20	F	Mac HumanGround::_UpdateMove 0xFE069C. data+0x80 == 3 -> OrientedMove; Poisoned; walking-on-horse flag this+0x6F9 (Mac +0x6E9) -> InAir.
 634D20	c	Mac HumanGround::_UpdateMove 0xFE069C. data+0x80 == 3 -> OrientedMove; Poisoned; walking-on-horse flag this+0x6F9 (Mac +0x6E9) -> InAir.
@@ -26381,6 +26406,8 @@ FFF84	c	char *
 90D060	F	Microsoft VisualC 2-14/net runtime
 90D070	F	Microsoft VisualC 2-14/net runtime
 90D080	F	Microsoft VisualC 2-14/net runtime
+90E190	F	Mac HumanGroundData::GetMovementDivisionFromSpeedRatio 0x1119F44 (hp, value): first index i < count[data+0x155+hp] with threshold[data+0x158+20*hp+4*i] >= value, else 0. LocalInit fills {0, 0.9, 1} for both.
+90E190	c	Mac HumanGroundData::GetMovementDivisionFromSpeedRatio 0x1119F44 (hp, value): first index i < count[data+0x155+hp] with threshold[data+0x158+20*hp+4*i] >= value, else 0. LocalInit fills {0, 0.9, 1} for both.
 90E2B0	F	Microsoft VisualC 2-14/net runtime
 90E2C0	F	Microsoft VisualC 2-14/net runtime
 90EB01	c	Block

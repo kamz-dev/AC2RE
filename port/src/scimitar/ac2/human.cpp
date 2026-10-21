@@ -37,7 +37,15 @@ ActorContext* HumanContextBundle::Get(HumanContextId id) {
     }
 }
 
-Human::Human() = default;
+Human::Human() {
+    // PORT: stands in for the player's controller, which sets the heading rotation through IHumanGround.
+    const PortHeadingSettings heading;
+    IHumanGround& ground = m_ContextBundle.GetGround();
+    ground.SetHeadingMinRotationSpeed(heading.minRotationSpeed);
+    ground.SetHeadingMaxRotationSpeed(heading.maxRotationSpeed);
+    ground.SetHeadingMinRotationAngle(heading.minRotationAngle);
+    ground.SetHeadingMaxRotationAngle(heading.maxRotationAngle);
+}
 Human::~Human() = default;
 
 void Human::ForceContext(HumanContextId id) {

@@ -92,7 +92,9 @@ TEST(ground_wait_movecycle_wait) {
     CHECK_NEAR(ground.GetSpeedRatio(), 0.8f, 1e-5f);
     CHECK(ground.IsRunning());
 
-    for (int i = 0; i < 40 && ground.GetMoveState() == State::MoveCycle; ++i) human.Update({}, world, dt);
+    // Released: MoveCycle -> Wait once the division is 0 and the ratio is no longer a running one (<= 0.4).
+    for (int i = 0; i < 300 && ground.GetMoveState() == State::MoveCycle; ++i) human.Update({}, world, dt);
     CHECK(ground.GetMoveState() == State::Wait);
-    CHECK_NEAR(ground.GetSpeedRatio(), 0.0f, 1e-5f);
+    CHECK(ground.GetSpeedRatio() <= 0.4f);
+    CHECK(!ground.IsRunning());
 }

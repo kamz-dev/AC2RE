@@ -9,14 +9,32 @@
 namespace scimitar::ac2 {
 
 struct HumanGroundData {
-    Vec3 m_MoveDirection;               // +0x20 desired move direction (hypothesis)
+    Vec3 m_MoveDirection;               // +0x20 desired move direction
     int m_MovementMode = 0;             // +0x80 3 = oriented move
     float m_StickMagnitude = 0;         // +0x88 0..1 (hypothesis)
     float m_TurnAngle = 0;              // +0xB4
     float m_TurnAngle2 = 0;             // +0xB8
+    bool m_AllowMoveStop = false;       // +0xED
     bool m_SpeedBandUp = false;         // +0xEE raises the target speed ratio by 0.2 (LIVE row 5)
-    bool m_CrouchRequest = false;       // +0xF3 (Mac; not yet checked on PC)
-    bool m_HighProfileRequest = false;  // +0x181 (Mac; not yet checked on PC) (LIVE row 5)
+    bool m_CrouchRequest = false;       // +0xF3
+    // +0x155 / +0x158: the movement-division tables, [0] without and [1] with high profile. HumanGround::LocalInit
+    // (PC 0x61F920) fills them; these defaults are its values.
+    unsigned char m_MovementDivisionCount[2] = {3, 3};
+    float m_MovementDivisionThresholds[2][5] = {{0.0f, 0.9f, 1.0f}, {0.0f, 0.9f, 1.0f}};
+    bool m_HighProfileRequest = false;  // +0x181 (LIVE row 5)
+    float m_RotationRatio = 1.0f;       // +0x21C scales the heading rotation angles; PORT: initial value not seen
+    float m_RotationRatioStep = 0.5f;   // +0x220 per second; PORT: initial value not seen (ExitMove sets 1 / 0.5)
+
+    // Mac 0x1119F44, PC 0x90E190: the first index below the count whose threshold is >= value, else 0.
+    int GetMovementDivisionFromSpeedRatio(bool highProfile, float value) const {
+        const int h = highProfile ? 1 : 0;
+        for (int i = 0; i < m_MovementDivisionCount[h]; ++i) {
+            if (m_MovementDivisionThresholds[h][i] >= value) return i;
+        }
+        return 0;
+    }
+    void SetRotationRatio(float ratio) { m_RotationRatio = ratio; }      // Mac 0x1119F9C, PC 0x90E250
+    void SetRotationRatioStep(float step) { m_RotationRatioStep = step; }  // Mac 0x1119FAE
 };
 
 // PORT: ground speed in the game is the root motion of the MoveCycle animations blended by the speed ratio
@@ -26,6 +44,16 @@ struct PortGroundSpeeds {
     float atRatio[6] = {0.0f, 1.2f, 1.8f, 3.0f, 4.5f, 6.0f};
     // PORT: how far below the feet still counts as ground, metres. Not decoded.
     float stepDownHeight = 0.3f;
+};
+
+// PORT: the player's controller sets HumanGround's heading rotation through IHumanGround (RE/11_ground.md 7); its
+// values aren't known yet (LIVE row 6). These stand-ins make the port turn briskly: about 170 deg/s for small
+// corrections, up to about 520 deg/s for a quarter turn or more.
+struct PortHeadingSettings {
+    float minRotationSpeed = 3.0f;    // rad/s
+    float maxRotationSpeed = 9.0f;    // rad/s
+    float minRotationAngle = 0.3f;    // rad
+    float maxRotationAngle = 1.5708f; // rad
 };
 
 struct HumanInAirData {

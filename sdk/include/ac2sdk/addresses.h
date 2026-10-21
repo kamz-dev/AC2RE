@@ -24,6 +24,16 @@ inline constexpr std::uint32_t HumanGround_UpdateHumanGround = 0x6381D0;       /
 inline constexpr std::uint32_t HumanGround_UpdateMove = 0x634D20;              // Mac 0xFE069C; static
 inline constexpr std::uint32_t HumanGround_UpdateMoveCycle = 0x621B90;         // Mac 0xFE05A2; static
 inline constexpr std::uint32_t HumanGround_UpdateMoveCycleMain = 0x61BB60;     // Mac 0xFCD20A; static
+inline constexpr std::uint32_t HumanGround_LocalInit = 0x61F920;               // slot 2, Mac 0xFA71B0; static
+inline constexpr std::uint32_t HumanGround_UpdateMoveMain = 0x604990;          // Mac 0xFCA184; static
+inline constexpr std::uint32_t HumanGround_UpdateMovementIntention = 0x5E03E0; // Mac 0xF98C54; static
+inline constexpr std::uint32_t HumanGround_UpdateTurnAngle = 0x5FE6A0;         // Mac 0xFB34C4; static
+inline constexpr std::uint32_t HumanGround_UpdateOrientation = 0x5FFC40;       // Mac 0xFB4E32; static
+inline constexpr std::uint32_t HumanGround_TestWaitToMoveCycleMain = 0x5F4E70; // Mac 0xF9EAE6; static
+inline constexpr std::uint32_t HumanGround_TestMoveCycleToWaitMain = 0x5EAB90; // Mac 0xFB5D7A; static
+inline constexpr std::uint32_t HumanGround_IHumanGround_vftable = 0x19BF390;   // at +0x14 (ctor); static
+inline constexpr std::uint32_t RotateVectorToVectorWithAngularSpeed = 0x5FF930;  // Mac 0xFB4A3C; static
+inline constexpr std::uint32_t HumanGroundData_GetMovementDivisionFromSpeedRatio = 0x90E190;  // Mac 0x1119F44
 
 // Context data
 inline constexpr std::uint32_t HumanInAirData_FastLoad = 0x90C4D0;  // named
