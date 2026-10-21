@@ -4,6 +4,7 @@
 
 #include "check.h"
 #include "drive.h"
+#include "scimitar/ac2/human_in_air.h"
 
 using scimitar::Vec3;
 using scimitar::ac2::AssassinAbilitySet;
@@ -179,6 +180,34 @@ TEST(pad_input_damped_stick_is_the_angle_curve) {
     in.cameraYaw = 1.0f;
     task.Update(in, human, kDt);
     CHECK_NEAR(yawOf(task.m_LastDampedRelativeDirection), 1.0f + 20 * kDeg, 1e-5f);
+}
+
+TEST(controller_in_air_sets_the_landing_speed_ratio) {
+    // AssassinTask::UpdateInAir (PC 0xDEC620): just under InAir's landing bands (RE/21_input.md, RE/20 row 10).
+    Human human;  // facing +Y
+    human.ForceContext(scimitar::ac2::HumanContextId::InAir);
+    AssassinTask task;
+    const auto& inAir = human.GetContextBundle().GetInAir();
+    const struct {
+        float yaw, mag;
+        std::uint32_t buttons;
+        float ratio;
+    } rows[] = {
+        {0, 0, 0, 0.09f},                                     // no stick: standing
+        {0, 0.5f, 0, 0.09f},                                  // half a stick or less
+        {0, 1, 0, 0.49f},                                     // walking
+        {0, 0.5f, port::kHighProfile, 0.19f},
+        {0, 1, port::kHighProfile, 0.89f},                    // running
+        {0, 1, port::kHighProfile | port::kLegs, 1.0f},       // sprinting
+        {0, 1, port::kLegs, 0.49f},                           // button 0 only counts in high profile
+        {1.0f, 1, port::kHighProfile | port::kLegs, 1.0f},    // 57 degrees off the facing
+        {1.1f, 1, port::kHighProfile | port::kLegs, 0.0f},    // more than 60 degrees: 0
+        {3.0f, 0.3f, port::kHighProfile, 0.19f},              // in the dead zone the angle doesn't count
+    };
+    for (const auto& r : rows) {
+        task.Update(Stick(r.yaw, r.mag, r.buttons), human, kDt);
+        CHECK_NEAR(inAir.GetLandingSpeedRatio(), r.ratio, 1e-6f);
+    }
 }
 
 TEST(controller_without_all_actions_stops) {

@@ -16,6 +16,7 @@ struct MoveInput;
 namespace scimitar::ac2 {
 
 class Human;
+class HumanInAir;
 class IHumanGround;
 
 // scimitar::ac2::AssassinAbilitySet (the mission's ability set; AssassinAbilities::GetAbility / GetMaxSpeed read it).
@@ -44,6 +45,11 @@ public:
     // rotation speeds, the direction, sprint and the movement type (RE/21_input.md). The rest of the function (from
     // PC 0xDF8C2D: ladders and interactions) isn't decoded.
     void UpdateGroundMovement(IHumanGround& ground, const Vec3& sight, float dt);
+
+    // PC 0xDEC620, Mac 0x105C244: the InAir context's update. The decoded part the port uses: the landing speed
+    // ratio, which picks InAir's landing (RE/21_input.md, RE/11_ground.md 11). The grasp, dive, wall reception and
+    // side-step landing requests go to parts of InAir the port doesn't have.
+    void UpdateInAir(HumanInAir& inAir, const Vec3& sight);
 
     // PORT: the ability set's answers (the game reads the mission's AssassinAbilitySet). Defaults: everything allowed.
     bool m_PortAllActions = true;   // AssassinAbilitySet::GetAllActions (PC 0x6CC7C0)

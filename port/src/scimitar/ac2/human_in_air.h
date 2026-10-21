@@ -16,6 +16,7 @@ public:
 
     // IHumanInAir::SetLandingSpeedRatio (Mac 0x15FF30A).
     void SetLandingSpeedRatio(float ratio) { m_LandingSpeedRatio = ratio; }
+    float GetLandingSpeedRatio() const { return m_LandingSpeedRatio; }
 
 private:
     // PC 0x69B730, Mac 0x1236156: the landing on the ground; picks the landing and hands over to HumanGround.

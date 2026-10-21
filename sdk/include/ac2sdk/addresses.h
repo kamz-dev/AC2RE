@@ -74,6 +74,10 @@ inline constexpr std::uint32_t ActionComponent_HasActionFinished = 0x165C20;   /
 // scimitar::ac2::AssassinTask, the player's controller (RE/21_input.md)
 inline constexpr std::uint32_t AssassinTask_UpdateGround = 0xE049A0;           // Mac 0x1082F62; static
 inline constexpr std::uint32_t AssassinTask_UpdateGroundMovement = 0xDF7FE0;   // Mac 0x107F0EC; static (constants)
+inline constexpr std::uint32_t AssassinTask_UpdateInAir = 0xDEC620;            // Mac 0x105C244; static (constants)
+inline constexpr std::uint32_t AssassinTask_vftable = 0x1A23360;               // live 2026-10-21 (player's task)
+inline constexpr std::uint32_t PadInput_ComputeRelativeInput = 0x1E84A0;       // Mac 0x81F570; static
+inline constexpr std::uint32_t PadInput_Update = 0x1E8740;                     // Mac 0x81FC30; static
 inline constexpr std::uint32_t AssassinTask_ReorientDirectionFromWallCollision = 0xDF3590;  // static
 inline constexpr std::uint32_t AssassinTask_GetCrowdObstructionFactor = 0xDE1720;           // static
 inline constexpr std::uint32_t AssassinTask_OnSprintBegin = 0xDEB5E0;          // Mac 0x104EA26; static

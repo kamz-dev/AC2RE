@@ -9,11 +9,10 @@
 namespace scimitar::ac2 {
 
 void HumanInAir::Enter() {
-    // PORT: the jump / fall start (HumanInAirData::JumpOrigin) and the landing speed ratio are set by code the port
-    // doesn't have yet (the jumps; IHumanInAir::SetLandingSpeedRatio's caller, LIVE row 10). Stand-ins: the position
-    // and HumanGround's speed ratio when the human leaves the ground.
+    // PORT: the jump / fall start (HumanInAirData::JumpOrigin) is set by code the port doesn't have yet (the jumps);
+    // the stand-in is the position when the human leaves the ground. The landing speed ratio comes from the
+    // controller every frame (AssassinTask::UpdateInAir).
     m_Human.GetInAirData().m_JumpOrigin = m_Human.m_Position;
-    SetLandingSpeedRatio(m_Human.GetContextBundle().GetGround().GetSpeedRatio());
     m_PortEntered = true;
 }
 

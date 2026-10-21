@@ -260,7 +260,7 @@ that way round, 0..2π).
 `IHumanGround`'s setters (Mac `SetHeadingMin/MaxRotationSpeed`, `SetHeadingMin/MaxRotationAngle`,
 `SetHeadingRotationDirection`, `SetTurnOnMovementMinAngle`; PC `IHumanGround` vftable 0x19BF390), i.e. by the
 player's or the AI's controller. One state sets its own (PC 0x617E40: min 0.2, max 0.4 rad/s). The player's
-values are open (live row 6).
+speeds come from `AssassinTask::UpdateGroundMovement` (`21_input.md` 8); the angles' setter is open (live row 6).
 
 ## 8. Construction and `LocalInit` defaults
 - ctor (0x6317A0): heading speeds / angles 0, `HeadingRotationDirection` 0, `TurnOnMovementMinAngle` π/2,
@@ -272,14 +272,16 @@ values are open (live row 6).
   height − 0.15 (`CharacterComponent` +0x64 / +0x68 / +0x6C from +0x78) **(hypothesis: capsule fields)**.
 
 ## 9. Open
-- [ ] Who calls `IHumanGround`'s heading setters, `SetBreakHard` and `SetSprint` for the player. *What* they set is
-      known from the live session (rows 5–7, 2026-10-21); the caller is the player's controller (`21_input.md`).
+- [x] Who calls `IHumanGround`'s heading setters, `SetBreakHard` and `SetSprint` for the player:
+      `AssassinTask::UpdateGroundMovement` PC 0xDF7FE0 (`21_input.md`, 2026-10-21). Still open: who sets the heading
+      rotation *angles*.
 - [x] The hold of the speed ratio after MoveCycle starts: the restricted branch while the move cycle action isn't current (section 5, live row 8, 2026-10-21). Still open: which action is current during it.
 - [x] TurnOnSpot: the custom-action check, `m_TurnMode`, the cycle flag and the target (section 13, 2026-10-21).
       Still open: who calls `DoTurnOnSpot` / `SetUseTurnOnSpotCycle` (the look-at and custom-action systems).
 - [x] CrouchWait's transition check and `ActorCanPhysicallyStandUp` (section 13, 2026-10-21).
 - [x] InAir's side of the landing hand-over (`HumanInAir::ExecMainToGroundMain`, section 11, 2026-10-21). Still open:
-      EdgeLanding; who sets InAir's `m_LandingSpeedRatio` (live row 10); `ComputeFallDamage`; the spring jump.
+      EdgeLanding; `ComputeFallDamage`; the spring jump. (InAir's `m_LandingSpeedRatio`: `AssassinTask::UpdateInAir`,
+      `21_input.md`.)
 - [ ] Who sends the jump / edge / obstacle interface commands (the free-run / guidance system); `CanWallingVertical`,
       `TestForPotentialObstacleCollision`, `IsNarrowEdge`.
 - [x] `HumanGroundData`'s property names (section 15, 2026-10-21).

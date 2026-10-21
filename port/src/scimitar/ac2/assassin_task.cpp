@@ -5,6 +5,7 @@
 #include "port/input.h"
 #include "scimitar/ac2/human.h"
 #include "scimitar/ac2/human_ground.h"
+#include "scimitar/ac2/human_in_air.h"
 
 namespace scimitar::ac2 {
 
@@ -83,6 +84,24 @@ void AssassinTask::Update(const port::MoveInput& input, Human& human, float dt) 
     // the port always reaches UpdateGroundMovement.
     if (human.GetCurrentContextID() == HumanContextId::Ground)
         UpdateGroundMovement(human.GetContextBundle().GetGround(), sight, dt);
+    else if (human.GetCurrentContextID() == HumanContextId::InAir)
+        UpdateInAir(human.GetContextBundle().GetInAir(), sight);
+}
+
+void AssassinTask::UpdateInAir(HumanInAir& inAir, const Vec3& sight) {
+    // The landing speed ratio (PC 0xDEC804): 0 when the stick points more than 60 degrees away from the sight
+    // (the angle counts only above the 0.35 dead zone); otherwise by high profile, the stick length and button 0. The
+    // values sit just under InAir's landing bands (0.2 / 0.5 / 0.9): standing, walking, running, sprinting.
+    float angle = 0.0f;
+    if (m_LastInputLength > 0.35f) angle = GetAngleAboutK(sight, m_LastRelativeDirection);
+    float ratio = 0.0f;
+    if (std::fabs(angle) <= 1.0471976f) {
+        if (m_IsHighProfile)
+            ratio = m_LastInputLength <= 0.5f ? 0.19f : (ButtonPressed(0) ? 1.0f : 0.89f);
+        else
+            ratio = m_LastInputLength <= 0.5f ? 0.09f : 0.49f;
+    }
+    inAir.SetLandingSpeedRatio(ratio);  // IHumanInAir +0x40
 }
 
 void AssassinTask::UpdateGroundMovement(IHumanGround& ground, const Vec3& sight, float dt) {

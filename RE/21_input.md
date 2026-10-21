@@ -149,6 +149,24 @@ PC naming note: the baseline's `scimitar::ControlScheme::ButtonPressed` at 0xD11
 true when **another** control scheme holds the button; the press test is "not held by another" and then
 `Pad::ButtonPressed_0` 0x10B1710. It is renamed `unk_IsButtonHijackedByOther`.
 
+## UpdateInAir 0xDEC620 [0x105C244]
+The InAir state's update drives `IHumanInAir` (Mac secondary vftable 0x283D698; slots +0x08 / +0x0C
+`CanWallReception` / `DoWallReception`, +0x24 `SetGrasp`, +0x28 `SetGraspDirection`, +0x34 / +0x38 `CanDive` /
+`DoDive`, +0x3C `SetSideStepLandingDirection`, +0x40 `SetLandingSpeedRatio`, +0x44 `SetDivingIntention`). Every frame:
+- `SetGrasp(GetGrasp ability && button 3)`, `SetGraspDirection(relative stick, normalised)`;
+- `SetSideStepLandingDirection(length > 0.35 && dot(sight, stick) < 0.70710677)`;
+- a `FallEvent` with InAir's +0x58 getter;
+- **`SetLandingSpeedRatio`**: 0 when the stick is more than 60° (1.0471976) from the sight (the angle only counts
+  above 0.35); otherwise, in high profile, length ≤ 0.5 → 0.19, else button 0 → 1.0, else 0.89; in low profile,
+  length ≤ 0.5 → 0.09, else 0.49. The values sit just under InAir's landing bands (`11_ground.md` 11: < 0.2
+  standing, < 0.5, < 0.9, else): standing, walking, running and sprinting landings follow the stick and buttons at
+  the landing;
+- `SetDivingIntention(!high profile && button 0)`;
+- `CanWallReception` → `DoWallReception`; `CanDive(2)` → `DoDive` on a buffered legs press (+0x946).
+
+On PC the high-profile branch tests button 0 through `ControlScheme::ButtonPressed` 0x4CA290 (not held by another
+scheme, then the pad).
+
 ## Live (2026-10-21)
 The player's AssassinTask was found by scanning for the player entity at +0x0C; its vftable is PC 0x1A23360. With
 the keyboard the stick length is 0 or 1 (no ramp), so the stick goes straight from band 0 to band 2 and the previous
@@ -159,7 +177,8 @@ and all three bands, consistent with the thresholds. The damped stick: see PadIn
 `scimitar::ac2::AssassinTask` (`port/src/scimitar/ac2/assassin_task.h`) runs steps 2–13 as above; `port::Sim` runs it
 before `Human::Update`, as the game's task runs before the contexts. `scimitar::PadInput`
 (`port/src/scimitar/pad_input.h`) has the snap cone, the curve and the length cap; the stick thresholds are the live
-values. PORT stand-ins: `CameraProxy::RemapPadInput` is a rotation by `MoveInput::cameraYaw`; the `UpdateGround`
+values. `UpdateInAir` sets the landing speed ratio (the other InAir requests have no port side yet). PORT stand-ins:
+`CameraProxy::RemapPadInput` is a rotation by `MoveInput::cameraYaw`; the `UpdateGround`
 handlers are skipped (out of scope); no crowds, carrying, praying, walls or group formations
 (their queries answer false or 0); the abilities default to everything allowed; `OnSprintBegin` and the first-person
 reorientation aren't ported.

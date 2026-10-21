@@ -14042,6 +14042,8 @@ FFF84	c	char *
 4C9DB1	c	Block
 4CA187	c	Block
 4CA277	c	Block
+4CA290	F	Mac 0x14641BC ControlScheme::ButtonPressed: not held by another scheme (0xD1170), then Pad::ButtonPressed_0 on the scheme's pad (+0x10).
+4CA290	c	Mac 0x14641BC ControlScheme::ButtonPressed: not held by another scheme (0xD1170), then Pad::ButtonPressed_0 on the scheme's pad (+0x10).
 4CA3B0	F	Microsoft VisualC 2-14/net runtime
 4CA407	c	Block
 4CA779	c	int
@@ -36486,6 +36488,8 @@ DEC380	r	jumptable 00DEC338 default case
 DEC530	c	jump table for switch statement
 DEC5C5	c	float
 DEC5C8	c	int
+DEC620	F	Mac 0x105C244 AssassinTask::UpdateInAir. IHumanInAir slots (Mac vftable 0x283D698): +0x24 SetGrasp(ability && button 3), +0x28 SetGraspDirection(stick), +0x3C SetSideStepLandingDirection(len > 0.35 && dot(sight, stick) < 0.7071), +0x40 SetLandingSpeedRatio, +0x44 SetDivingIntention(!high profile && button 0), +0x8/+0xC Can/DoWallReception, +0x34/+0x38 CanDive/DoDive. Landing ratio: |angle(sight, stick)| > 60 deg -> 0; high profile: len > 0.5 ? (button 0 ? 1.0 : 0.89) : 0.19; else len > 0.5 ? 0.49 : 0.09. RE/21_input.md.
+DEC620	c	Mac 0x105C244 AssassinTask::UpdateInAir. IHumanInAir slots (Mac vftable 0x283D698): +0x24 SetGrasp(ability && button 3), +0x28 SetGraspDirection(stick), +0x3C SetSideStepLandingDirection(len > 0.35 && dot(sight, stick) < 0.7071), +0x40 SetLandingSpeedRatio, +0x44 SetDivingIntention(!high profile && button 0), +0x8/+0xC Can/DoWallReception, +0x34/+0x38 CanDive/DoDive. Landing ratio: |angle(sight, stick)| > 60 deg -> 0; high profile: len > 0.5 ? (button 0 ? 1.0 : 0.89) : 0.19; else len > 0.5 ? 0.49 : 0.09. RE/21_input.md.
 DECF40	c	void *
 DECF4C	c	void *
 DED1CB	c	void *

@@ -2040,6 +2040,7 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 4C9340	j_j_j_nullsub_601_1_0_1
 4CA160	j_j_j_j_nullsub_601_1_1_0
 4CA250	j_j_j_nullsub_601_1_1_0
+4CA290	scimitar::ControlScheme::ButtonPressed
 4CA350	j_nullsub_596_1
 4CA3E0	__RTC_NumErrors_1277
 4CA720	j_nullsub_596_2
@@ -8845,6 +8846,7 @@ DEC210	scimitar::ac2::AssassinTask::UpdateMainCharacterActionIDs
 DEC380	def_DEC338
 DEC530	jpt_DEC338
 DEC550	scimitar::ac2::AssassinTask::CheckDoGroupManip
+DEC620	scimitar::ac2::AssassinTask::UpdateInAir
 DED850	scimitar::ac2::AssassinTask::UpdateGrabbed
 DEEA20	scimitar::ac2::AssassinTask::UpdateCarryNPCDetection
 DF3590	scimitar::ac2::AssassinTask::ReorientDirectionFromWallCollision
