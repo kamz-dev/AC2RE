@@ -28,8 +28,8 @@ enum TransitionToMotionType : int {
 // members after +0xF3 take their names from the Revelations PDB, where they sit 0x20 later (RE/11_ground.md 4).
 struct HumanGroundData {
     // HumanGroundData::MovementState (Revelations PDB names). AC2 numbering: 0-7 as in Revelations, 10-13 are
-    // Revelations' 11-14 (EnterMove PC 0x60C610), 14 is MAX (ResetTransitionData). 8 and 9 are two of Revelations'
-    // Collide / CarryObject / CustomAction (not decoded; EnterMove has no case for them).
+    // Revelations' 11-14 (EnterMove PC 0x60C610), 14 is MAX (ResetTransitionData). 8 is Collide (the beam's _Collide
+    // exit, Mac 0xF211E8); 9 is CarryObject or CustomAction (not decoded). EnterMove has no case for 8 or 9.
     enum MovementState : int {
         MovementState_WaitLow = 0,
         MovementState_WaitHigh = 1,
@@ -39,6 +39,7 @@ struct HumanGroundData {
         MovementState_Run = 5,
         MovementState_Sprint = 6,
         MovementState_Crouch = 7,
+        MovementState_Collide = 8,
         MovementState_Landing = 10,
         MovementState_LandingHard = 11,
         MovementState_LandingBalanceFall = 12,

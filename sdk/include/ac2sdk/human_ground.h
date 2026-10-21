@@ -227,13 +227,17 @@ struct HumanGroundData {
     std::uint8_t destMvtType;                     // 0x181  m_DestMvtType: 1 while high profile is held
     AC2_PAD(0x1A0 - 0x182);                       // 0x182
     std::int32_t destMovementState;               // 0x1A0  m_DestMovementState (MovementState); EnterMove 0x60C610
-    AC2_PAD(0x21C - 0x1A4);                       // 0x1A4  (+0x1A8 ActionTransition, +0x204 flag, +0x214 blends)
+    AC2_PAD(0x21C - 0x1A4);                       // 0x1A4  (+0x1A8 m_DestTransition, +0x204 m_IsCustomTransitionSet,
+                                                  //  +0x20C m_DestTransitionFlags, +0x210 m_DestFeetPos, +0x214 m_DestBlendFactors)
     float rotationRatio;                          // 0x21C  SetRotationRatio 0x90E250
     float rotationRatioStep;                      // 0x220  per second
     std::uint8_t skipActionOnStateEntry;          // 0x224  m_SkipActionOnStateEntry
     AC2_PAD(0x03);                                // 0x225
     std::int32_t transitionToMotionType;          // 0x228  -> HumanGround speed restriction mode in EnterMoveCycle
-    AC2_PAD(0x3A0 - 0x22C);                       // 0x22C
+    std::uint8_t teleportToGroundSetup;           // 0x22C  m_TeleportToGroundSetup
+    AC2_PAD(0x250 - 0x22D);                       // 0x22D  (+0x230 m_BlockFallOffEdgeTimer, Revelations)
+    std::int32_t entryState;                      // 0x250  m_EntryState (HumanGroundData::EntryState)
+    AC2_PAD(0x3A0 - 0x254);                       // 0x254
 };
 
 AC2_ASSERT_SIZE(HumanGroundData, 0x3A0);

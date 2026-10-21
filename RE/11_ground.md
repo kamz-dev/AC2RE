@@ -150,7 +150,9 @@ the same in both builds; each was read on PC in the function named.
 | +0x181 | u8 | **`m_DestMvtType`** (→ `m_IntentionMvtType` +0x7B4); for the player, 1 (High) while high profile (right mouse, the run) is held (live row 5) | `UpdateMovementIntention` 0x5E03E0 |
 | +0x1A0 | `MovementState` | **`m_DestMovementState`**: how `EnterMove` starts (section 11) | `EnterMove` 0x60C610 |
 | +0x1A8 / +0x204 | `ActionTransition` / bool | `m_DestTransition` / `m_IsCustomTransitionSet` | Mac `SetupTransitionData` 0x111AAC6 |
-| +0x20C / +0x210 | int | feet position / a flags word passed to `SetTargetAction`. The PDB order is `m_DestTransitionFlags` then `m_DestFeetPos`: re-check which is which | same; Mac `EnterMoveCycle` 0xFBE706 |
+| +0x20C / +0x210 | u32 / `ACTFeetPosition` | `m_DestTransitionFlags` (passed to `SetTargetAction`) / `m_DestFeetPos`. `SetupTransitionData` copies the setup's +0x0C / +0x10 here, and the AC2 ctor (Mac 0x150EF4C) stores its feet-position argument at +0x10, so the PDB order holds | Mac `SetupTransitionData` 0x111AAC6; `EnterMoveCycle` 0xFBE706 |
+| +0x22C | bool | `m_TeleportToGroundSetup`: `EnterMove` resets the character component when set | `SetupTransitionData`; `EnterMove` 0x60C610 |
+| +0x250 | `EntryState` | `m_EntryState`; `SetupTransitionData` resets it to 0 (`EntryState_Move`) | Mac `SetupTransitionData` 0x111AAC6 |
 | +0x214 | float array | `m_DestBlendFactors` for the first action | same |
 | +0x21C | float | `m_RotationRatio` (scales the heading rotation angles); `SetRotationRatio` 0x90E250 | `UpdateOrientation` |
 | +0x220 | float | `m_RotationRatioStep` per second; Mac `SetRotationRatioStep` 0x1119FAE; `ExitMove` sets ratio 1, step 0.5 | `UpdateOrientation`; Mac `ExitMove` 0xFAFB48 |
@@ -372,8 +374,10 @@ gait level. `_EnterMove` (PC 0x621720 [0xFD43E0]) then enters that child (PC inl
 
 `MovementState`'s names are the Revelations PDB's (`HumanGroundData::MovementState`). AC2 numbers 0–7 like
 Revelations; its 10–13 are Revelations' 11–14 and 14 is `MovementState_MAX`, so AC2 has two of Revelations'
-Collide / CarryObject / CustomAction at 8 and 9 (which two isn't decoded; `EnterMove` has no case for them, so they
-keep Move's previous child). A separate reflected enum `LandingType` (Safe,
+Collide / CarryObject / CustomAction at 8 and 9. **8 is Collide**: `HumanNarrowObjectBeam::
+ExecMoveToGroundOnHumanNarrowObjectInterfaceCommand_Collide` (Mac 0xF211E8) hands over with 8. Whether 9 is CarryObject
+or CustomAction isn't decoded (no caller seen with 9). `EnterMove` has no case for either, so they keep Move's
+previous child. A separate reflected enum `LandingType` (Safe,
 SmallDamage, HeavyDamage, Fatal) is InAir's, and most likely what picks 10 / 11 / 12.
 
 **The landing states** play the action the handing-over context set up and leave when it ends:
