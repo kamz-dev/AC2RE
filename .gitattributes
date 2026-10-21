@@ -1,0 +1,10 @@
+* text=auto eol=lf
+*.bat text eol=crlf
+*.sln text eol=crlf
+*.vcxproj text eol=crlf
+
+# Annotations: merge line by line
+IDB/annotations/** text eol=lf diff
+
+*.png binary
+*.jpg binary

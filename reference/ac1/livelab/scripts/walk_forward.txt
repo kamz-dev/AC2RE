@@ -1,0 +1,11 @@
+# Smoke test: walk forward 2 s, run 2 s (high profile), stop, turn right in place.
+mark walk_forward start
+stick 0 0.5 for 2
+stick 0 1 for 1
+hold RT
+stick 0 1 for 2
+release all
+stick 0 0 for 1
+stick 1 0 for 0.6
+stick 0 0 for 1
+mark walk_forward end

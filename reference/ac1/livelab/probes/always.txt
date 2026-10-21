@@ -1,0 +1,3 @@
+# Probes armed on every check page (one per line): <address> <name> [when=<expr>] [max=<n>] <field>...
+# Example (off): the walk-off / run-off jump to an edge (RE/18 live result 1)
+# 0xDA7A10 ToInAir_JumpToEdge max=20 feet=$entity+0x40:vec3

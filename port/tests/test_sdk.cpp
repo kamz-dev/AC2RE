@@ -1,0 +1,27 @@
+// The sdk/ headers compile in the port's build, and the address table stays inside the PC image.
+
+#include "ac2sdk/addresses.h"
+#include "ac2sdk/layout.h"
+#include "check.h"
+
+namespace {
+// PC IDB: .text 0x1000..0x18A5000, image size 0x2170000 (RE/01_triage.md).
+constexpr std::uint32_t kTextBegin = 0x1000, kTextEnd = 0x18A5000;
+}  // namespace
+
+TEST(sdk_function_addresses_are_in_text) {
+    using namespace ac2sdk::addr;
+    for (std::uint32_t a : {Human_Update, Human_ApplyDeath, HumanInAirData_FastLoad, Engine_BeginFrame, World_GetPlayer})
+        CHECK(a >= kTextBegin && a < kTextEnd);
+}
+
+TEST(sdk_layout_macros_compile) {
+    struct Probe {
+        std::uint32_t vtable;
+        AC2_PAD(4);
+        float speed;
+    };
+    AC2_ASSERT_OFFSET(Probe, speed, 8);
+    AC2_ASSERT_SIZE(Probe, 12);
+    static_assert(sizeof(Probe) == 12);
+}

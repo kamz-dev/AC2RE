@@ -1,0 +1,37 @@
+{
+  "version": 6,
+  "configurePresets": [
+    {
+      "name": "vs2022",
+      "displayName": "Visual Studio 2022, x64",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
+      "binaryDir": "${sourceDir}/build/${presetName}"
+    },
+    {
+      "name": "vs2022-x86",
+      "displayName": "Visual Studio 2022, 32-bit (the game's ABI: sdk/ layout checks are live)",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "Win32",
+      "binaryDir": "${sourceDir}/build/${presetName}"
+    },
+    {
+      "name": "ninja",
+      "displayName": "Ninja (run from a VS developer prompt, or on Linux / macOS)",
+      "generator": "Ninja Multi-Config",
+      "binaryDir": "${sourceDir}/build/${presetName}"
+    }
+  ],
+  "buildPresets": [
+    { "name": "debug", "configurePreset": "vs2022", "configuration": "Debug" },
+    { "name": "release", "configurePreset": "vs2022", "configuration": "Release" },
+    { "name": "x86-debug", "configurePreset": "vs2022-x86", "configuration": "Debug" },
+    { "name": "ninja-debug", "configurePreset": "ninja", "configuration": "Debug" }
+  ],
+  "testPresets": [
+    { "name": "debug", "configurePreset": "vs2022", "configuration": "Debug", "output": { "outputOnFailure": true } },
+    { "name": "release", "configurePreset": "vs2022", "configuration": "Release", "output": { "outputOnFailure": true } },
+    { "name": "x86-debug", "configurePreset": "vs2022-x86", "configuration": "Debug", "output": { "outputOnFailure": true } },
+    { "name": "ninja-debug", "configurePreset": "ninja", "configuration": "Debug", "output": { "outputOnFailure": true } }
+  ]
+}

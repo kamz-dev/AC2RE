@@ -1,0 +1,195 @@
+<title>AC1 Movement Pipeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column; a summary strip, the roadmap as phase cards, then the checklist sections, then the commit log. */
+:root {
+  --bg: #f3f4f6; --surface: #ffffff; --ink: #1d2128; --muted: #5b6270; --line: #d9dce2;
+  --accent: #8e1b22; --done: #2f7a4a; --partial: #b07a12; --open: #8a909b;
+  --done-bg: #e3f1e7; --partial-bg: #f8edd5; --open-bg: #eceef1;
+  --validation: #315f9b; --validation-bg: #e5edf8; --code-bg: #eaecef;
+  --f-display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #15181d; --surface: #1d2128; --ink: #e6e8ec; --muted: #9aa1ad; --line: #2f343d;
+  --accent: #e0575f; --done: #5fbf82; --partial: #e2ad45; --open: #8d939e;
+  --done-bg: #1c3326; --partial-bg: #3a2f17; --open-bg: #262a31; --validation: #8eb6ef; --validation-bg: #20324b; --code-bg: #2a2f37; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #15181d; --surface: #1d2128; --ink: #e6e8ec; --muted: #9aa1ad; --line: #2f343d;
+  --accent: #e0575f; --done: #5fbf82; --partial: #e2ad45; --open: #8d939e;
+  --done-bg: #1c3326; --partial-bg: #3a2f17; --open-bg: #262a31; --validation: #8eb6ef; --validation-bg: #20324b; --code-bg: #2a2f37; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { margin: 0; overflow-wrap: anywhere; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--f-body); }
+.wrap { max-width: 980px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 64px; display: grid; gap: 36px; }
+h1, h2, h3 { font-family: var(--f-display); letter-spacing: .01em; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(30px, 6vw, 44px); font-weight: 700; line-height: 1.05; }
+h2 { flex-wrap: wrap; font-size: 26px; font-weight: 600; display: flex; align-items: baseline; gap: 12px; }
+h2 small { font: 500 12px var(--f-mono); color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+h3 { font-size: 19px; font-weight: 600; }
+p { margin: 0; }
+code { font: 12.5px var(--f-mono); background: var(--code-bg); padding: 1px 5px; border-radius: 3px; overflow-wrap: anywhere; }
+.eyebrow { font: 500 12px var(--f-mono); color: var(--accent); letter-spacing: .08em; text-transform: uppercase; }
+
+header.top { display: grid; gap: 14px; }
+header.top .lede { color: var(--muted); max-width: 68ch; }
+.summary { display: grid; gap: 10px; }
+.summary .nums { display: flex; flex-wrap: wrap; gap: 8px 22px; font-variant-numeric: tabular-nums; }
+.summary .nums b { font: 700 24px var(--f-display); margin-right: 4px; }
+.summary .nums .d b { color: var(--done); } .summary .nums .p b { color: var(--partial); } .summary .nums .o b { color: var(--open); }
+.bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--open-bg); }
+.bar.big { height: 12px; }
+.seg.done { background: var(--done); } .seg.partial { background: var(--partial); } .seg.open { background: var(--open-bg); }
+.counts { display: flex; flex-wrap: wrap; gap: 14px; font: 12px var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.pill { flex: none; display: inline-block; min-width: 54px; text-align: center; font: 600 11px var(--f-mono); letter-spacing: .04em; text-transform: uppercase; padding: 2px 6px; border-radius: 3px; }
+.pill.done { color: var(--done); background: var(--done-bg); }
+.pill.partial { color: var(--partial); background: var(--partial-bg); }
+.pill.open { color: var(--muted); background: var(--open-bg); }
+.pill.note { color: var(--muted); background: transparent; min-width: 54px; }
+
+.pill.validation { color: var(--validation); background: var(--validation-bg); }
+.seg.validation { background: var(--validation); }
+.summary .nums .v b { color: var(--validation); }
+.phase.validation { border-top: 3px solid var(--validation); }
+a { color: var(--validation); text-underline-offset: 2px; }
+.source { display: block; font-size: 12px; color: var(--muted); margin-top: 3px; }
+.handoff { margin-top: 14px; }
+
+/* roadmap */
+.phases { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 14px; }
+.phase { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.phase.open { border-top: 3px solid var(--open); } .phase.partial { border-top: 3px solid var(--partial); } .phase.done { border-top: 3px solid var(--done); }
+.phase header { display: flex; align-items: baseline; gap: 10px; }
+.phase .key { font: 600 13px var(--f-mono); color: var(--accent); }
+.phase .frac { margin-left: auto; font: 500 12px var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.phase p { color: var(--muted); font-size: 14px; }
+.phase ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.step { display: flex; gap: 10px; align-items: baseline; font-size: 14px; min-width: 0; }
+.step > span:last-child { min-width: 0; }
+
+/* controls */
+.controls { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 2; background: var(--bg); padding-block: 10px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; border-bottom: 1px solid var(--line); }
+.controls button { font: 600 13px var(--f-body); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 6px 12px; cursor: pointer; }
+.controls button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.controls button:focus-visible, .controls input:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.controls input { flex: 1 1 200px; min-width: 0; font: 14px var(--f-body); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 6px 10px; }
+.controls .shown { font: 12px var(--f-mono); color: var(--muted); }
+
+/* checklist */
+.sections { display: grid; gap: 10px; }
+.sec { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; min-width: 0; }
+.sec.sub { margin-left: 18px; }
+.sec summary { list-style: none; cursor: pointer; padding: 14px 16px; display: grid; gap: 8px; }
+.sec summary::-webkit-details-marker { display: none; }
+.sec summary h3::before { content: "▸"; display: inline-block; width: 1em; color: var(--muted); transition: transform .15s; }
+.sec details[open] summary h3::before { transform: rotate(90deg); }
+.sec .notes { padding: 0 16px 8px; color: var(--muted); font-size: 14px; display: grid; gap: 6px; max-width: 78ch; }
+ul.items { list-style: none; margin: 0; padding: 0 16px 14px; display: grid; gap: 10px; }
+ul.items.sub { padding: 8px 0 0; gap: 8px; }
+.item { display: flex; gap: 12px; align-items: baseline; min-width: 0; }
+.item .body { min-width: 0; display: grid; gap: 4px; }
+.item .head { max-width: 80ch; }
+.item .detail { color: var(--muted); font-size: 13.5px; max-width: 80ch; border-left: 2px solid var(--line); padding-left: 10px; }
+.item[hidden] { display: none; }
+
+/* log */
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.log li { display: grid; grid-template-columns: auto auto 1fr; gap: 12px; align-items: baseline; font-size: 14px; }
+.log li > span:last-child { min-width: 0; }
+.log .date { font: 12px var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+@media (max-width: 520px) { .log li { grid-template-columns: auto 1fr; } .log .date { display: none; } .sec.sub { margin-left: 8px; } }
+footer { color: var(--muted); font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <span class="eyebrow">Assassin's Creed (2008) · Steam v1.02 · movement port</span>
+    <h1>AC1 Movement Pipeline</h1>
+    <p class="lede">Everything still between the Rust port and a 1:1 copy of Altaïr's movement. The roadmap is the working order; the checklist below it is the project's full list (<code>RE/12_remaining_movement_checklist.md</code>), item by item, with the game address each one comes from.</p>
+    <p class="lede">Port target: <strong>AC1-Movement-Rewritten</strong>. <strong>AC1-rs is a friend's reference project only</strong>; its unverified leads require IDA confirmation before porting.</p>
+    <div class="summary">
+      <div class="nums"><span class="d"><b>{{DONE}}</b>done</span><span class="p"><b>{{PARTIAL}}</b>partly done</span><span class="v"><b>{{VALIDATION}}</b>awaiting validation</span><span class="o"><b>{{OPEN}}</b>open</span><span><b>{{PCT}}%</b>of {{TOTAL}} checklist items (partly counts half; awaiting validation is not done)</span></div>
+      <div class="bar big" role="img" aria-label="{{DONE}} done, {{PARTIAL}} partly done, {{VALIDATION}} awaiting validation, {{OPEN}} open"><span class="seg done" style="flex:{{DONE}}"></span><span class="seg partial" style="flex:{{PARTIAL}}"></span><span class="seg validation" style="flex:{{VALIDATION}}"></span><span class="seg open" style="flex:{{OPEN}}"></span></div>
+    </div>
+  </header>
+
+  <section>
+    <h2>Roadmap <small>working order</small></h2>
+    <div class="phases" style="margin-top:14px">{{ROADMAP}}</div>
+  </section>
+
+  <section>
+    <h2>Implementation and RE hand-off <small>{{DATE}}</small></h2>
+    <div class="phases handoff">{{HANDOFF}}</div>
+  </section>
+
+  <section>
+    <h2>Checklist <small>RE/12, all sections</small></h2>
+    <p class="lede">RE/12 marks implementation with checkmarks. Game smoothing (PR #23) and falls (PR #24) are merged; falls keep explicit dependency blocks. Air catches, ground extras and smoothness are pushed but not yet merged. Partial items are not complete native parity.</p>
+    <div class="controls" style="margin-top:10px">
+      <button type="button" id="f-all" data-filter="all" aria-pressed="true">All</button>
+      <button type="button" id="f-open" data-filter="open" aria-pressed="false">Open</button>
+      <button type="button" id="f-partial" data-filter="partial" aria-pressed="false">Partly</button>
+      <button type="button" id="f-validation" data-filter="validation" aria-pressed="false">Needs test</button>
+      <button type="button" id="f-done" data-filter="done" aria-pressed="false">Done</button>
+      <input id="q" type="search" placeholder="Search items, e.g. ladder, 0xDD4CD0" aria-label="Search the checklist">
+      <span class="shown" id="shown"></span>
+    </div>
+    <div class="sections" style="margin-top:12px">{{SECTIONS}}</div>
+  </section>
+
+  <section>
+    <h2>Recent work <small>last 30 commits on initial-import</small></h2>
+    <ul class="log" style="margin-top:12px">{{LOG}}</ul>
+  </section>
+
+  <footer>Generated {{DATE}} from RE/04 §9, RE/12, RE/15 §1–3 / §6.1–6.3, RE/02 §4, RE/16 (midway check) and linked port history. PRs #23 and #24 merged. Evidence panels do not add to checklist totals. "Partly" means ported with a stand-in or only some of it done; stand-ins are tagged PORT in the code, and RE/12 §1 still misses some of them (RE/16 M5–M6).</footer>
+</div>
+
+<script>
+(function () {
+  var filter = "all";
+  try { filter = localStorage.getItem("ac1-pipeline-filter") || "all"; } catch (e) {}
+  var q = document.getElementById("q");
+  var shown = document.getElementById("shown");
+  var buttons = Array.prototype.slice.call(document.querySelectorAll(".controls button"));
+  function matches(li, term) {
+    var st = li.getAttribute("data-status");
+    var okStatus = filter === "all" || st === filter;
+    var okText = !term || li.textContent.toLowerCase().indexOf(term) !== -1;
+    return okStatus && okText;
+  }
+  function apply() {
+    var term = q.value.trim().toLowerCase();
+    var n = 0;
+    var top = document.querySelectorAll(".sections > .sec > details > ul.items > li.item");
+    // an item stays visible when it or any child matches
+    document.querySelectorAll(".sections li.item").forEach(function (li) {
+      var self = matches(li, term);
+      var kid = Array.prototype.some.call(li.querySelectorAll("li.item"), function (c) { return matches(c, term); });
+      li.hidden = !(self || kid);
+    });
+    top.forEach(function (li) { if (!li.hidden) n++; });
+    document.querySelectorAll(".sections > .sec").forEach(function (sec) {
+      var any = sec.querySelector("li.item:not([hidden])");
+      sec.hidden = !any && (filter !== "all" || term !== "");
+    });
+    shown.textContent = n + " items shown";
+    buttons.forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-filter") === filter)); });
+  }
+  buttons.forEach(function (b) {
+    b.addEventListener("click", function () {
+      filter = b.getAttribute("data-filter");
+      try { localStorage.setItem("ac1-pipeline-filter", filter); } catch (e) {}
+      apply();
+    });
+  });
+  q.addEventListener("input", apply);
+  apply();
+})();
+</script>

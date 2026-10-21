@@ -1,0 +1,46 @@
+# IDA databases and their working files: never in git (IDB/README.md). Annotations are shared instead.
+*.i64
+*.idb
+*.id0
+*.id1
+*.id2
+*.nam
+*.til
+*.$$$
+*.pdb
+!IDB/annotations/**
+
+# Game files and copies of them
+bin/
+*.exe
+*.dll
+*.forge
+RE/data/
+
+# Builds
+build/
+out/
+.vs/
+*.obj
+*.lib
+*.exp
+*.ilk
+obj/
+CMakeUserPresets.json
+
+# Lab output and personal data
+livelab/sessions/
+livelab/save_backup/
+livelab/names/
+*.bmp
+captures/
+
+# Python
+__pycache__/
+*.pyc
+
+# Agent and editor local state
+.claude/settings.local.json
+.idea/
+.vscode/
+*.swp

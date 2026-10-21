@@ -1,0 +1,72 @@
+# The quick lab set (M3 group 11, 2026-10-20): one recording per line, relative to livelab/sessions/.
+# Built from the g5-g10 replays' changed rows (one per label, every owner-accepted knife-edge row),
+# the RE/34 (a) rows of group 11's codes, and one matching / one parting recording per family.
+# Used by: py livelab/tools/compare_all.py --set quick
+2026-10-12_120751/003_roof_jogoff_high  # changed in g5-g10
+2026-10-12_122003/001_ladder_bureau_up  # changed in g5-g10
+2026-10-12_122003/004_hay_plainfall  # changed in g5-g10
+2026-10-12_122727/007_hang_shimmy  # changed in g5-g10
+2026-10-12_123944/002_ladder_footm  # changed in g5-g10
+2026-10-12_123944/007_hang_reception_feet  # changed in g5-g10
+2026-10-12_123944/020_lip_drop_in  # changed in g5-g10
+2026-10-12_123944/021_lip_drop_out  # changed in g5-g10
+2026-10-12_123944/022_lip_catch_a  # changed in g5-g10
+2026-10-12_203221/001_freerun_east_cands  # changed in g5-g10
+2026-10-12_203221/005_freerun_east_drift2  # changed in g5-g10
+2026-10-12_203221/014_freerun_east_drift3  # changed in g5-g10
+2026-10-12_203221/021_freerun_east_drift4  # changed in g5-g10
+2026-10-12_224022/006_climb_05  # changed in g5-g10
+2026-10-13_084315/008_climb_11  # changed in g5-g10
+2026-10-13_084315/037_freerun_east_depth  # changed in g5-g10
+2026-10-13_210349/007_beam_freerun  # changed in g5-g10
+2026-10-14_204257/002_catch69_side_right  # changed in g5-g10
+2026-10-14_204257/008_catch69_ahead  # changed in g5-g10
+2026-10-14_204257/009_catch69_behind  # changed in g5-g10
+2026-10-14_204257/011_knee_lip_inside  # changed in g5-g10
+2026-10-14_212752/001_catch_left_reach_letgo  # changed in g5-g10
+2026-10-14_212752/002_catch_short_type5  # changed in g5-g10
+2026-10-14_212752/003_catch_auto_wall  # changed in g5-g10
+2026-10-14_212752/004_edge_landing_out  # changed in g5-g10
+2026-10-15_232826/003_freestep50_walkon  # owner-accepted knife-edge
+2026-10-15_232826/004_fall3_stepoff  # changed in g5-g10
+2026-10-15_232826/005_hang58_bones  # changed in g5-g10
+2026-10-15_232826/013_reception52_feet  # changed in g5-g10
+2026-10-15_232826/015_climb10_courtyard  # owner-accepted knife-edge
+2026-10-15_232826/022_ladder38_side  # changed in g5-g10
+2026-10-15_232826/024_catch60_hips  # changed in g5-g10
+2026-10-16_095226/001_swing_chain_souk  # changed in g5-g10
+2026-10-17_014441/001_climb10_grabprobe  # owner-accepted knife-edge
+2026-10-17_014441/002_hay43_letgo  # owner-accepted knife-edge
+2026-10-17_014441/003_hay43_letgo  # changed in g5-g10
+2026-10-17_014441/004_hay43_letgo  # owner-accepted knife-edge
+2026-10-17_014441/006_hay43_letgo  # owner-accepted knife-edge
+2026-10-17_014441/008_climb10_lowhold  # changed in g5-g10
+2026-10-17_014441/011_ladder38_rows  # changed in g5-g10
+2026-10-17_014441/013_lip13_east  # changed in g5-g10
+2026-10-17_014441/014_lip13_crate  # owner-accepted knife-edge
+2026-10-17_024732/004_shake19_drop  # changed in g5-g10
+2026-10-17_024732/014_sound28_switches  # changed in g5-g10
+2026-10-17_024732/015_fx32_landing  # changed in g5-g10
+2026-10-17_024732/021_probeS_climb24  # changed in g5-g10
+2026-10-18_011512/002_a1_drift4_targets  # changed in g5-g10
+2026-10-18_011512/007_freestep50_walkon  # owner-accepted knife-edge
+2026-10-18_011512/021_a6_ladder_side_shimmy  # changed in g5-g10
+2026-10-18_011512/036_b1_stall_run  # changed in g5-g10
+2026-10-12_123944/008_wall_legs_hold  # RE/34 (a) row of a group 11 code
+2026-10-12_224022/005_climb_04  # RE/34 (a) row of a group 11 code
+2026-10-18_011512/013__rerun_a3_climb24  # RE/34 (a) row of a group 11 code
+2026-10-15_232826/028_swing_bar_forward  # RE/34 (a) row of a group 11 code
+2026-10-15_232826/029_swing_bar_neutral  # RE/34 (a) row of a group 11 code
+2026-10-12_122727/003_roof_freerun_off  # RE/34 (a) row of a group 11 code
+2026-10-17_024732/011_sol31_lookdown  # RE/34 (a) row of a group 11 code
+2026-10-12_224022/004_climb_03  # RE/34 (a) row of a group 11 code
+2026-10-13_084315/007_climb_08  # RE/34 (a) row of a group 11 code
+2026-10-17_024732/047_crouch4_blend  # RE/34 (a) row of a group 11 code
+2026-10-15_232826/002_hangtype72_reception  # RE/34 (a) row of a group 11 code
+2026-10-12_224022/021_climb_20  # RE/34 (a) row of a group 11 code
+2026-10-12_123944/009_wall_legs_tap  # family walling (matches)
+2026-10-12_123944/014_beam_hand_side  # family beam (matches)
+2026-10-15_232826/016_straight72_swing37  # family swing (matches)
+2026-10-15_232826/014_climb10_down  # family climb10 (matches)
+2026-10-12_123944/004_ladder_drop  # family ladder
+2026-10-17_024732/038_sound28_switches  # changed in g5-g10 (A01's crate corner, the other row)
