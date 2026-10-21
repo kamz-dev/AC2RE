@@ -69,7 +69,7 @@ TEST(ground_landing_while_moving_starts_a_walk) {
         return in;
     };
     // Run off the edge, then walk (no high profile) through the landing.
-    sim.run(2.0f, [&](float t) { return fwd(t, port::kHighProfile | port::kLegs); });
+    sim.run(2.0f, [&](float t) { return fwd(t, port::kHighProfile); });
     bool sawLanding = false;
     for (int i = 0; i < 90; ++i) {
         sim.step(fwd(0, 0));

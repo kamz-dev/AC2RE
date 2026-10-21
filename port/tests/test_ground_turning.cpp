@@ -149,9 +149,9 @@ TEST(ground_slowing_from_a_run_follows_the_curve) {
     port::MoveInput run;
     run.moveDir = {0, 1, 0};
     run.moveMag = 1;
-    run.buttons = port::kHighProfile | port::kLegs;
+    run.buttons = port::kHighProfile;
     for (int i = 0; i < 40; ++i) human.Update(run, world, dt);
-    CHECK_NEAR(ground.GetSpeedRatio(), 1.0f, 1e-5f);
+    CHECK_NEAR(ground.GetSpeedRatio(), 0.8f, 1e-5f);
 
     // High profile released, still walking: the target drops to 0.2 and the ratio falls at dt x curve(ratio). The
     // curve is low (0.2..0.3) between 0.4 and 0.666, so it takes over a second to get under 0.4.
@@ -175,7 +175,7 @@ TEST(ground_move_stop_and_run_turn) {
     port::MoveInput run;
     run.moveDir = {0, 1, 0};
     run.moveMag = 1;
-    run.buttons = port::kHighProfile | port::kLegs;
+    run.buttons = port::kHighProfile;
     for (int i = 0; i < 40; ++i) human.Update(run, world, dt);
 
     human.Update({}, world, dt);  // released while running: BreakHard -> MoveStop

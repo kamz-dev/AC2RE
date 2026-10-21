@@ -87,9 +87,9 @@ TEST(ground_wait_movecycle_wait) {
     CHECK(human.m_Position.y > 0.0f);
 
     port::MoveInput run = walk;
-    run.buttons = port::kHighProfile | port::kLegs;  // Sprint + high profile: target 1 (live row 5)
+    run.buttons = port::kHighProfile;  // the run: +0x181, target 0.8 (live row 5)
     for (int i = 0; i < 30; ++i) human.Update(run, world, dt);
-    CHECK_NEAR(ground.GetSpeedRatio(), 1.0f, 1e-5f);
+    CHECK_NEAR(ground.GetSpeedRatio(), 0.8f, 1e-5f);
     CHECK(ground.IsRunning());
 
     // Released while running: BreakHard (the port's stand-in controller) sends MoveCycle to MoveStop, and MoveStop to

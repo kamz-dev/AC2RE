@@ -134,14 +134,14 @@ the same in both builds; each was read on PC in the function named.
 | +0x94 / +0x98 | u32 | `ParamFlags` / `InternalFlags` (`EnterMove` sets bit 1 in both) | `EnterMove` |
 | +0xB4 / +0xB8 | float | `CurrentBodyAngle` / `CurrentBodyBankingAngle`, smoothed with the sight (`ComputeVectorRotationWithSight` 0x5FE3D0); they weight the move cycle's turn variants | `UpdateMoveCycleMain` |
 | +0xED | bool | **`BreakHard`**: while running, sends MoveCycle to MoveStop. Set by `IHumanGround::SetBreakHard` (PC 0x632E20 [0x153B958]) | `TestMoveCycleToMoveStopMain` 0x5EAAF0 |
-| +0xEE | bool | **`Sprint`**: +0.2 to the target speed ratio (high profile + sprint = 0.8..1). Set by `IHumanGround::SetSprint` (PC 0x632E80 [0x153B9D0]); for the player, on while the high-profile button is held (live row 5) | `UpdateMoveCycleMain` |
+| +0xEE | bool | **`Sprint`**: +0.2 to the target speed ratio (high profile + sprint = 0.8..1). Set by `IHumanGround::SetSprint` (PC 0x632E80 [0x153B9D0]); for the player, on while legs (Space, the fast walk) is held (live row 5) | `UpdateMoveCycleMain` |
 | +0xF3 | bool | **`Crouch`** (→ CrouchMove / CrouchWait). Set by `IHumanGround::SetCrouch` [0x153B994] | `LocalInit` 0x61F920 (cleared); Mac `_UpdateMoveCycle` |
 | (+0x30…+0xF2) | | the other reflected members (collision, look-at sights, combat style, block cylinder, acting, custom-action channels): section 15 | |
 | +0x154 | u8 | 2 after `LocalInit`; use unknown | `LocalInit` |
 | +0x155 / +0x156 | u8 | movement-division threshold counts (without / with high profile), 3 after `LocalInit` | `LocalInit`; Mac `GetMovementDivisionFromSpeedRatio` 0x1119F44 |
 | +0x158 / +0x16C | float[5] | movement-division thresholds, {0, 0.9, 1} after `LocalInit` | same |
 | +0x180 | bool | cleared by `LocalInit`; use unknown | `LocalInit` |
-| +0x181 | bool | high-profile request (→ `this+0x7B4`); for the player, on with high profile + legs (live row 5) | `UpdateMovementIntention` 0x5E03E0 |
+| +0x181 | bool | high-profile request (→ `this+0x7B4`); for the player, on while high profile (right mouse, the run) is held (live row 5) | `UpdateMovementIntention` 0x5E03E0 |
 | +0x150 | int | set to 1 by `EnterMove` | `EnterMove` 0x60C610 |
 | +0x1A0 | int | **`HumanGroundData::MovementState`**: how `EnterMove` starts (section 11) | `EnterMove` 0x60C610 |
 | +0x1A8 / +0x204 | `ActionTransition` / bool | the transition action into Move, and whether there is one | Mac `SetupTransitionData` 0x111AAC6 |

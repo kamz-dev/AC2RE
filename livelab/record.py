@@ -26,7 +26,6 @@ with open(out, "w") as f:
         if h and g and e:
             f.write(json.dumps({"t": round(t, 4), "hg": h.hex(), "gd": g.hex(), "ent": e.hex(),
                                 "dt6c": p.f32(six + 0x5D8) if six else None, "ctx": ctx,
-                                "ctxvt": p.u32(ctx) if ctx else None}) + "
-")
+                                "ctxvt": p.u32(ctx) if ctx else None}) + "\n")
         time.sleep(0.008)
 print("done", out)

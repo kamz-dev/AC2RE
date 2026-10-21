@@ -11,8 +11,8 @@ namespace port {
 
 // AC-style "puppeteer" buttons. LIVE: map them to AC2's pad proxy fields once decoded.
 enum Button : std::uint32_t {
-    kHighProfile = 1u << 0,  // RT / right mouse
-    kLegs = 1u << 1,         // A / space: jump, free-run
+    kHighProfile = 1u << 0,  // RT / right mouse: the run; with legs, the sprint
+    kLegs = 1u << 1,         // A / space: the fast walk; jump, free-run
     kHand = 1u << 2,         // B / grab, drop
     kHead = 1u << 3,         // Y / eagle vision
 };

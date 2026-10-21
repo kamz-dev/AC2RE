@@ -60,15 +60,15 @@ void Human::ForceContext(HumanContextId id) {
 void Human::Update(const port::MoveInput& input, const port::World& world, float dt) {
     // PORT: the game's controller / action interpreter (not decoded) sets HumanGroundData's DestHeading and
     // DestSpeedRatio; the port copies the input's world direction and stick magnitude in. Live (RE/20 row 5,
-    // 2026-10-21): high profile alone sets Sprint (target 0.4, a jog); high profile + legs also sets +0x181 (target
-    // 1, running), which was never seen without Sprint. Whether legs alone sets +0x181 is still open (row 5).
-    const bool highProfile = input.held(port::kHighProfile);
+    // session 2): legs (Space, the fast walk) sets Sprint (target 0.4); high profile (right mouse, the run) sets
+    // +0x181 (target 0.8); both give the sprint (target 1). Each flag follows its own button.
+    const bool sprint = input.held(port::kLegs);
     m_GroundData.m_DestHeading = input.moveDir;
     m_GroundData.m_DestSpeedRatio = input.moveMag;
-    m_GroundData.m_HighProfileRequest = highProfile && input.held(port::kLegs);
+    m_GroundData.m_HighProfileRequest = input.held(port::kHighProfile);
     IHumanGround& ground = m_ContextBundle.GetGround();
-    ground.SetSprint(highProfile);
-    SetPortHeading(highProfile ? kPortHeadingSprint : kPortHeadingNormal);  // live row 6: follows Sprint
+    ground.SetSprint(sprint);
+    SetPortHeading(sprint ? kPortHeadingSprint : kPortHeadingNormal);  // live row 6: follows Sprint
     // PORT: who calls SetBreakHard for the player isn't decoded (LIVE row 7). Live it is set while DestSpeedRatio is
     // 0 and cleared ~0.1 s after a move starts; the port follows the stick without that lag.
     ground.SetBreakHard(input.moveMag <= 0.0f);
