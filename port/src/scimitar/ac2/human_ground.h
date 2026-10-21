@@ -118,6 +118,9 @@ private:
     bool TestLandingToWaitMain() const;               // PC 0x5EB330, Mac 0xFB5FA6
     bool TestLandingToMoveCycleMain() const;          // PC 0x5EB3A0, Mac 0xFB602A
     void ExecLandingToMoveCycleMain();                // Mac 0xFA920A
+    void ExecTurnStartToWaitMain();                   // PC 0x614F40, Mac 0xFB664C
+    void ExecTurnStartToMoveCycleMain();              // PC 0x615120, Mac 0xFB7474
+    void ExecMoveStopToWaitMain();                    // inlined in PC 0x61F200, Mac 0xF9748A
     bool TestLandingHardToWaitMain(float dt) const;   // inlined in PC 0x630890, Mac 0xF9DC58
     bool TestLandingHardToMoveCycleMain(float dt) const;  // PC 0x5EB4C0, Mac 0xF9DC96
     bool TestLandingBalanceFallToWaitMain(float dt) const;  // Mac 0xF9DD20

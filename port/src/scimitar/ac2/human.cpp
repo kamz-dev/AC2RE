@@ -38,8 +38,11 @@ ActorContext* HumanContextBundle::Get(HumanContextId id) {
 }
 
 Human::Human() {
+    SetPortHeading(kPortHeadingNormal);
+}
+
+void Human::SetPortHeading(const PortHeadingSettings& heading) {
     // PORT: stands in for the player's controller, which sets the heading rotation through IHumanGround.
-    const PortHeadingSettings heading;
     IHumanGround& ground = m_ContextBundle.GetGround();
     ground.SetHeadingMinRotationSpeed(heading.minRotationSpeed);
     ground.SetHeadingMaxRotationSpeed(heading.maxRotationSpeed);
@@ -56,14 +59,18 @@ void Human::ForceContext(HumanContextId id) {
 
 void Human::Update(const port::MoveInput& input, const port::World& world, float dt) {
     // PORT: the game's controller / action interpreter (not decoded) sets HumanGroundData's DestHeading and
-    // DestSpeedRatio; the port copies the input's world direction and stick magnitude in. LIVE rows 3 and 5: which
-    // buttons set Sprint and +0x181.
+    // DestSpeedRatio; the port copies the input's world direction and stick magnitude in. Live (RE/20 row 5,
+    // 2026-10-21): high profile alone sets Sprint (target 0.4, a jog); high profile + legs also sets +0x181 (target
+    // 1, running), which was never seen without Sprint. Whether legs alone sets +0x181 is still open (row 5).
+    const bool highProfile = input.held(port::kHighProfile);
     m_GroundData.m_DestHeading = input.moveDir;
     m_GroundData.m_DestSpeedRatio = input.moveMag;
-    m_GroundData.m_HighProfileRequest = input.held(port::kHighProfile);
+    m_GroundData.m_HighProfileRequest = highProfile && input.held(port::kLegs);
     IHumanGround& ground = m_ContextBundle.GetGround();
-    ground.SetSprint(input.held(port::kLegs));
-    // PORT: who calls SetBreakHard for the player isn't decoded (LIVE row 7); the port breaks when the stick is let go.
+    ground.SetSprint(highProfile);
+    SetPortHeading(highProfile ? kPortHeadingSprint : kPortHeadingNormal);  // live row 6: follows Sprint
+    // PORT: who calls SetBreakHard for the player isn't decoded (LIVE row 7). Live it is set while DestSpeedRatio is
+    // 0 and cleared ~0.1 s after a move starts; the port follows the stick without that lag.
     ground.SetBreakHard(input.moveMag <= 0.0f);
 
     m_RequestedContext = HumanContextId::Count;

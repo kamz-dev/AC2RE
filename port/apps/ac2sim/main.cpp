@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
         MoveInput in;
         in.moveDir = {0, 1, 0};
         in.moveMag = 1;
-        in.buttons = kHighProfile;  // run
+        in.buttons = kHighProfile | kLegs;  // run
         return in;
     });
 

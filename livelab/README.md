@@ -18,3 +18,12 @@ runs int3 probes without a debugger, controls the clock, plays pad scripts and s
 - Sessions, recordings, screenshots and save backups stay out of git (`.gitignore`).
 
 Start with the launcher, the injection and the overlay showing the player's position; then the recorder.
+
+## Until then: the read-only reader
+`peek.py` reads the running game's memory with `ReadProcessMemory` (no injection, no writes), and `record.py`
+records the player's HumanGround, HumanGroundData and entity at ~100+ Hz:
+```
+py livelab/record.py 100 %TEMP%ec.jsonl
+```
+How the player is found is in `RE/20_live_checks.md` (session 1). It can't hook, probe or control time, so
+questions about who calls a function (row 7) still need the mod.

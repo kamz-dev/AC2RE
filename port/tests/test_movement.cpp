@@ -42,7 +42,7 @@ TEST(walk_off_edge_falls_and_lands) {
     Sim sim(world, {.position = {0, 0, 3}});
     sim.run(4.0f, [](float) {
         MoveInput in = forward();
-        in.buttons = kHighProfile;  // run: a stick-only walk (ratio 0.2) wouldn't reach the edge in time
+        in.buttons = kHighProfile | kLegs;  // run: a stick-only walk (ratio 0.2) wouldn't reach the edge in time
         return in;
     });
 

@@ -17703,6 +17703,10 @@ FFF84	c	char *
 614BB0	F	Mac EnterTurnStart 0xFBE3D6. |turn angle| >= TurnOnMovementMinAngle: action g_TurnStartActionMap[6*side(+0x468) + 3*running + foot(player only)], 2 blend items (1-f, f), f = (|a| - pi/2)/(pi/2); else 3 items blended by |a|/(pi/2). Saves the turn angle at +0x480, clears gait level.
 614BB0	c	Mac EnterTurnStart 0xFBE3D6. |turn angle| >= TurnOnMovementMinAngle: action g_TurnStartActionMap[6*side(+0x468) + 3*running + foot(player only)], 2 blend items (1-f, f), f = (|a| - pi/2)/(pi/2); else 3 items blended by |a|/(pi/2). Saves the turn angle at +0x480, clears gait level.
 614F26	c	float
+614F40	F	Mac ExecTurnStartToWaitMain 0xFB664C. +0x7B4 := +0x7B0; wait action from g_GroundWaitActionMap[12*side+6*running+3*foot]; speed ratio +0x7BC := 0; 2-way blend by |turn angle|. Live 2026-10-21: ratio 0 after TurnStart->Wait (RE/20 row 8).
+614F40	c	Mac ExecTurnStartToWaitMain 0xFB664C. +0x7B4 := +0x7B0; wait action from g_GroundWaitActionMap[12*side+6*running+3*foot]; speed ratio +0x7BC := 0; 2-way blend by |turn angle|. Live 2026-10-21: ratio 0 after TurnStart->Wait (RE/20 row 8).
+615120	F	Mac ExecTurnStartToMoveCycleMain 0xFB7474. Speed ratio seed: running -> 0.6 and GroundData+0x228 := 2; else +0x7B4 -> 0.6 (+0x998 |= 1), player with division 1 -> 0, else 0.2; GroundData+0x228 := 3. Live 2026-10-21: 0.2 walk / 0.6 high profile.
+615120	c	Mac ExecTurnStartToMoveCycleMain 0xFB7474. Speed ratio seed: running -> 0.6 and GroundData+0x228 := 2; else +0x7B4 -> 0.6 (+0x998 |= 1), player with division 1 -> 0, else 0.2; GroundData+0x228 := 3. Live 2026-10-21: 0.2 walk / 0.6 high profile.
 6164DB	c	int
 6164E0	c	float
 616A5C	c	float
@@ -17753,6 +17757,8 @@ FFF84	c	char *
 61CF1A	c	float
 61D519	c	float
 61E666	c	float
+61F200	F	Mac _TransitFromMoveStopToWaitMain 0xFD1C64 with ExecMoveStopToWaitMain (Mac 0xF9748A) inlined: +0x7B4 := 1, speed ratio +0x7BC := 0. Live 2026-10-21: ratio 0 after MoveStop->Wait.
+61F200	c	Mac _TransitFromMoveStopToWaitMain 0xFD1C64 with ExecMoveStopToWaitMain (Mac 0xF9748A) inlined: +0x7B4 := 1, speed ratio +0x7BC := 0. Live 2026-10-21: ratio 0 after MoveStop->Wait.
 61F802	c	float
 61F920	F	Mac HumanGround::LocalInit 0xFA71B0. Movement-division tables data+0x155/+0x156 = 3, thresholds {0, 0.9, 1} at +0x158 and +0x16C; slow-down ResponseCurve +0x81C keys (0,1) (0.333,1) (0.4,0.3) (0.666,0.2) (1,1); capsule height 1.8, radius 0.4.
 61F920	c	Mac HumanGround::LocalInit 0xFA71B0. Movement-division tables data+0x155/+0x156 = 3, thresholds {0, 0.9, 1} at +0x158 and +0x16C; slow-down ResponseCurve +0x81C keys (0,1) (0.333,1) (0.4,0.3) (0.666,0.2) (1,1); capsule height 1.8, radius 0.4.

@@ -87,18 +87,17 @@ TEST(ground_wait_movecycle_wait) {
     CHECK(human.m_Position.y > 0.0f);
 
     port::MoveInput run = walk;
-    run.buttons = port::kHighProfile;
+    run.buttons = port::kHighProfile | port::kLegs;  // Sprint + high profile: target 1 (live row 5)
     for (int i = 0; i < 30; ++i) human.Update(run, world, dt);
-    CHECK_NEAR(ground.GetSpeedRatio(), 0.8f, 1e-5f);
+    CHECK_NEAR(ground.GetSpeedRatio(), 1.0f, 1e-5f);
     CHECK(ground.IsRunning());
 
     // Released while running: BreakHard (the port's stand-in controller) sends MoveCycle to MoveStop, and MoveStop to
-    // Wait once its action is over and the division is 0. The speed ratio isn't reset on the way (RE/11 10).
+    // Wait once its action is over and the division is 0.
     human.Update({}, world, dt);
     CHECK(ground.GetMoveState() == State::MoveStop);
     for (int i = 0; i < 60 && ground.GetMoveState() == State::MoveStop; ++i) human.Update({}, world, dt);
     CHECK(ground.GetMoveState() == State::Wait);
-    // One slow-down step happened on the release frame (UpdateMoveCycleMain runs before the MoveStop test); then the
-    // ratio stays put through MoveStop and Wait.
-    CHECK(ground.GetSpeedRatio() > 0.75f && ground.GetSpeedRatio() < 0.8f);
+    // ExecMoveStopToWaitMain (PC 0x61F200) zeroes the speed ratio; live 2026-10-21 (RE/20 row 8).
+    CHECK_NEAR(ground.GetSpeedRatio(), 0.0f, 1e-6f);
 }

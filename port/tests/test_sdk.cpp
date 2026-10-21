@@ -14,7 +14,9 @@ TEST(sdk_function_addresses_are_in_text) {
     using namespace ac2sdk::addr;
     for (std::uint32_t a : {Human_Update, Human_ApplyDeath, HumanInAirData_FastLoad, Engine_BeginFrame, World_GetPlayer,
                             HumanGround_ctor, HumanGround_Update, HumanGround_LinkFSM, HumanGround_UpdateHumanGround,
-                            HumanGround_UpdateMove, HumanGround_UpdateMoveCycle, HumanGround_UpdateMoveCycleMain})
+                            HumanGround_UpdateMove, HumanGround_UpdateMoveCycle, HumanGround_UpdateMoveCycleMain,
+                            HumanGround_ExecTurnStartToWaitMain, HumanGround_ExecTurnStartToMoveCycleMain,
+                            HumanGround_TransitFromMoveStopToWaitMain, EngineContext_GetCurrentGameWorld})
         CHECK(a >= kTextBegin && a < kTextEnd);
     static_assert(ac2sdk::addr::HumanGround_vftable >= kTextEnd);  // in .rdata
 }

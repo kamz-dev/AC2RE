@@ -410,6 +410,40 @@ void HumanGround::EnterMoveCycle() {
     data.m_CurrentBodyAngle = 0;
 }
 
+void HumanGround::ExecTurnStartToWaitMain() {
+    // PC 0x614F40, Mac 0xFB664C. The wait action (g_GroundWaitActionMap[12 * side + 6 * running + 3 * foot]) and
+    // its blend by the turn angle are left to the animation layer. Live (RE/20 row 8): the ratio is 0 afterwards.
+    m_HighProfileIntention = m_Running;
+    m_SpeedRatio = 0;
+}
+
+void HumanGround::ExecTurnStartToMoveCycleMain() {
+    // PC 0x615120, Mac 0xFB7474: seeds the speed ratio and TransitionToMotionType, which EnterMoveCycle then copies
+    // into the speed restriction. The move cycle action (0x5923BDB) and its blend factors are left to the animation
+    // layer. PORT: the +0x998 |= 1 of the high-profile branch isn't mirrored (the field's use isn't decoded).
+    HumanGroundData& data = m_Human.GetGroundData();
+    const bool isPlayer = true;  // entity type (entity +0xA8 & 7) == 1; the port's Human is the player
+    if (m_Running) {
+        m_SpeedRatio = 0.6f;
+        data.m_TransitionToMotionType = 2;
+    } else {
+        if (m_HighProfileIntention)
+            m_SpeedRatio = 0.6f;
+        else if (isPlayer && m_MovementDivision == 1)
+            m_SpeedRatio = 0;
+        else
+            m_SpeedRatio = 0.2f;
+        data.m_TransitionToMotionType = 3;
+    }
+}
+
+void HumanGround::ExecMoveStopToWaitMain() {
+    // Mac 0xF9748A, inlined in PC _TransitFromMoveStopToWaitMain 0x61F200. Live (RE/20 row 8): ratio 0 afterwards,
+    // +0x7B4 at 1 for one frame (EnterWait's children reset it).
+    m_HighProfileIntention = 1;
+    m_SpeedRatio = 0;
+}
+
 void HumanGround::EnterTurnStart() {
     // PC 0x614BB0. The action is g_TurnStartActionMap[6 * side + 3 * running + foot] (big turns) or a 3-way blend
     // (small turns); only the field changes are mirrored here.
@@ -576,18 +610,23 @@ void HumanGround::Update(const port::MoveInput&, const port::World& world, float
         case State::MoveStop:  // _UpdateMoveStop PC 0x621C80
             if (TestMoveStopToRunTurnMain(dt))
                 SwitchMoveState(State::RunTurn);
-            else if (TestMoveStopToWaitMain())
+            else if (TestMoveStopToWaitMain()) {  // _TransitFromMoveStopToWaitMain PC 0x61F200
+                ExecMoveStopToWaitMain();
                 SwitchMoveState(State::Wait);
+            }
             else if (TestMoveStopToMoveCycleMain())
                 SwitchMoveState(State::MoveCycle);
             break;
         case State::TurnStart: {  // _UpdateTurnStart PC 0x621EE0
             UpdateTurnStartMain();
             const float scaled = dt * m_PortActionTimeScale;
-            if (TestTurnStartToWaitMain(scaled))
+            if (TestTurnStartToWaitMain(scaled)) {
+                ExecTurnStartToWaitMain();
                 SwitchMoveState(State::Wait);
-            else if (TestTurnStartToMoveCycleMain(scaled))
+            } else if (TestTurnStartToMoveCycleMain(scaled)) {
+                ExecTurnStartToMoveCycleMain();
                 SwitchMoveState(State::MoveCycle);
+            }
             break;
         }
         case State::RunTurn:  // _UpdateRunTurn PC 0x621E60

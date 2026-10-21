@@ -133,16 +133,21 @@ struct PortGroundSpeeds {
 // values aren't known yet (LIVE row 6). These stand-ins make the port turn briskly: about 170 deg/s for small
 // corrections, up to about 520 deg/s for a quarter turn or more.
 struct PortHeadingSettings {
-    float minRotationSpeed = 3.0f;    // rad/s
-    float maxRotationSpeed = 9.0f;    // rad/s
-    float minRotationAngle = 0.3f;    // rad
-    float maxRotationAngle = 1.5708f; // rad
+    float minRotationSpeed;  // rad/s
+    float maxRotationSpeed;  // rad/s
+    float minRotationAngle;  // rad
+    float maxRotationAngle;  // rad
 };
+// The player's values, read live from HumanGround +0x8B8..+0x8C4 (RE/20_live_checks.md row 6, 2026-10-21): one set
+// while Sprint (HumanGroundData +0xEE) is off, the other while it is on (the speeds x 0.65). Who sets them (the
+// player's controller) isn't decoded, so they stay PORT stand-ins with live-verified values.
+inline constexpr PortHeadingSettings kPortHeadingNormal{1.5f, 4.0f, 0.17453292f, 1.0471976f};
+inline constexpr PortHeadingSettings kPortHeadingSprint{0.975f, 2.6f, 0.17453292f, 1.0471976f};
 
 // PORT: the lengths of the animation-driven ground states' actions (TurnStart, MoveStop, RunTurn), which the game
 // takes from the animations (g_TurnStartActionMap etc., RE/11_ground.md 10). Stand-ins until they are loaded.
 struct PortActionLengths {
-    float turnStart = 0.5f;
+    float turnStart = 0.39f;  // live: 0.39 s walking, 0.27..0.30 s in high profile (RE/20 row 8 notes)
     float moveStop = 0.4f;
     float runTurn = 0.6f;
     float landing = 0.5f;

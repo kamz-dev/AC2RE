@@ -120,6 +120,25 @@ TEST(ground_turn_start_from_wait) {
     for (int i = 0; i < 60 && ground.GetMoveState() == State::TurnStart; ++i) human.Update(back, world, dt);
     CHECK(ground.GetMoveState() == State::MoveCycle);  // the turn's action finished with movement intended
     CHECK(std::fabs(human.m_Yaw - 2.6f) < 0.2f);        // PORT: the stand-in turn spreads the angle over the action
+    // ExecTurnStartToMoveCycleMain (PC 0x615120): a walk starts at 0.2 with TransitionToMotionType 3, which
+    // EnterMoveCycle copies into the speed restriction (live 2026-10-21: 0.2 and restriction 3).
+    CHECK_NEAR(ground.GetSpeedRatio(), 0.2f, 1e-5f);
+}
+
+TEST(ground_turn_start_released_goes_to_wait_at_ratio_0) {
+    port::BoxWorld world;
+    Human human;
+    HumanGround& ground = human.GetContextBundle().GetGround();
+    const float dt = 1.0f / 30.0f;
+    port::MoveInput back;
+    back.moveDir = scimitar::forwardFromYaw(2.6f);
+    back.moveMag = 1;
+    human.Update(back, world, dt);
+    CHECK(ground.GetMoveState() == State::TurnStart);
+    for (int i = 0; i < 60 && ground.GetMoveState() == State::TurnStart; ++i) human.Update({}, world, dt);
+    CHECK(ground.GetMoveState() == State::Wait);
+    // ExecTurnStartToWaitMain (PC 0x614F40) zeroes the speed ratio; live 2026-10-21 (RE/20 row 8).
+    CHECK_NEAR(ground.GetSpeedRatio(), 0.0f, 1e-6f);
 }
 
 TEST(ground_slowing_from_a_run_follows_the_curve) {
@@ -130,9 +149,9 @@ TEST(ground_slowing_from_a_run_follows_the_curve) {
     port::MoveInput run;
     run.moveDir = {0, 1, 0};
     run.moveMag = 1;
-    run.buttons = port::kHighProfile;
+    run.buttons = port::kHighProfile | port::kLegs;
     for (int i = 0; i < 40; ++i) human.Update(run, world, dt);
-    CHECK_NEAR(ground.GetSpeedRatio(), 0.8f, 1e-5f);
+    CHECK_NEAR(ground.GetSpeedRatio(), 1.0f, 1e-5f);
 
     // High profile released, still walking: the target drops to 0.2 and the ratio falls at dt x curve(ratio). The
     // curve is low (0.2..0.3) between 0.4 and 0.666, so it takes over a second to get under 0.4.
@@ -156,7 +175,7 @@ TEST(ground_move_stop_and_run_turn) {
     port::MoveInput run;
     run.moveDir = {0, 1, 0};
     run.moveMag = 1;
-    run.buttons = port::kHighProfile;
+    run.buttons = port::kHighProfile | port::kLegs;
     for (int i = 0; i < 40; ++i) human.Update(run, world, dt);
 
     human.Update({}, world, dt);  // released while running: BreakHard -> MoveStop

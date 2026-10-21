@@ -2635,6 +2635,8 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 610DB0	scimitar::ac2::HumanGround::_TransitFromMoveStopToRunTurnMain
 614370	scimitar::ac2::HumanGround::EnterMoveStop
 614BB0	scimitar::ac2::HumanGround::EnterTurnStart
+614F40	scimitar::ac2::HumanGround::ExecTurnStartToWaitMain
+615120	scimitar::ac2::HumanGround::ExecTurnStartToMoveCycleMain
 615420	scimitar::ac2::HumanGround::ExecJumpImpulsionToMoveMain
 618AF0	scimitar::ac2::HumanGround::UpdateMoveDefaultBlendFactors
 619DD0	scimitar::ac2::HumanGround::_EnterMoveCycle

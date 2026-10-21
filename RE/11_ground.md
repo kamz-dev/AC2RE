@@ -134,14 +134,14 @@ the same in both builds; each was read on PC in the function named.
 | +0x94 / +0x98 | u32 | `ParamFlags` / `InternalFlags` (`EnterMove` sets bit 1 in both) | `EnterMove` |
 | +0xB4 / +0xB8 | float | `CurrentBodyAngle` / `CurrentBodyBankingAngle`, smoothed with the sight (`ComputeVectorRotationWithSight` 0x5FE3D0); they weight the move cycle's turn variants | `UpdateMoveCycleMain` |
 | +0xED | bool | **`BreakHard`**: while running, sends MoveCycle to MoveStop. Set by `IHumanGround::SetBreakHard` (PC 0x632E20 [0x153B958]) | `TestMoveCycleToMoveStopMain` 0x5EAAF0 |
-| +0xEE | bool | **`Sprint`**: +0.2 to the target speed ratio (high profile + sprint = 0.8..1). Set by `IHumanGround::SetSprint` (PC 0x632E80 [0x153B9D0]) | `UpdateMoveCycleMain` |
+| +0xEE | bool | **`Sprint`**: +0.2 to the target speed ratio (high profile + sprint = 0.8..1). Set by `IHumanGround::SetSprint` (PC 0x632E80 [0x153B9D0]); for the player, on while the high-profile button is held (live row 5) | `UpdateMoveCycleMain` |
 | +0xF3 | bool | **`Crouch`** (→ CrouchMove / CrouchWait). Set by `IHumanGround::SetCrouch` [0x153B994] | `LocalInit` 0x61F920 (cleared); Mac `_UpdateMoveCycle` |
 | (+0x30…+0xF2) | | the other reflected members (collision, look-at sights, combat style, block cylinder, acting, custom-action channels): section 15 | |
 | +0x154 | u8 | 2 after `LocalInit`; use unknown | `LocalInit` |
 | +0x155 / +0x156 | u8 | movement-division threshold counts (without / with high profile), 3 after `LocalInit` | `LocalInit`; Mac `GetMovementDivisionFromSpeedRatio` 0x1119F44 |
 | +0x158 / +0x16C | float[5] | movement-division thresholds, {0, 0.9, 1} after `LocalInit` | same |
 | +0x180 | bool | cleared by `LocalInit`; use unknown | `LocalInit` |
-| +0x181 | bool | high-profile request (→ `this+0x7B4`) | `UpdateMovementIntention` 0x5E03E0 |
+| +0x181 | bool | high-profile request (→ `this+0x7B4`); for the player, on with high profile + legs (live row 5) | `UpdateMovementIntention` 0x5E03E0 |
 | +0x150 | int | set to 1 by `EnterMove` | `EnterMove` 0x60C610 |
 | +0x1A0 | int | **`HumanGroundData::MovementState`**: how `EnterMove` starts (section 11) | `EnterMove` 0x60C610 |
 | +0x1A8 / +0x204 | `ActionTransition` / bool | the transition action into Move, and whether there is one | Mac `SetupTransitionData` 0x111AAC6 |
@@ -260,8 +260,9 @@ values are open (live row 6).
   height − 0.15 (`CharacterComponent` +0x64 / +0x68 / +0x6C from +0x78) **(hypothesis: capsule fields)**.
 
 ## 9. Open
-- [ ] Who calls `IHumanGround`'s heading setters, `SetBreakHard` and `SetSprint` for the player, and with what (live
-      rows 5–7; `21_input.md`).
+- [ ] Who calls `IHumanGround`'s heading setters, `SetBreakHard` and `SetSprint` for the player. *What* they set is
+      known from the live session (rows 5–7, 2026-10-21); the caller is the player's controller (`21_input.md`).
+- [ ] The ~0.5–0.67 s hold of the speed ratio after MoveCycle starts (live row 8).
 - [ ] The custom-action orientation check in TurnOnSpot; `SetTurnMode`'s target (+0x464?) and
       `SetUseTurnOnSpotCycle` (the TurnOnSpot cycle flag); who sets the turn-on-spot target (+0x8C0 Mac).
 - [ ] CrouchWait's transition-animation check (flag Mac +0x8B5); `ActorCanPhysicallyStandUp`'s collision query.
@@ -296,8 +297,20 @@ where they go (section 6's table). The turn or stop itself is the animation's ro
   `PlayTurnAnimation` (PC 0x5EA850) with weight \|a\| / (15°, 45°, 90° or 180° for the four sizes) and a 0.2 s
   blend. Action ids 0–7: 788325963, 788325965, 660761273, 660761275, 660761277, 660761279, 660761269, 660761271.
 
-**The speed ratio is not reset** by `ExitMoveCycle` [0xF9FD94], `EnterWait` [0xFBEA66] or `EnterMoveCycle`, so it
-carries over a stop into the next move cycle inside Move; `EnterMove` sets it whenever Move is entered (section 11).
+**Where the speed ratio is set.** `ExitMoveCycle` [0xF9FD94], `EnterWait` [0xFBEA66] and `EnterMoveCycle` leave it
+alone, so MoveCycle → Wait keeps it (live: 0.196 in Wait after a walk). The transitions' Exec functions set it:
+- `ExecMoveStopToWaitMain` (Mac 0xF9748A, inlined in PC `_TransitFromMoveStopToWaitMain` 0x61F200): +0x7B4 := 1,
+  ratio := 0;
+- `ExecTurnStartToWaitMain` (PC 0x614F40 [0xFB664C]): +0x7B4 := running (+0x7B0); the wait action
+  `g_GroundWaitActionMap[12·side + 6·running + 3·foot]` (another map for six current-action ids), blended by
+  (\|turn angle\| − π/2) / (π/2); ratio := 0;
+- `ExecTurnStartToMoveCycleMain` (PC 0x615120 [0xFB7474]): action 0x5923BDB; if running, ratio 0.6 and
+  `TransitionToMotionType` 2; otherwise ratio 0.6 with +0x7B4 (and +0x998 |= 1), 0 for the player at division 1,
+  else 0.2, and `TransitionToMotionType` 3;
+- `EnterMove` whenever Move is entered (section 11).
+
+Live (2026-10-21, `20_live_checks.md`): ratio 0 in Wait after MoveStop and after TurnStart; 0.2 / 0.6 and
+restriction 3 at the start of a walk / high-profile move cycle; +0x7B4 at 1 for one frame after MoveStop → Wait.
 
 **Action maps** (filled once by `HumanGround::InitializeGlobalActions`, PC 0x633E90 [0xFA755A]; ids are either
 small aliases or hashes):

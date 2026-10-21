@@ -68,6 +68,8 @@ public:
     float m_Yaw = 0;
 
 private:
+    void SetPortHeading(const PortHeadingSettings& heading);  // PORT: the controller's heading setters
+
     HumanContextBundle m_ContextBundle{*this};
     HumanContextId m_CurrentContext = HumanContextId::Ground;
     HumanContextId m_PreviousContext = HumanContextId::Ground;
