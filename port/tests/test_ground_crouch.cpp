@@ -129,3 +129,22 @@ TEST(ground_turn_on_spot_cycle_holds_the_step_until_cleared) {
     human.Update({}, world, kDt);
     CHECK(ground.GetMoveState() == State::Wait);
 }
+
+TEST(ground_crouch_cannot_stand_up_under_a_low_ceiling) {
+    // ActorCanPhysicallyStandUp (PC 0x5F72C0): a 0.38 m capsule from the feet + 1.42 m down to + 0.42 m must be clear.
+    port::BoxWorld world;
+    world.add({{-1, -1, 1.2f}, {1, 1, 2}});  // a ceiling at 1.2 m over the spot
+    Human human;
+    HumanGround& ground = human.GetContextBundle().GetGround();
+    ground.SetCrouch(true);
+    human.Update({}, world, kDt);
+    CHECK(ground.GetMoveState() == State::CrouchWait);
+    ground.SetCrouch(false);
+    for (int i = 0; i < 10; ++i) human.Update({}, world, kDt);
+    CHECK(ground.GetMoveState() == State::CrouchWait);  // released, but no room to stand
+
+    port::BoxWorld high;
+    high.add({{-1, -1, 1.9f}, {1, 1, 2.5f}});  // above the capsule's top (1.42 + 0.38 = 1.8)
+    human.Update({}, high, kDt);
+    CHECK(ground.GetMoveState() == State::Wait);
+}

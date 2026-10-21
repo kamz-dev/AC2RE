@@ -319,9 +319,31 @@ bool HumanGround::PortIsActionInterruptibleByMovement() const {
     return m_PortAction.HasFinished();
 }
 
-bool HumanGround::ActorCanPhysicallyStandUp() const {
-    // PC 0x5F72C0: a 0.38 m capsule test from 0.42 m to 1.42 m above the feet. PORT: the port has no collision.
-    return true;
+bool HumanGround::ActorCanPhysicallyStandUp(const port::World& world) const {
+    // PC 0x5F72C0: Human::CheckClearanceCapsuleGlobal (PC 0x934800) with a 0.38 m capsule from the feet + 1.42 m down to
+    // + 0.42 m. PORT: the world's capsule query stands in for the physics one.
+    Vec3 top = m_Human.m_Position;
+    top.z += 1.42f;
+    Vec3 bottom = top;
+    bottom.z -= 1.0f;
+    return world.capsuleIsClear(top, bottom, 0.38f);
+}
+
+void HumanGround::SetCrouched(bool crouched) {
+    // Mac 0xF97E58: presentation event 31 (enter / leave) when the value changes; not mirrored.
+    m_IsCrouched = crouched;
+}
+
+void HumanGround::ExecWaitToCrouchWaitMain() {
+    // Mac 0xFB9206: the crouch wait action (g_CrouchWaitActionMap[2 * foot + GetUseHideStance()]) with a 0.4 s
+    // transition (through a hide-stance transition action when the hide stance is on); then the flag that holds
+    // CrouchWait -> CrouchMove until that transition is 75 % done. (The actions are left to the animation layer.)
+    m_IsCrouchTransitionFromExternal = true;
+}
+
+void HumanGround::ExecCrouchWaitToCrouchMoveMain() {
+    // Mac 0xFB6D70: the crouch move action through g_CrouchWaitToMoveActionMap[foot]; the flag is cleared.
+    m_IsCrouchTransitionFromExternal = false;
 }
 
 bool HumanGround::TestWaitToTurnOnSpotMain() const {
@@ -420,17 +442,27 @@ bool HumanGround::TestMoveCycleToCrouchMoveMain() const {
     return m_Human.GetGroundData().m_Crouch && m_CurrentMvtType == 0;
 }
 
-bool HumanGround::TestCrouchWaitToWaitMain() const {
-    return !m_Human.GetGroundData().m_Crouch && PortIsActionInterruptibleByMovement() && ActorCanPhysicallyStandUp();
+bool HumanGround::TestCrouchWaitToWaitMain(const port::World& world) const {
+    return !m_Human.GetGroundData().m_Crouch && PortIsActionInterruptibleByMovement() && ActorCanPhysicallyStandUp(world);
 }
 
 bool HumanGround::TestCrouchWaitToCrouchMoveMain() const {
-    // PORT: the transition-animation check behind the flag at Mac +0x8B5 is left out.
-    return m_IntentionMvtState != 0;
+    // Mac 0xF9DF6A: movement intended and, after Wait -> CrouchWait, the stand -> crouch transition more than 75 %
+    // done (the transition action's ratio, or the current blend's progress; done when there is no blend). PORT: no
+    // action system, so like the game with no blend the transition counts as done.
+    if (m_IntentionMvtState == 0) return false;
+    if (m_IsCrouchTransitionFromExternal && PortCrouchTransitionProgress() <= 0.75f) return false;
+    return true;
 }
 
-bool HumanGround::TestCrouchMoveToMoveCycleMain() const {
-    return (!m_Human.GetGroundData().m_Crouch || m_IntentionMvtType == 1) && ActorCanPhysicallyStandUp();
+float HumanGround::PortCrouchTransitionProgress() const {
+    // PORT: the stand -> crouch transition's progress (the transition action's ratio, else the blend's); no action
+    // system, so it is done, as in the game when there is no blend.
+    return 1.0f;
+}
+
+bool HumanGround::TestCrouchMoveToMoveCycleMain(const port::World& world) const {
+    return (!m_Human.GetGroundData().m_Crouch || m_IntentionMvtType == 1) && ActorCanPhysicallyStandUp(world);
 }
 
 // --- Locomotion transitions (RE/11_ground.md 6 and 10) ---
@@ -639,6 +671,9 @@ bool HumanGround::TestRollToMoveCycleMain(float dt) const {
 
 void HumanGround::SwitchMoveState(State next) {
     if (m_MoveState == State::TurnOnSpot && next != State::TurnOnSpot) ExitTurnOnSpot();
+    // ExitCrouchWait / ExitCrouchMove (Mac 0xFC19D0 / 0xFC1A62): capsule height back to 1.8 (PORT: no capsule), not
+    // crouched.
+    if ((m_MoveState == State::CrouchWait || m_MoveState == State::CrouchMove) && next != m_MoveState) SetCrouched(false);
     if (next != State::MoveCycle) {
         if (m_MoveState == State::MoveCycle) ExitMoveCycle();
         m_PortMoveCycleEntryPending = false;
@@ -662,10 +697,12 @@ void HumanGround::SwitchMoveState(State next) {
         case State::CrouchWait:  // Mac 0xFC316C: capsule height 1.0 (PORT: no capsule), running and gait 0
             m_CurrentMvtType = 0;
             m_CurrentMvtState = 0;
+            SetCrouched(true);
             break;
         case State::CrouchMove:  // Mac 0xFC3338: capsule height 1.0, running 0, gait 1
             m_CurrentMvtType = 0;
             m_CurrentMvtState = 1;
+            SetCrouched(true);
             break;
         case State::CrouchTurn:  // the game turns by the character controller's displacement (progression ratio)
             m_PortAction.Start(m_Human.GetPortActionLengths().crouchTurn);
@@ -711,8 +748,10 @@ void HumanGround::Update(const port::MoveInput&, const port::World& world, float
                 m_TurnOnSpotDir = m_Human.GetGroundData().m_DestHeading;  // ExecWaitToTurnOnSpotMain, inlined in PC 0x61F0D0
                 SwitchMoveState(State::TurnOnSpot);
             }
-            else if (TestWaitToCrouchWaitMain())
+            else if (TestWaitToCrouchWaitMain()) {
+                ExecWaitToCrouchWaitMain();
                 SwitchMoveState(State::CrouchWait);
+            }
             break;
         case State::MoveCycle:  // _UpdateMoveCycle PC 0x621B90 (CrouchMove not in the port yet)
             UpdateMoveCycleMain(dt);
@@ -789,10 +828,12 @@ void HumanGround::Update(const port::MoveInput&, const port::World& world, float
             }
             break;
         case State::CrouchWait:  // _UpdateCrouchWait PC 0x623FA0
-            if (TestCrouchWaitToWaitMain())
+            if (TestCrouchWaitToWaitMain(world)) {
                 SwitchMoveState(State::Wait);
-            else if (TestCrouchWaitToCrouchMoveMain())
+            } else if (TestCrouchWaitToCrouchMoveMain()) {
+                ExecCrouchWaitToCrouchMoveMain();
                 SwitchMoveState(State::CrouchMove);
+            }
             // (high profile -> JumpImpulsion: not in the port, JumpImpulsion needs the free-run system)
             else if (Has180TurnIntention())
                 SwitchMoveState(State::CrouchTurn);
@@ -800,7 +841,7 @@ void HumanGround::Update(const port::MoveInput&, const port::World& world, float
         case State::CrouchMove:  // _UpdateCrouchMove PC 0x61E620
             if (m_IntentionMvtState == 0)
                 SwitchMoveState(State::CrouchWait);
-            else if (TestCrouchMoveToMoveCycleMain())
+            else if (TestCrouchMoveToMoveCycleMain(world))
                 SwitchMoveState(State::MoveCycle);
             else if (Has180TurnIntention())
                 SwitchMoveState(State::CrouchTurn);

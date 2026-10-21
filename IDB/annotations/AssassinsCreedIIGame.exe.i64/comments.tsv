@@ -26860,6 +26860,8 @@ FFF84	c	char *
 933B35	c	int
 9347A1	c	void *
 9347D2	c	void *
+934800	F	Mac Human::CheckClearanceCapsuleGlobal(CollisionReport*, top, bottom, radius, IColor) 0x12CA306 (same call shape from ActorCanPhysicallyStandUp).
+934800	c	Mac Human::CheckClearanceCapsuleGlobal(CollisionReport*, top, bottom, radius, IColor) 0x12CA306 (same call shape from ActorCanPhysicallyStandUp).
 9348E7	c	void *
 9349A2	c	struct Concurrency::details::QuickBitSet *
 9349A3	c	this

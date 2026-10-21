@@ -149,10 +149,14 @@ private:
     int GetCurrentCustomActionOrientation() const;    // PC 0x5F2320, Mac 0xF9BDE0
     bool TestWaitToCrouchWaitMain() const;            // PC 0x5F4FC0, Mac 0xF9E9C2
     bool TestMoveCycleToCrouchMoveMain() const;       // inlined in Mac 0xFE05A2 (PC 0x5E1AC0)
-    bool TestCrouchWaitToWaitMain() const;            // inlined in PC 0x623FA0, Mac 0xFDEBB8
+    bool TestCrouchWaitToWaitMain(const port::World& world) const;  // inlined in PC 0x623FA0, Mac 0xFDEBB8
     bool TestCrouchWaitToCrouchMoveMain() const;      // PC 0x5EBDD0, Mac 0xF9DF6A
-    bool TestCrouchMoveToMoveCycleMain() const;       // inlined in PC 0x61E620, Mac 0xFDEB1A
-    bool ActorCanPhysicallyStandUp() const;           // PC 0x5F72C0, Mac 0xFDEA42
+    bool TestCrouchMoveToMoveCycleMain(const port::World& world) const;  // inlined in PC 0x61E620, Mac 0xFDEB1A
+    bool ActorCanPhysicallyStandUp(const port::World& world) const;  // PC 0x5F72C0, Mac 0xFDEA42
+    void ExecWaitToCrouchWaitMain();                  // Mac 0xFB9206
+    void ExecCrouchWaitToCrouchMoveMain();            // Mac 0xFB6D70
+    void SetCrouched(bool crouched);                  // Mac 0xF97E58 (virtual)
+    float PortCrouchTransitionProgress() const;
     bool PortIsActionInterruptibleByMovement() const;
 
     void EnterMove();        // PC 0x60C610, Mac 0xFA3D06
@@ -205,6 +209,9 @@ private:
     // +0x998 bit 0: set by ExecTurnStartToMoveCycleMain's high-profile branch; while the move-cycle action isn't
     // current yet, UpdateMoveCycleMain then plays the current action at 2 - its ratio. Cleared by ExitMoveCycle.
     std::uint8_t m_DoubleTransitionToMotionSpeed = 0;
+    // +0x8D5..+0x8D9: bytes that Revelations packs into a bitfield after m_ForceTurnAround (same order).
+    bool m_IsCrouchTransitionFromExternal = false;  // +0x8D5 set by ExecWaitToCrouchWaitMain (stand -> crouch playing)
+    bool m_IsCrouched = false;           // +0x8D7 SetCrouched (presentation event 31 on change)
     bool m_TurnOnSpotCycle = false;      // +0x8DD SetUseTurnOnSpotCycle: chain turn-on-spot steps while set
     Vec3 m_TurnOnSpotDir;                // +0x8E0 the direction TurnOnSpot turns to (PDB m_TurnOnSpotDir)
 

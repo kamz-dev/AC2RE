@@ -4397,6 +4397,7 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 929510	scimitar::ac2::Human::EmitPresentationEvent
 929650	scimitar::ac2::Human::ApplyDeath
 933480	scimitar::ac2::Human::Update
+934800	scimitar::ac2::Human::CheckClearanceCapsuleGlobal
 937BA0	__RTC_NumErrors_2513
 939100	?__uncaught_exception@@YA_NXZ_7
 93AE84	def_93AE2F

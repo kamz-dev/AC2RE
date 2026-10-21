@@ -277,7 +277,7 @@ values are open (live row 6).
 - [x] The hold of the speed ratio after MoveCycle starts: the restricted branch while the move cycle action isn't current (section 5, live row 8, 2026-10-21). Still open: which action is current during it.
 - [x] TurnOnSpot: the custom-action check, `m_TurnMode`, the cycle flag and the target (section 13, 2026-10-21).
       Still open: who calls `DoTurnOnSpot` / `SetUseTurnOnSpotCycle` (the look-at and custom-action systems).
-- [ ] CrouchWait's transition-animation check (flag Mac +0x8B5); `ActorCanPhysicallyStandUp`'s collision query.
+- [x] CrouchWait's transition check and `ActorCanPhysicallyStandUp` (section 13, 2026-10-21).
 - [ ] InAir's side of the hand-over: which `MovementState` / landing action it sets from `LandingType`
       (`12_in_air.md`); EdgeLanding.
 - [ ] Who sends the jump / edge / obstacle interface commands (the free-run / guidance system); `CanWallingVertical`,
@@ -432,14 +432,26 @@ guidance code) are outside this doc.
 |---|---|---|
 | Wait → CrouchWait | 0x5F4FC0 [0xF9E9C2] | crouch, no high profile, the current action interruptible by movement |
 | MoveCycle → CrouchMove | inline [0xFE05A2] | crouch and not running |
-| CrouchWait → Wait | inline in PC 0x623FA0 [0xFDEBB8] | crouch released, interruptible, `ActorCanPhysicallyStandUp` (PC 0x5F72C0: a 0.38 m capsule from 0.42 m to 1.42 m above the feet is clear) |
-| CrouchWait → CrouchMove | 0x5EBDD0 [0xF9DF6A] | division ≠ 0 (and, with the flag Mac +0x8B5, a transition animation past 75 %) |
+| CrouchWait → Wait | inline in PC 0x623FA0 [0xFDEBB8] | crouch released, interruptible, `ActorCanPhysicallyStandUp` (PC 0x5F72C0: `Human::CheckClearanceCapsuleGlobal` PC 0x934800 [0x12CA306] with a 0.38 m capsule from the feet + 1.42 m down to + 0.42 m) |
+| CrouchWait → CrouchMove | 0x5EBDD0 [0xF9DF6A] | `m_IntentionMvtState` ≠ Wait and, while `m_IsCrouchTransitionFromExternal` (+0x8D5 [+0x8B5]) is set, the stand → crouch transition more than 75 % done: the transition action's ratio if one plays, else the current blend's time over its length (done when there is no blend) |
 | CrouchWait → JumpImpulsion | 0x622580 [0xFC2E48] | high profile pressed |
 | CrouchWait → CrouchTurn | 0x603690 | `Has180TurnIntention` (PC 0x5E1FA0) |
 | CrouchMove → CrouchWait | inline | division 0 |
 | CrouchMove → MoveCycle | inline [0xFDEB1A] | (crouch released or high profile) and can stand up |
 | CrouchMove → CrouchTurn | 0x6036B0 | `Has180TurnIntention` |
 | CrouchTurn → CrouchWait | inline in PC 0x5FA510 | the character controller's displacement is done (`DisplacementManager::GetProgressionRatio` PC 0x487340 ≥ 1) |
+
+`ExecWaitToCrouchWaitMain` [0xFB9206] plays `g_CrouchWaitActionMap[2·foot + GetUseHideStance()]` with a 0.4 s
+transition (through a hide-stance transition action when the hide stance is on) and sets
+`m_IsCrouchTransitionFromExternal`; `ExecCrouchWaitToCrouchMoveMain` [0xFB6D70] plays the move through
+`g_CrouchWaitToMoveActionMap[foot]` and clears it. The crouch command (interface command 135, `ExecCrouchWaitInterfaceCommand`
+[0xFB6E6C]) replays the crouch wait action without setting it. `SetCrouched` [0xF97E58] (`m_IsCrouched`, presentation
+event 31) is set by the crouch states' Enter and cleared by their Exit.
+
+The crouch bytes at PC +0x8D4..+0x8D9 [+0x8B4..+0x8B9] follow Revelations' bitfield order; three are anchored by
+code: `m_IsCrouched` (`SetCrouched`), `m_UseHideStance` (`GetUseHideStance` [0x153B800]) and `m_CrouchWasHidden`
+(`EnterCrouchWait` stores `GetUseHideStance()` there), so +0x8D5 `m_IsCrouchTransitionFromExternal` and +0x8D6
+`m_EnteredJumpImpulsionFromCrouch` take the PDB names by position.
 
 `EnterCrouchWait` [0xFC316C] / `EnterCrouchMove` [0xFC3338] set the **capsule height to 1.0** (standing: 1.8,
 `LocalInit`), running 0, gait 0 / 1, and restart a timer (0.5 s; `UpdateCrouchWaitMain` PC 0x5E1EC0 calls a
