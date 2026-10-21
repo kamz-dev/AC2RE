@@ -7,6 +7,7 @@
 // AI humans are driven through the same interfaces by the navigation services instead.
 
 #include "scimitar/math.h"
+#include "scimitar/pad_input.h"
 
 namespace port {
 struct MoveInput;
@@ -62,6 +63,9 @@ public:
     bool m_InPreciseTargetingMode = false;  // +0xEE0 written by UpdateGroundMovement: button 0 without high profile
     float m_LastDampedInputAngle = 0;  // +0xEE4 sight -> m_LastDampedRelativeDirection, kept like m_LastInputAngle
     Vec3 m_LastDampedRelativeDirection;  // +0xEF0 the damped camera-relative stick
+
+    // +0x80: the ControlScheme's (+0x70) PadInput (+0x10). PORT: only the stick processing.
+    PadInput m_PadInput;
 
 private:
     // ControlScheme::JoyThresholdPressed / JoyThresholdJustPressed (stick 0); PC inlines them (PC 0xDF8139..).

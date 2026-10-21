@@ -2713,6 +2713,8 @@ FFD1	c	Size
 5106D	c	char *
 511E1	c	Block
 512A3	c	Block
+52740	F	Mac 0x860EF0 CameraProxy::RemapPadInput (stick space -> camera-relative world)
+52740	c	Mac 0x860EF0 CameraProxy::RemapPadInput (stick space -> camera-relative world)
 527D0	F	Microsoft VisualC 2-14/net runtime
 527E0	F	Microsoft VisualC 2-14/net runtime
 527F0	F	Microsoft VisualC 2-14/net runtime
@@ -7390,6 +7392,12 @@ FFF84	c	char *
 1E6F60	c	Source
 1E72BE	c	int
 1E7ED1	c	Block
+1E84A0	F	Mac 0x81F570 PadInput::ComputeRelativeInput. raw: normalised stick, remapped. relative: snapped to forward (0,1) when dot > +0xA8[stick] (PC: no flag; Mac gates it on a flag), remapped. damped: forward rotated by curve(|angle|/pi) on the stick's side, remapped. RE/21_input.md.
+1E84A0	c	Mac 0x81F570 PadInput::ComputeRelativeInput. raw: normalised stick, remapped. relative: snapped to forward (0,1) when dot > +0xA8[stick] (PC: no flag; Mac gates it on a flag), remapped. damped: forward rotated by curve(|angle|/pi) on the stick's side, remapped. RE/21_input.md.
+1E8740	F	Mac 0x81FC30 PadInput::Update: per stick ComputeRelativeInput, the length (capped at 1), the band = number of thresholds below the length, a quadrant vs the sight (+-45/135 deg).
+1E8740	c	Mac 0x81FC30 PadInput::Update: per stick ComputeRelativeInput, the length (capped at 1), the band = number of thresholds below the length, a quadrant vs the sight (+-45/135 deg).
+1E8B00	F	Mac 0x820150 PadInput::PadInput. +0xA8[stick] snap-to-forward cos (0.9961947 = cos 5 deg, 1.0); +0x600 + 0x8C*stick ResponseCurve: stick 0 keys (0,0) (1/36,1deg) (1/18,5deg) (1/9,10deg) (1/6,20deg) (2/9,40deg) (1,pi), stick 1 identity. Live 2026-10-21: the player's PadInput is AssassinTask +0x80 (ControlScheme +0x10).
+1E8B00	c	Mac 0x820150 PadInput::PadInput. +0xA8[stick] snap-to-forward cos (0.9961947 = cos 5 deg, 1.0); +0x600 + 0x8C*stick ResponseCurve: stick 0 keys (0,0) (1/36,1deg) (1/18,5deg) (1/9,10deg) (1/6,20deg) (2/9,40deg) (1,pi), stick 1 identity. Live 2026-10-21: the player's PadInput is AssassinTask +0x80 (ControlScheme +0x10).
 1E8B31	c	void (__thiscall *)(void *)
 1E8B36	c	void (__thiscall *)(void *)
 1E8B3D	c	int
@@ -90416,6 +90424,7 @@ FFFF48	c	Source
 18A6290	c	SizeOfData
 18A6294	c	AddressOfRawData
 18A6298	c	PointerToRawData
+18BA584	c	scimitar::ResponseCurve vftable (ctor 0x1E7EA0); GetOutput is slot 1 (+4)
 19BFCD8	c	vftable scimitar::ac2::HumanGround (primary, ActorContext). 24 slots; PC slot k = Mac __ZTVN8scimitar3ac211HumanGroundE slot k+1 (Itanium has D1+D0). RE/11_ground.md
 19C0010	c	vftable scimitar::ac2::HumanLedge (primary, ActorContext) by its bundle slot (Human +0x44C = slot 3, Mac GetLedge +0xC); live: current while hanging after a vault. RE/20 row 9
 19C05B0	c	vftable scimitar::ac2::HumanInAir (primary, ActorContext); slot 2 LocalInit 0x6911A0. Human +0x440 bundle slot 2. RE/20 row 9

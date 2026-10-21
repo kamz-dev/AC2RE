@@ -155,6 +155,32 @@ TEST(controller_forced_turn_around_on_entering_a_band_for_0_3_s) {
     CHECK(!task.m_ForceTurnAround);
 }
 
+TEST(pad_input_damped_stick_is_the_angle_curve) {
+    // PadInput::ComputeRelativeInput (PC 0x1E84A0) with the ctor's curve (PC 0x1E8B00); RE/21_input.md.
+    constexpr float kDeg = 0.017453292f;
+    auto yawOf = [](const Vec3& v) { return scimitar::yawFromDirection(v); };
+    Human human;
+    AssassinTask task;
+    port::MoveInput in = Stick(30 * kDeg, 1);  // 30 degrees off the camera's forward: damped at 20, same side
+    task.Update(in, human, kDt);
+    CHECK_NEAR(yawOf(task.m_LastRelativeDirection), 30 * kDeg, 1e-5f);
+    CHECK_NEAR(yawOf(task.m_LastDampedRelativeDirection), 20 * kDeg, 1e-5f);
+    task.Update(Stick(-30 * kDeg, 1), human, kDt);
+    CHECK_NEAR(yawOf(task.m_LastDampedRelativeDirection), -20 * kDeg, 1e-5f);
+    task.Update(Stick(25 * kDeg, 1), human, kDt);  // between the 20 and 30 degree keys: 15
+    CHECK_NEAR(yawOf(task.m_LastDampedRelativeDirection), 15 * kDeg, 1e-4f);
+    task.Update(Stick(90 * kDeg, 1), human, kDt);  // from 40 degrees on the curve is the identity
+    CHECK_NEAR(yawOf(task.m_LastDampedRelativeDirection), 90 * kDeg, 1e-5f);
+    task.Update(Stick(3 * kDeg, 1), human, kDt);  // within 5 degrees: both snap to forward
+    CHECK_NEAR(yawOf(task.m_LastRelativeDirection), 0.0f, 1e-6f);
+    CHECK_NEAR(yawOf(task.m_LastDampedRelativeDirection), 0.0f, 1e-6f);
+
+    in = Stick(1.0f + 30 * kDeg, 1);  // the same relative to a turned camera
+    in.cameraYaw = 1.0f;
+    task.Update(in, human, kDt);
+    CHECK_NEAR(yawOf(task.m_LastDampedRelativeDirection), 1.0f + 20 * kDeg, 1e-5f);
+}
+
 TEST(controller_without_all_actions_stops) {
     Human human;
     AssassinTask task;

@@ -21,6 +21,9 @@ enum Button : std::uint32_t {
 struct MoveInput {
     scimitar::Vec3 moveDir;  // world-space move direction, unit length or zero
     float moveMag = 0;       // stick magnitude 0..1
+    // The camera's heading (yaw of its forward, scimitar::forwardFromYaw). PadInput's stick-space rules (the snap to
+    // forward, the angle curve) work relative to it. PORT: stands in for CameraProxy::RemapPadInput's camera.
+    float cameraYaw = 0;
     std::uint32_t buttons = 0;
 
     bool held(Button b) const { return (buttons & b) != 0; }

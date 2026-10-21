@@ -127,6 +127,7 @@
 41BA0	scimitar::World::GetConflictLoopManagerComponent
 52610	?GetExecutionResourceId@VirtualProcessor@details@Concurrency@@QBEIXZ_0
 526E0	scimitar::CameraProxy::AddViewSurface
+52740	scimitar::CameraProxy::RemapPadInput
 533C0	scimitar::CameraProxy::GetInputView
 53590	Gear::GetAngle
 54550	__RTC_NumErrors_25
@@ -756,7 +757,15 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 1E64C0	__RTC_NumErrors_384
 1E64D0	__RTC_NumErrors_385
 1E71E0	scimitar::AICharacterUtils::LockPlayerControl
+1E7C50	scimitar::ResponseCurve::AddPoint
+1E7EA0	scimitar::ResponseCurve::ResponseCurve
 1E7EF0	scimitar::PadInput::SetPadID
+1E80C0	scimitar::PadInput::AddRawRelativeStickValue
+1E8120	scimitar::PadInput::AddRelativeStickValue
+1E8180	scimitar::PadInput::AddDampedRelativeStickValue
+1E84A0	scimitar::PadInput::ComputeRelativeInput
+1E8740	scimitar::PadInput::Update
+1E8B00	scimitar::PadInput::PadInput
 1E8DE0	scimitar::MissionChannel::GetMissionChannel
 1E8EB0	?_Release@_NonReentrantLock@details@Concurrency@@QAEXXZ_4
 1E9000	__RTC_NumErrors_386

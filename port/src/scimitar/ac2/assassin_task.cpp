@@ -55,13 +55,19 @@ void AssassinTask::Update(const port::MoveInput& input, Human& human, float dt) 
         m_IsHighProfile = false;
     else if (m_PortAllActions)
         m_IsHighProfile = input.held(port::kHighProfile);
-    // The camera-relative stick, normalised, and its damped version. PORT: the port's input is already the
-    // camera-relative direction. ControlScheme::GetDampedRelativeStick's damping isn't decoded; with the keyboard the
-    // damped stick equals the stick on every frame (live, RE/20 row 11), which the port keeps for any input. A
-    // gamepad's damping is unmeasured.
-    m_LastRelativeDirection = input.moveMag > 0 ? NormalizeAny(input.moveDir) : Vec3{};
-    m_LastDampedRelativeDirection = m_LastRelativeDirection;
-    m_LastInputLength = input.moveMag;  // ControlScheme::GetStickLength
+    // The camera-relative stick, normalised, and its damped version: ControlScheme::GetRelativeStick /
+    // GetDampedRelativeStick return what PadInput::ComputeRelativeInput (PC 0x1E84A0) stored. PORT: the port's input
+    // is a world direction; it goes back to stick space through the camera's heading.
+    Vec3 stick;
+    if (input.moveMag > 0) {
+        const Vec3 world = NormalizeAny(Vec3{input.moveDir.x, input.moveDir.y, 0});
+        const float c = std::cos(-input.cameraYaw), s = std::sin(-input.cameraYaw);
+        stick = Vec3{world.x * c - world.y * s, world.x * s + world.y * c, 0};
+    }
+    const PadInput::RelativeInput rel = m_PadInput.ComputeRelativeInput(stick, 0, input.cameraYaw);
+    m_LastRelativeDirection = NormalizeAny(rel.relative);
+    m_LastDampedRelativeDirection = rel.damped;
+    m_LastInputLength = PadInput::CapLength(input.moveMag);  // ControlScheme::GetStickLength
     const bool sightIsNull = std::fabs(sight.x) <= 0.0005f && std::fabs(sight.y) <= 0.0005f && std::fabs(sight.z) <= 0.0005f;
     if (m_LastInputLength > 0.35f && !sightIsNull) {
         m_LastInputAngle = GetAngleAboutK(m_LastRelativeDirection, sight);

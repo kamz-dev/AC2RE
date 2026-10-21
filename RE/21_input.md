@@ -55,6 +55,29 @@ Others (names not matched): +0x8B0 the stick's speed ratio, +0x8B8 the turn slow
 direction, +0x94C high profile (Revelations calls its flag `m_IsHighProfile`; the neighbouring bool block suggests
 the same place, hypothesis), +0x94E the forced turn-around, +0x968 [+0x964] its `scimitar::Timer`.
 
+## PadInput: the length, the bands, the relative and "damped" sticks
+The ControlScheme (AssassinTask +0x70) holds a `scimitar::PadInput` at +0x10 (AssassinTask +0x80, live). Each frame
+`PadInput::Update` 0x1E8740 [0x81FC30] runs, per stick, `ComputeRelativeInput` 0x1E84A0 [0x81F570], stores the length
+(capped at 1), and sets the band: the number of thresholds below the length (thresholds 0.35 / 0.9 / 1.0, live).
+
+`ComputeRelativeInput` keeps a 10-frame history of three directions, each made camera-relative by
+`CameraProxy::RemapPadInput` 0x52740 [0x860EF0]:
+- **raw** (`AddRawRelativeStickValue` 0x1E80C0): the normalised stick;
+- **relative** (`AddRelativeStickValue` 0x1E8120; `ControlScheme::GetRelativeStick`): the stick, but exactly forward
+  when dot(stick, forward) > PadInput +0xA8[stick] (0.9961947 = cos 5° for stick 0, 1.0 for stick 1). On PC this is
+  unconditional; Mac gates it on a flag;
+- **"damped"** (`AddDampedRelativeStickValue` 0x1E8180; `GetDampedRelativeStick`): not a time filter. The (snapped)
+  stick's angle θ from forward goes through the `ResponseCurve` at PadInput +0x600 + 0x8C·stick (`GetOutput`,
+  vftable 0x18BA584 slot 1) as |θ| / π, and forward is turned by the result on the stick's side. The constructor
+  (0x1E8B00 [0x820150]) gives stick 0 the keys (0, 0), (1/36, 1°), (1/18, 5°), (1/9, 10°), (1/6, 20°), (2/9, 40°),
+  (1, 180°): directions near forward are pulled towards it, by at most 10° (at 30°), and from 40° on nothing changes.
+  Stick 1 (the camera) has the identity.
+
+Live (2026-10-21, gamepad): the damped and relative directions differed by at most 10.0° over 6663 samples, and were
+equal in most of them (stick directions 40° or more from the camera's forward); with the stick held still while the
+camera turned, the difference stayed constant. With the keyboard they were always equal: the key directions are 0°,
+45° or 90° from forward, where the curve changes nothing.
+
 ## UpdateGlobal [0x106BDE2] (every frame, before the context's update)
 - **High profile** (+0x94C): with the HighProfile ability, and while all actions are allowed, `ButtonPressed(13)`
   (12 with the alternative control setting, GameSetting +172), flipped when the inverse-profile option is on.
@@ -126,17 +149,18 @@ PC naming note: the baseline's `scimitar::ControlScheme::ButtonPressed` at 0xD11
 true when **another** control scheme holds the button; the press test is "not held by another" and then
 `Pad::ButtonPressed_0` 0x10B1710. It is renamed `unk_IsButtonHijackedByOther`.
 
-## Live (2026-10-21, keyboard)
+## Live (2026-10-21)
 The player's AssassinTask was found by scanning for the player entity at +0x0C; its vftable is PC 0x1A23360. With
 the keyboard the stick length is 0 or 1 (no ramp), so the stick goes straight from band 0 to band 2 and the previous
-band (+0x7D6) follows one frame later. The damped stick (+0xEF0) equalled the stick (+0xED0) on every one of 4755
-samples. +0xEC0 and +0x630 always held the same length.
+band (+0x7D6) follows one frame later; +0xEC0 and +0x630 always held the same length. The gamepad gives every length
+and all three bands, consistent with the thresholds. The damped stick: see PadInput above.
 
 ## Port
 `scimitar::ac2::AssassinTask` (`port/src/scimitar/ac2/assassin_task.h`) runs steps 2–13 as above; `port::Sim` runs it
-before `Human::Update`, as the game's task runs before the contexts. The stick thresholds are the live values; the
-damped stick is the stick (true for the keyboard live; a gamepad's damping is unmeasured). PORT stand-ins: the
-`UpdateGround` handlers are skipped (out of scope); no crowds, carrying, praying, walls or group formations
+before `Human::Update`, as the game's task runs before the contexts. `scimitar::PadInput`
+(`port/src/scimitar/pad_input.h`) has the snap cone, the curve and the length cap; the stick thresholds are the live
+values. PORT stand-ins: `CameraProxy::RemapPadInput` is a rotation by `MoveInput::cameraYaw`; the `UpdateGround`
+handlers are skipped (out of scope); no crowds, carrying, praying, walls or group formations
 (their queries answer false or 0); the abilities default to everything allowed; `OnSprintBegin` and the first-person
 reorientation aren't ported.
 
@@ -144,6 +168,7 @@ reorientation aren't ported.
 - [ ] `UpdateGlobal`'s PC address.
 - [ ] The rest of `UpdateGroundMovement` (from PC 0xDF8C2D).
 - [x] The stick thresholds (0.35 / 0.9 / 1.0, live 2026-10-21, row 11).
-- [ ] Where the thresholds come from (`ControlScheme::SetupStickThresholds`), and `GetDampedRelativeStick`'s damping
-      with a gamepad (the keyboard gives a 0 / 1 stick and no damping).
+- [x] The "damped" stick: PadInput's angle curve (2026-10-21, static + live with a gamepad).
+- [ ] Where the thresholds come from (`ControlScheme::SetupStickThresholds`); `CameraProxy::RemapPadInput`; the Mac
+      flag on the snap; `Pad::ReadStick`'s own dead zone.
 - [ ] `ReorientDirectionFromWallCollision`, `GetCrowdObstructionFactor`, `OnSprintBegin`.
