@@ -8,6 +8,7 @@
 // states so far; the rest of Move's children come one by one with their RE.
 
 #include "ac2sdk/human_ground.h"
+#include "scimitar/ac2/human_data.h"
 #include "scimitar/ac2/human_context.h"
 #include "scimitar/math.h"
 #include "scimitar/response_curve.h"
@@ -31,7 +32,7 @@ public:
     virtual void SetBreakHard(bool breakHard) = 0;                    // PC 0x632E20, Mac 0x153B958
     virtual void SetSprint(bool sprint) = 0;                          // PC 0x632E80, Mac 0x153B9D0
     virtual void SetCrouch(bool crouch) = 0;                          // Mac 0x153B994
-    // IHumanGround::TurnMode in the game; TurnOnSpot needs 1 (value names unknown). Target hypothesis: +0x464.
+    // IHumanGround::TurnMode: 0 MainCharacter, 1 NPC (Revelations PDB); TurnOnSpot needs NPC. Sets m_TurnMode (+0x464).
     virtual void SetTurnMode(int mode) = 0;                           // Mac 0x153B87E
 };
 
@@ -70,11 +71,11 @@ public:
     static int GetTurnAnimation(float signedAngle);
 
     State GetMoveState() const { return m_MoveState; }
-    float GetSpeedRatio() const { return m_SpeedRatio; }
-    int GetGaitLevel() const { return m_GaitLevel; }
-    int GetMovementDivision() const { return m_MovementDivision; }
+    float GetSpeedRatio() const { return m_CurrentSpeedRatio; }
+    int GetGaitLevel() const { return m_CurrentMvtState; }
+    int GetMovementDivision() const { return m_IntentionMvtState; }
     float GetTurnAngle() const { return m_TurnAngle; }
-    bool IsRunning() const { return m_Running != 0; }
+    bool IsRunning() const { return m_CurrentMvtType != 0; }
     const ResponseCurve& GetSlowDownCurve() const { return m_SlowDownCurve; }
 
     // --- Decoded rules of UpdateMoveCycleMain (PC 0x61BB60, Mac 0xFCD20A), RE/11_ground.md 5 ---
@@ -83,7 +84,7 @@ public:
     static float ComputeTargetSpeedRatio(float stickMagnitude, bool sprint, bool highProfile, bool aiOverride,
                                          float aiSpeedRatio);
     // Step 2: the restriction mode's limits, applied while the current action isn't the move cycle.
-    static float RestrictTargetSpeedRatio(float target, int restrictionMode, bool isPlayer, bool sprint,
+    static float RestrictTargetSpeedRatio(float target, TransitionToMotionType restrictionMode, bool isPlayer, bool sprint,
                                           bool highProfile, float currentRatio);
     // Step 3: one frame of the ratio towards the target. `slowDownCurve` is the player's ResponseCurve output when
     // falling (1 for AI-driven humans).
@@ -160,30 +161,32 @@ private:
 
     // Mirrors of HumanGround's fields (PC offsets).
     State m_MoveState = State::Wait;     // the Move record's current child (+0x94)
-    int m_TurnMode = 0;                  // +0x464 (hypothesis: SetTurnMode's target); TurnOnSpot needs 1
-    int m_TurnStartSide = 0;             // +0x468 1 when the turn angle is >= 0
-    float m_TurnStartAngle = 0;          // +0x480 the turn angle when TurnStart was entered
-    bool m_BlockTurnStartFromWait = false;  // +0x7A0
-    int m_GaitLevel = 0;                 // +0x7A8
-    int m_MovementDivision = 0;          // +0x7AC
-    int m_Running = 0;                   // +0x7B0
-    int m_HighProfileIntention = 0;      // +0x7B4
-    float m_SpeedRatio = 0;              // +0x7BC
-    float m_AISpeedRatio = 0;            // +0x7C0
+    // Names from the Revelations PDB's HumanGround (RE/11_ground.md 2); the enums' values are in the comments.
+    int m_TurnMode = 0;                  // +0x464 IHumanGround::TurnMode: 0 MainCharacter, 1 NPC (TurnOnSpot needs 1)
+    int m_TurnIntention = 0;             // +0x468 HumanGround::TurnIntention: 0 Left, 1 Right, 2 Back, 3 Unknown
+    float m_IntendedTurnAngle = 0;       // +0x480 the turn angle when TurnStart was entered
+    bool m_OnlyUseTurnOnSpot = false;    // +0x7A0 blocks Wait -> TurnStart
+    int m_CurrentMvtState = 0;           // +0x7A8 IHumanGroundAccess::MovementState: 0 Wait, 1 Slow, 2 Fast
+    int m_IntentionMvtState = 0;         // +0x7AC the same, from the movement-division tables
+    int m_CurrentMvtType = 0;            // +0x7B0 IHumanGroundAccess::MovementType: 0 Low, 1 High (running)
+    int m_IntentionMvtType = 0;          // +0x7B4 the same, from HumanGroundData::m_DestMvtType
+    float m_CurrentSpeedRatio = 0;       // +0x7BC
+    float m_IntentionSpeedRatio = 0;     // +0x7C0 used with SpeedControlType_DirectSpeed
     float m_TurnAngle = 0;               // +0x7D8
     ResponseCurve m_SlowDownCurve;       // +0x81C
-    int m_AISpeedOverride = 0;           // +0x8A8
+    int m_SpeedControlType = 0;          // +0x8A8 IHumanGround::SpeedControlType: 0 MvtTypeAndMvtState, 1 DirectSpeed
     float m_HeadingMinRotationSpeed = 0;  // +0x8B8 (ctor: 0)
     float m_HeadingMaxRotationSpeed = 0;  // +0x8BC
     float m_HeadingMinRotationAngle = 0;  // +0x8C0
     float m_HeadingMaxRotationAngle = 0;  // +0x8C4
-    int m_HeadingRotationDirection = 0;   // +0x8D0
-    bool m_ForceTurnAround = false;       // +0x8D4 (Has180TurnIntention; SetForceTurnAround's target, hypothesis)
+    int m_HeadingRotationDirection = 0;   // +0x8D0 IHumanGround::RotationDirection: 0 Shortest, -1 Left, 1 Right
+    bool m_ForceTurnAround = false;       // +0x8D4 bit 0 of a bitfield (PDB name); read by Has180TurnIntention
     float m_TurnOnMovementMinAngle = kPi / 2;  // +0x990 (ctor: pi/2)
-    int m_SpeedRestriction = 1;               // +0x994 (ctor: 1)
+    // +0x994 the speed restriction (ctor: BlendWalkToJog); EnterMoveCycle copies HumanGroundData's into it.
+    TransitionToMotionType m_TransitionToMotionTypeInternal = TransitionToMotionType_BlendWalkToJog;
     // +0x998 bit 0: set by ExecTurnStartToMoveCycleMain's high-profile branch; while the move-cycle action isn't
     // current yet, UpdateMoveCycleMain then plays the current action at 2 - its ratio. Cleared by ExitMoveCycle.
-    std::uint8_t m_MoveCycleEntryFlags = 0;
+    std::uint8_t m_DoubleTransitionToMotionSpeed = 0;
 
     PortAction m_PortAction;
     float m_PortSpeed = 0;           // PORT: the stand-in speed this frame
@@ -193,21 +196,5 @@ private:
     bool m_PortMoveCycleEntryPending = false;  // PORT: the action before the move cycle is still current (RE/20 row 8)
 };
 
-// HumanGroundData::MovementState values that EnterMove understands (RE/11_ground.md 11; names partly hypothesis).
-namespace movement_state {
-inline constexpr int WaitLow = 0;
-inline constexpr int WaitHigh = 1;
-inline constexpr int WalkVerySlow = 2;
-inline constexpr int Walk = 3;
-inline constexpr int Jog = 4;
-inline constexpr int Run = 5;
-inline constexpr int Sprint = 6;
-inline constexpr int Crouch = 7;
-inline constexpr int Landing = 10;
-inline constexpr int LandingHard = 11;
-inline constexpr int LandingBalanceFall = 12;
-inline constexpr int HandPassOverReception = 13;
-inline constexpr int Default = 14;  // what ResetTransitionData leaves: Wait
-}  // namespace movement_state
 
 }  // namespace scimitar::ac2

@@ -27,7 +27,8 @@ TEST(ground_target_ratio_ai_override) {
 
 TEST(ground_restriction_modes) {
     auto r = [](float t, int mode, bool bandUp = false, bool hp = true, float cur = 0, bool player = true) {
-        return HumanGround::RestrictTargetSpeedRatio(t, mode, player, bandUp, hp, cur);
+        return HumanGround::RestrictTargetSpeedRatio(t, static_cast<scimitar::ac2::TransitionToMotionType>(mode), player,
+                                                     bandUp, hp, cur);
     };
     CHECK_NEAR(r(0.9f, 0), 0.6f, 1e-6f);
     CHECK_NEAR(r(0.1f, 0), 0.6f, 1e-6f);

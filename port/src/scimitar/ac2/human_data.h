@@ -10,8 +10,41 @@
 
 namespace scimitar::ac2 {
 
-// Reflected class HumanGroundData (descriptor PC 0x1D1C528, size 0x3A0, parent HumanGroundDatav2).
+// scimitar::ac2::TransitionToMotionType: how a move cycle may blend in from a transition. It is also HumanGround's
+// speed restriction (m_TransitionToMotionTypeInternal, PC +0x994; RestrictTargetSpeedRatio). Names from the
+// Revelations PDB (RE/02); the caps they get in AC2 match them (RE/11_ground.md 5).
+enum TransitionToMotionType : int {
+    TransitionToMotionType_JogOnly = 0,
+    TransitionToMotionType_BlendWalkToJog = 1,
+    TransitionToMotionType_BlendWalkToJogWithRotation = 2,
+    TransitionToMotionType_BlendWalkVerySlowToWalkToJogWithRotation = 3,
+    TransitionToMotionType_BlendWalkToJogFromCollide = 4,
+    TransitionToMotionType_BlendWalkToJogToSprint = 5,
+    TransitionToMotionType_BlendWalkToJogToSprintWithFixedLayer = 6,
+    TransitionToMotionType_BlendWalkVerySlowToWalkToJogToSprint = 7,
+};
+
+// Reflected class HumanGroundData (descriptor PC 0x1D1C528, size 0x3A0, parent HumanGroundDatav2). The unreflected
+// members after +0xF3 take their names from the Revelations PDB, where they sit 0x20 later (RE/11_ground.md 4).
 struct HumanGroundData {
+    // HumanGroundData::MovementState (Revelations PDB names). AC2 numbering: 0-7 as in Revelations, 10-13 are
+    // Revelations' 11-14 (EnterMove PC 0x60C610), 14 is MAX (ResetTransitionData). 8 and 9 are two of Revelations'
+    // Collide / CarryObject / CustomAction (not decoded; EnterMove has no case for them).
+    enum MovementState : int {
+        MovementState_WaitLow = 0,
+        MovementState_WaitHigh = 1,
+        MovementState_WalkVerySlow = 2,
+        MovementState_Walk = 3,
+        MovementState_Jog = 4,
+        MovementState_Run = 5,
+        MovementState_Sprint = 6,
+        MovementState_Crouch = 7,
+        MovementState_Landing = 10,
+        MovementState_LandingHard = 11,
+        MovementState_LandingBalanceFall = 12,
+        MovementState_HandPassOverReception = 13,
+        MovementState_MAX = 14,
+    };
     enum HumanGroundSubState {  // HumanGroundData::HumanGroundSubState
         SubState_Movement = 0,
         SubState_Fight = 1,
@@ -69,26 +102,28 @@ struct HumanGroundData {
     bool m_ActingInterrupted = false;              // +0xF2
     bool m_Crouch = false;                         // +0xF3 IHumanGround::SetCrouch
 
-    // Unreflected members (named after what they do).
-    // +0x155 / +0x158: the movement-division tables, [0] without and [1] with high profile. HumanGround::LocalInit
+    // Unreflected members (Revelations PDB names; PC offsets). m_HumanGroundHurtData etc. aren't mirrored.
+    int m_HumanGroundStage = 0;         // +0x150 IHumanGround::HumanGroundStage; EnterMove: 1 (Navigation)
+    // +0x154..+0x158: the movement-division tables, [0] for movement type Low and [1] for High. HumanGround::LocalInit
     // (PC 0x61F920) fills them; these defaults are its values.
-    unsigned char m_MovementDivisionCount[2] = {3, 3};
-    float m_MovementDivisionThresholds[2][5] = {{0.0f, 0.9f, 1.0f}, {0.0f, 0.9f, 1.0f}};
-    bool m_HighProfileRequest = false;  // +0x181 (LIVE row 5)
-    // +0x1A0 HumanGroundData::MovementState: how HumanGround::EnterMove starts (RE/11_ground.md 11). Value names
-    // (hypothesis, from ActingClip::ExitMovementState): 0 WaitLow, 1 WaitHigh, 2 WalkVerySlow, 3 Walk, 4/5 Jog/Run,
-    // 6 Sprint; 7 crouch, 10 Landing, 11 LandingHard, 12 LandingBalanceFall, 13 HandPassOverReception, 14 Wait (the
-    // value ResetTransitionData leaves).
-    int m_MovementState = 14;
+    unsigned char m_NbMvtTypes = 2;     // +0x154
+    unsigned char m_NbMvtDivisions[2] = {3, 3};  // +0x155
+    float m_MvtDivThreshold[2][5] = {{0.0f, 0.9f, 1.0f}, {0.0f, 0.9f, 1.0f}};  // +0x158
+    unsigned char m_CurMvtType = 0;     // +0x180 IHumanGroundAccess::MovementType; cleared by LocalInit
+    unsigned char m_DestMvtType = 0;    // +0x181 the requested movement type: 1 (High) while high profile is held
+    // +0x1A0: how HumanGround::EnterMove starts (RE/11_ground.md 11), left by TransitionSetupDataToMovement.
+    MovementState m_DestMovementState = MovementState_MAX;
     float m_RotationRatio = 1.0f;       // +0x21C scales the heading rotation angles; PORT: initial value not seen
     float m_RotationRatioStep = 0.5f;   // +0x220 per second; PORT: initial value not seen (ExitMove sets 1 / 0.5)
-    int m_TransitionToMotionType = 1;   // +0x228 EnterMoveCycle copies it into the speed restriction mode
+    bool m_SkipActionOnStateEntry = false;  // +0x224 EnterMove sets it for MovementState_MAX (not used by the port)
+    // +0x228: EnterMoveCycle copies it into HumanGround::m_TransitionToMotionTypeInternal.
+    TransitionToMotionType m_TransitionToMotionType = TransitionToMotionType_BlendWalkToJog;
 
     // Mac 0x1119F44, PC 0x90E190: the first index below the count whose threshold is >= value, else 0.
     int GetMovementDivisionFromSpeedRatio(bool highProfile, float value) const {
         const int h = highProfile ? 1 : 0;
-        for (int i = 0; i < m_MovementDivisionCount[h]; ++i) {
-            if (m_MovementDivisionThresholds[h][i] >= value) return i;
+        for (int i = 0; i < m_NbMvtDivisions[h]; ++i) {
+            if (m_MvtDivThreshold[h][i] >= value) return i;
         }
         return 0;
     }
@@ -100,22 +135,22 @@ struct HumanGroundData {
 // leaves in HumanGroundData for EnterMove. PORT: the action transition, feet position, blend factors and the two
 // bools aren't mirrored (no animation layer yet).
 struct TransitionSetupDataToMovement {
-    int movementState = 14;
+    HumanGroundData::MovementState movementState = HumanGroundData::MovementState_MAX;
     float rotationRatio = 0;
     float rotationRatioStep = 0;
-    int transitionToMotionType = 1;
+    TransitionToMotionType transitionToMotionType = TransitionToMotionType_BlendWalkToJog;
 
     // Mac 0x111AAC6.
     void SetupTransitionData(HumanGroundData& data) const {
-        data.m_MovementState = movementState;
+        data.m_DestMovementState = movementState;
         data.m_RotationRatio = rotationRatio;
         data.m_RotationRatioStep = rotationRatioStep;
         data.m_TransitionToMotionType = transitionToMotionType;
     }
     // Mac 0x1119FE2.
     static void ResetTransitionData(HumanGroundData& data) {
-        data.m_MovementState = 14;
-        data.m_TransitionToMotionType = 1;
+        data.m_DestMovementState = HumanGroundData::MovementState_MAX;
+        data.m_TransitionToMotionType = TransitionToMotionType_BlendWalkToJog;
     }
 };
 

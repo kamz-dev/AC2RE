@@ -84,7 +84,7 @@ void Human::Update(const port::MoveInput& input, const port::World& world, float
     const bool sprint = input.held(port::kLegs);
     m_GroundData.m_DestHeading = input.moveDir;
     m_GroundData.m_DestSpeedRatio = input.moveMag;
-    m_GroundData.m_HighProfileRequest = input.held(port::kHighProfile);
+    m_GroundData.m_DestMvtType = input.held(port::kHighProfile);
     IHumanGround& ground = m_ContextBundle.GetGround();
     ground.SetSprint(sprint);
     SetPortHeading(sprint ? kPortHeadingSprint : kPortHeadingNormal);  // live row 6: follows Sprint

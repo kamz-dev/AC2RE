@@ -93,73 +93,77 @@ struct HumanGround {
     AC2_PAD(0x8C - 0x43);           // 0x043  (+0x44: FSMSuccessfulInterfaceTransitionTracker)
     std::uint8_t fsmStates[0x2AD - 0x8C];  // 0x08C  records and wrappers, ids 1..147 (LinkFSM 0x602270)
     AC2_PAD(0x468 - 0x2AD);         // 0x2AD
-    std::int32_t turnStartSide;     // 0x468  1 when the turn angle was >= 0; EnterTurnStart 0x614BB0
+    std::int32_t turnIntention;     // 0x468  m_TurnIntention: 0 Left, 1 Right, 2 Back, 3 Unknown; EnterTurnStart 0x614BB0
     AC2_PAD(0x480 - 0x46C);         // 0x46C
-    float turnStartAngle;           // 0x480  the turn angle when TurnStart was entered
+    float intendedTurnAngle;        // 0x480  m_IntendedTurnAngle: the turn angle when TurnStart was entered
     AC2_PAD(0x6F9 - 0x484);         // 0x484
     std::uint8_t walkingOnHorse;    // 0x6F9  _UpdateMove 0x634D20
     AC2_PAD(0x790 - 0x6FA);         // 0x6FA
     std::uint32_t upperBody;        // 0x790  HumanUpperBody* (hypothesis)
     AC2_PAD(0x7A0 - 0x794);         // 0x794
-    std::uint8_t blockTurnStartFromWait;  // 0x7A0  TestWaitToTurnStartMain 0x5F4EC0
+    std::uint8_t onlyUseTurnOnSpot; // 0x7A0  m_OnlyUseTurnOnSpot; TestWaitToTurnStartMain 0x5F4EC0
     AC2_PAD(0x7A8 - 0x7A1);         // 0x7A1
-    std::int32_t gaitLevel;         // 0x7A8  1 / 2, UpdateMoveCycleMain 0x61BB60
-    std::int32_t movementDivision;  // 0x7AC  0 = no movement intent, 2 = moving; UpdateMovementIntention 0x5E03E0
-    std::int32_t running;           // 0x7B0  ratio above 0.4
-    std::int32_t highProfile;       // 0x7B4  high-profile intention
+    std::int32_t currentMvtState;   // 0x7A8  m_CurrentMvtState (IHumanGroundAccess::MovementState 0 Wait, 1 Slow, 2 Fast)
+    std::int32_t intentionMvtState; // 0x7AC  m_IntentionMvtState; UpdateMovementIntention 0x5E03E0
+    std::int32_t currentMvtType;    // 0x7B0  m_CurrentMvtType (IHumanGroundAccess::MovementType 0 Low, 1 High)
+    std::int32_t intentionMvtType;  // 0x7B4  m_IntentionMvtType (from HumanGroundData::m_DestMvtType)
     AC2_PAD(0x04);                  // 0x7B8
-    float speedRatio;               // 0x7BC  0..1, drives the MoveCycle blend
-    float aiSpeedRatio;             // 0x7C0
+    float currentSpeedRatio;        // 0x7BC  m_CurrentSpeedRatio: 0..1, drives the MoveCycle blend
+    float intentionSpeedRatio;      // 0x7C0  m_IntentionSpeedRatio (SpeedControlType_DirectSpeed)
     AC2_PAD(0x7D8 - 0x7C4);         // 0x7C4
     float turnAngle;                // 0x7D8  move direction -> sight about +Z; UpdateTurnAngle 0x5FE6A0
     AC2_PAD(0x04);                  // 0x7DC
-    float sight[4];                 // 0x7E0  copy of the entity's sight; UpdateMoveMain 0x604990
+    float headingBeforeRotationUpdate[4];  // 0x7E0  the entity's sight before turning; UpdateMoveMain 0x604990
     AC2_PAD(0x81C - 0x7F0);         // 0x7F0
     std::uint8_t slowDownCurve[4];  // 0x81C  ResponseCurve object (size unknown); LocalInit 0x61F920
     AC2_PAD(0x8A8 - 0x820);         // 0x820
-    std::int32_t aiSpeedOverride;   // 0x8A8
-    float blendSlot12Weight;        // 0x8AC
-    float blendSlot19Weight;        // 0x8B0
-    AC2_PAD(0x04);                  // 0x8B4
+    std::int32_t speedControlType;  // 0x8A8  m_SpeedControlType: 0 MvtTypeAndMvtState, 1 DirectSpeed
+    float alternateJogBlendFactor;  // 0x8AC  m_AlternateJogBlendFactor (MoveCycle blend slot 12)
+    float alternateSprintBlendFactor;  // 0x8B0  m_AlternateSprintBlendFactor (MoveCycle blend slot 19)
+    std::uint8_t overrideMoveCyclebySubState;  // 0x8B4  m_OverrideMoveCyclebySubState; UpdateMoveCycleMain returns early
+    AC2_PAD(0x03);                  // 0x8B5
     float headingMinRotationSpeed;  // 0x8B8  rad/s; UpdateOrientation 0x5FFC40
     float headingMaxRotationSpeed;  // 0x8BC
     float headingMinRotationAngle;  // 0x8C0  rad, scaled by HumanGroundData rotation ratio
     float headingMaxRotationAngle;  // 0x8C4
-    float unk8C8;                   // 0x8C8  15.0 at construction
-    float unk8CC;                   // 0x8CC  12.5 at construction
+    float savedHeadSpeed;           // 0x8C8  m_SavedHeadSpeed: 15.0 at construction
+    float savedBodySpeed;           // 0x8CC  m_SavedBodySpeed: 12.5 at construction
     std::int32_t headingRotationDirection;  // 0x8D0  IHumanGround::RotationDirection, -1 / 0 / 1
-    std::uint8_t forceTurnAround;   // 0x8D4  Has180TurnIntention (inlined in _UpdateMoveStop 0x621C80)
+    std::uint8_t forceTurnAround;   // 0x8D4  bit 0: m_ForceTurnAround (a bitfield); Has180TurnIntention
     AC2_PAD(0x990 - 0x8D5);         // 0x8D5
     float turnOnMovementMinAngle;   // 0x990  pi/2 at construction; Wait / MoveCycle -> TurnStart
-    std::int32_t speedRestriction;  // 0x994  mode 0..7 (1 at construction)
+    std::int32_t transitionToMotionTypeInternal;  // 0x994  m_TransitionToMotionTypeInternal (TransitionToMotionType)
+    std::uint8_t doubleTransitionToMotionSpeed;   // 0x998  m_DoubleTransitionToMotionSpeed (bit 0)
 };
 
 AC2_ASSERT_OFFSET(HumanGround, actor, 0x008);
 AC2_ASSERT_OFFSET(HumanGround, groundData, 0x010);
 AC2_ASSERT_OFFSET(HumanGround, fsmCurrentState, 0x042);
 AC2_ASSERT_OFFSET(HumanGround, fsmStates, 0x08C);
-AC2_ASSERT_OFFSET(HumanGround, turnStartSide, 0x468);
-AC2_ASSERT_OFFSET(HumanGround, turnStartAngle, 0x480);
+AC2_ASSERT_OFFSET(HumanGround, turnIntention, 0x468);
+AC2_ASSERT_OFFSET(HumanGround, intendedTurnAngle, 0x480);
 AC2_ASSERT_OFFSET(HumanGround, walkingOnHorse, 0x6F9);
-AC2_ASSERT_OFFSET(HumanGround, blockTurnStartFromWait, 0x7A0);
+AC2_ASSERT_OFFSET(HumanGround, onlyUseTurnOnSpot, 0x7A0);
 AC2_ASSERT_OFFSET(HumanGround, forceTurnAround, 0x8D4);
 AC2_ASSERT_OFFSET(HumanGround, upperBody, 0x790);
-AC2_ASSERT_OFFSET(HumanGround, gaitLevel, 0x7A8);
-AC2_ASSERT_OFFSET(HumanGround, movementDivision, 0x7AC);
-AC2_ASSERT_OFFSET(HumanGround, running, 0x7B0);
-AC2_ASSERT_OFFSET(HumanGround, highProfile, 0x7B4);
-AC2_ASSERT_OFFSET(HumanGround, speedRatio, 0x7BC);
-AC2_ASSERT_OFFSET(HumanGround, aiSpeedRatio, 0x7C0);
+AC2_ASSERT_OFFSET(HumanGround, currentMvtState, 0x7A8);
+AC2_ASSERT_OFFSET(HumanGround, intentionMvtState, 0x7AC);
+AC2_ASSERT_OFFSET(HumanGround, currentMvtType, 0x7B0);
+AC2_ASSERT_OFFSET(HumanGround, intentionMvtType, 0x7B4);
+AC2_ASSERT_OFFSET(HumanGround, currentSpeedRatio, 0x7BC);
+AC2_ASSERT_OFFSET(HumanGround, intentionSpeedRatio, 0x7C0);
 AC2_ASSERT_OFFSET(HumanGround, turnAngle, 0x7D8);
-AC2_ASSERT_OFFSET(HumanGround, sight, 0x7E0);
+AC2_ASSERT_OFFSET(HumanGround, headingBeforeRotationUpdate, 0x7E0);
 AC2_ASSERT_OFFSET(HumanGround, slowDownCurve, 0x81C);
-AC2_ASSERT_OFFSET(HumanGround, aiSpeedOverride, 0x8A8);
-AC2_ASSERT_OFFSET(HumanGround, blendSlot19Weight, 0x8B0);
+AC2_ASSERT_OFFSET(HumanGround, speedControlType, 0x8A8);
+AC2_ASSERT_OFFSET(HumanGround, alternateSprintBlendFactor, 0x8B0);
 AC2_ASSERT_OFFSET(HumanGround, headingMinRotationSpeed, 0x8B8);
 AC2_ASSERT_OFFSET(HumanGround, headingMaxRotationAngle, 0x8C4);
 AC2_ASSERT_OFFSET(HumanGround, headingRotationDirection, 0x8D0);
 AC2_ASSERT_OFFSET(HumanGround, turnOnMovementMinAngle, 0x990);
-AC2_ASSERT_OFFSET(HumanGround, speedRestriction, 0x994);
+AC2_ASSERT_OFFSET(HumanGround, transitionToMotionTypeInternal, 0x994);
+AC2_ASSERT_OFFSET(HumanGround, doubleTransitionToMotionSpeed, 0x998);
+AC2_ASSERT_OFFSET(HumanGround, overrideMoveCyclebySubState, 0x8B4);
 
 // HumanGround::groundData points here: the reflected class HumanGroundData (descriptor PC 0x1D1C528, size 0x3A0,
 // parent HumanGroundDatav2; names from RE/tools/refl.py), then the unreflected members found in the code.
@@ -213,18 +217,20 @@ struct HumanGroundData {
     std::uint8_t actingInterrupted;               // 0x0F2  ActingInterrupted
     std::uint8_t crouch;                          // 0x0F3  Crouch (IHumanGround::SetCrouch)
     // Unreflected members, named after what they do.
-    AC2_PAD(0x155 - 0xF4);                        // 0x0F4  (+0x150 := 1 in EnterMove, +0x154 = 2 after LocalInit)
-    std::uint8_t movementDivisionCount[2];        // 0x155  without / with high profile
+    AC2_PAD(0x150 - 0xF4);                        // 0x0F4
+    std::int32_t humanGroundStage;                // 0x150  m_HumanGroundStage (IHumanGround::HumanGroundStage)
+    std::uint8_t nbMvtTypes;                      // 0x154  m_NbMvtTypes (2)
+    std::uint8_t nbMvtDivisions[2];               // 0x155  m_NbMvtDivisions (Low / High)
     AC2_PAD(0x01);                                // 0x157
-    float movementDivisionThresholds[2][5];       // 0x158  GetMovementDivisionFromSpeedRatio 0x90E190
-    AC2_PAD(0x181 - 0x180);                       // 0x180
-    std::uint8_t highProfileRequest;              // 0x181
+    float mvtDivThreshold[2][5];                  // 0x158  m_MvtDivThreshold; GetMovementDivisionFromSpeedRatio 0x90E190
+    std::uint8_t curMvtType;                      // 0x180  m_CurMvtType
+    std::uint8_t destMvtType;                     // 0x181  m_DestMvtType: 1 while high profile is held
     AC2_PAD(0x1A0 - 0x182);                       // 0x182
-    std::int32_t movementState;                   // 0x1A0  HumanGroundData::MovementState; EnterMove 0x60C610
+    std::int32_t destMovementState;               // 0x1A0  m_DestMovementState (MovementState); EnterMove 0x60C610
     AC2_PAD(0x21C - 0x1A4);                       // 0x1A4  (+0x1A8 ActionTransition, +0x204 flag, +0x214 blends)
     float rotationRatio;                          // 0x21C  SetRotationRatio 0x90E250
     float rotationRatioStep;                      // 0x220  per second
-    std::uint8_t transitionFlag224;               // 0x224
+    std::uint8_t skipActionOnStateEntry;          // 0x224  m_SkipActionOnStateEntry
     AC2_PAD(0x03);                                // 0x225
     std::int32_t transitionToMotionType;          // 0x228  -> HumanGround speed restriction mode in EnterMoveCycle
     AC2_PAD(0x3A0 - 0x22C);                       // 0x22C
@@ -245,10 +251,13 @@ AC2_ASSERT_OFFSET(HumanGroundData, idleBreakerActionBlock, 0x0E8);
 AC2_ASSERT_OFFSET(HumanGroundData, breakHard, 0x0ED);
 AC2_ASSERT_OFFSET(HumanGroundData, sprint, 0x0EE);
 AC2_ASSERT_OFFSET(HumanGroundData, crouch, 0x0F3);
-AC2_ASSERT_OFFSET(HumanGroundData, movementDivisionCount, 0x155);
-AC2_ASSERT_OFFSET(HumanGroundData, movementDivisionThresholds, 0x158);
-AC2_ASSERT_OFFSET(HumanGroundData, highProfileRequest, 0x181);
-AC2_ASSERT_OFFSET(HumanGroundData, movementState, 0x1A0);
+AC2_ASSERT_OFFSET(HumanGroundData, humanGroundStage, 0x150);
+AC2_ASSERT_OFFSET(HumanGroundData, nbMvtTypes, 0x154);
+AC2_ASSERT_OFFSET(HumanGroundData, nbMvtDivisions, 0x155);
+AC2_ASSERT_OFFSET(HumanGroundData, curMvtType, 0x180);
+AC2_ASSERT_OFFSET(HumanGroundData, mvtDivThreshold, 0x158);
+AC2_ASSERT_OFFSET(HumanGroundData, destMvtType, 0x181);
+AC2_ASSERT_OFFSET(HumanGroundData, destMovementState, 0x1A0);
 AC2_ASSERT_OFFSET(HumanGroundData, rotationRatio, 0x21C);
 AC2_ASSERT_OFFSET(HumanGroundData, transitionToMotionType, 0x228);
 

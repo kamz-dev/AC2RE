@@ -44,7 +44,10 @@ with other classes' identical functions.
 
 ## 2. Fields (PC offsets; Mac in brackets where it differs)
 The FSM records sit at identical offsets in both builds; from about 0x6E0 on, PC fields are **+0x10 or +0x20**
-later than Mac. Check each field on PC.
+later than Mac. Check each field on PC. **Names** in `code` are the Revelations PDB's (`py RE/tools/pdbtypes.py
+scimitar::ac2::HumanGround`): Revelations' HumanGround is 0xD50 bytes with more members, but the movement block
+keeps its order, and neighbouring members pair up one for one with AC2's (2026-10-21). The enums' value names
+are the PDB's too.
 
 | PC | Type | Meaning | Evidence |
 |---|---|---|---|
@@ -56,28 +59,30 @@ later than Mac. Check each field on PC.
 | +0x8C… | FSM records | see 3 | `LinkFSM` |
 | +0x6F9 [+0x6E9] | bool | walking on a horse (cached `IsWalkingOnHorse` 0x5FBCE0) → InAir | `_UpdateMove` 0x634D20 |
 | +0x790 [+0x770] | `HumanUpperBody*` **(hypothesis from Mac calls)** | upper-body context | `UpdateMoveCycleMain` |
-| +0x464 [+0x460] | int | must be 1 for TurnOnSpot (`IHumanGround::SetTurnMode`'s target, hypothesis) | `TestWaitToTurnOnSpotMain` 0x5F4F30 |
-| +0x468 [+0x464] | int | TurnStart side: 1 when the turn angle was ≥ 0 | `EnterTurnStart` 0x614BB0 |
-| +0x480 | float | the turn angle when TurnStart was entered | `EnterTurnStart` |
-| +0x7A0 [+0x780] | bool | blocks TurnStart from Wait | `TestWaitToTurnStartMain` 0x5F4EC0 |
-| +0x7A8 [+0x788] | int | gait level 1 / 2 (drives `UpdateOrientation` when non-zero) | `UpdateMoveCycleMain`, `UpdateMoveMain` 0x604990 |
-| +0x7AC [+0x78C] | int | **movement division**: 0 = no movement intent, 2 = moving (see 6) | `UpdateMovementIntention` 0x5E03E0 |
-| +0x7B0 [+0x790] | int | 1 when the speed ratio is above 0.4 (running gaits) | `UpdateMoveCycleMain` |
-| +0x7B4 [+0x794] | int | high-profile intention, = `HumanGroundData`+0x181 != 0 | `UpdateMovementIntention` 0x5E03E0 |
-| +0x7BC [+0x79C] | float | **speed ratio** 0..1 | `UpdateMoveCycleMain` |
-| +0x7C0 [+0x7A0] | float | AI-requested speed ratio | same |
-| +0x7D8 [+0x7B8] | float | **turn angle**: signed, about +Z, from the move direction to the sight | `UpdateTurnAngle` 0x5FE6A0 |
-| +0x7E0 | vec4 | the entity's sight, copied each `UpdateMoveMain` | `UpdateMoveMain` 0x604990 |
-| +0x81C [+0x7FC] | `ResponseCurve` | slow-down curve (see 5) | `LocalInit` 0x61F920 |
-| +0x8A8 [+0x888] | int | AI speed override on | `UpdateMoveCycleMain` |
-| +0x8AC / +0x8B0 [+0x88C / +0x890] | float | extra blend weights (slot 12 / slot 19) | same |
+| +0x464 [+0x460] | `IHumanGround::TurnMode` | `m_TurnMode`: 0 MainCharacter, 1 NPC; TurnOnSpot needs NPC (`SetTurnMode`'s target) | `TestWaitToTurnOnSpotMain` 0x5F4F30 |
+| +0x468 [+0x464] | `HumanGround::TurnIntention` | `m_TurnIntention`: 0 Left, 1 Right (when the turn angle was ≥ 0), 2 Back, 3 Unknown | `EnterTurnStart` 0x614BB0 |
+| +0x480 | float | `m_IntendedTurnAngle`: the turn angle when TurnStart was entered | `EnterTurnStart` |
+| +0x7A0 [+0x780] | bool | `m_OnlyUseTurnOnSpot`: blocks TurnStart from Wait | `TestWaitToTurnStartMain` 0x5F4EC0 |
+| +0x7A8 [+0x788] | `IHumanGroundAccess::MovementState` | `m_CurrentMvtState`: 0 Wait, 1 Slow, 2 Fast (drives `UpdateOrientation` when not Wait) | `UpdateMoveCycleMain`, `UpdateMoveMain` 0x604990 |
+| +0x7AC [+0x78C] | same | **`m_IntentionMvtState`** (the "movement division"): 0 Wait = no movement intent, 2 Fast = moving (see 6) | `UpdateMovementIntention` 0x5E03E0 |
+| +0x7B0 [+0x790] | `IHumanGroundAccess::MovementType` | `m_CurrentMvtType`: 0 Low, 1 High (the speed ratio is above 0.4) | `UpdateMoveCycleMain` |
+| +0x7B4 [+0x794] | same | `m_IntentionMvtType`, = `HumanGroundData::m_DestMvtType` (+0x181) != 0 | `UpdateMovementIntention` 0x5E03E0 |
+| +0x7BC [+0x79C] | float | **`m_CurrentSpeedRatio`** 0..1 | `UpdateMoveCycleMain` |
+| +0x7C0 [+0x7A0] | float | `m_IntentionSpeedRatio`, used with `SpeedControlType_DirectSpeed` | same |
+| +0x7D8 [+0x7B8] | float | **`m_TurnAngle`**: signed, about +Z, from the move direction to the sight | `UpdateTurnAngle` 0x5FE6A0 |
+| +0x7E0 | vec4 | `m_HeadingBeforeRotationUpdate`: the entity's sight, copied each `UpdateMoveMain` | `UpdateMoveMain` 0x604990 |
+| +0x81C [+0x7FC] | `ResponseCurve` | `m_SlowDownCurve` (see 5) | `LocalInit` 0x61F920 |
+| +0x8A8 [+0x888] | `IHumanGround::SpeedControlType` | `m_SpeedControlType`: 0 MvtTypeAndMvtState, 1 DirectSpeed (the target is `m_IntentionSpeedRatio`) | `UpdateMoveCycleMain` |
+| +0x8AC / +0x8B0 [+0x88C / +0x890] | float | `m_AlternateJogBlendFactor` / `m_AlternateSprintBlendFactor` (blend slots 12 / 19) | same |
+| +0x8B4 | bool | `m_OverrideMoveCyclebySubState`: `UpdateMoveCycleMain` zeroes the body angles and returns; cleared by `ExitMoveCycle` | same; `ExitMoveCycle` 0x60DB70 |
 | +0x8B8 / +0x8BC [+0x898 / ?] | float | `HeadingMinRotationSpeed` / `HeadingMaxRotationSpeed` (rad/s) | Mac setters 0xF9771C / 0xF9772E; `UpdateOrientation` 0x5FFC40 |
 | +0x8C0 / +0x8C4 | float | `HeadingMinRotationAngle` / `HeadingMaxRotationAngle` (rad) | Mac setters 0xF97740 / 0xF97752 |
-| +0x8D0 | int | `HeadingRotationDirection` (`IHumanGround::RotationDirection`; −1 / 0 / 1) | Mac setter 0xF97764; `UpdateOrientation` |
-| +0x8D4 [+0x8B4] | bool | force turn-around (`Has180TurnIntention`; `SetForceTurnAround`'s target, hypothesis) | `_UpdateMoveStop` 0x621C80 |
-| +0x8C8 / +0x8CC | float | 15.0 / 12.5 at construction; use unknown | ctor 0x6317A0 |
+| +0x8D0 | int | `HeadingRotationDirection` (`IHumanGround::RotationDirection`: 0 Shortest, −1 Left, 1 Right) | Mac setter 0xF97764; `UpdateOrientation` |
+| +0x8D4 [+0x8B4] | bitfield | bit 0 `m_ForceTurnAround` (`Has180TurnIntention`); Revelations packs crouch / hide-stance flags in the same byte | `_UpdateMoveStop` 0x621C80 |
+| +0x8C8 / +0x8CC | float | `m_SavedHeadSpeed` / `m_SavedBodySpeed`: 15.0 / 12.5 at construction | ctor 0x6317A0 |
 | +0x990 [+0x970] | float | `TurnOnMovementMinAngle` (clamped ≤ π; π/2 at construction) | Mac setter 0xF9825E; ctor |
-| +0x994 [+0x974] | int | speed restriction mode 0..7 (1 at construction) | `UpdateMoveCycleMain`; ctor |
+| +0x994 [+0x974] | `TransitionToMotionType` | **`m_TransitionToMotionTypeInternal`**: the speed restriction (BlendWalkToJog at construction) | `UpdateMoveCycleMain`; ctor |
+| +0x998 | u8 | `m_DoubleTransitionToMotionSpeed`: bit 0 plays the entry action at 2 − ratio (section 5) | `UpdateMoveCycleMain`; `ExitMoveCycle` |
 
 Interfaces: PC HumanGround has eight vftable pointers (+0x00 primary 0x19BFCD8, +0x14 `IHumanGround` 0x19BF390,
 then +0x18…+0x2C, ctor 0x6317A0). The Mac `IHumanGround` thunks adjust `this` by 20, so `IHumanGround` is at +0x14
@@ -137,20 +142,20 @@ the same in both builds; each was read on PC in the function named.
 | +0xEE | bool | **`Sprint`**: +0.2 to the target speed ratio (high profile + sprint = 0.8..1). Set by `IHumanGround::SetSprint` (PC 0x632E80 [0x153B9D0]); for the player, on while legs (Space, the fast walk) is held (live row 5) | `UpdateMoveCycleMain` |
 | +0xF3 | bool | **`Crouch`** (→ CrouchMove / CrouchWait). Set by `IHumanGround::SetCrouch` [0x153B994] | `LocalInit` 0x61F920 (cleared); Mac `_UpdateMoveCycle` |
 | (+0x30…+0xF2) | | the other reflected members (collision, look-at sights, combat style, block cylinder, acting, custom-action channels): section 15 | |
-| +0x154 | u8 | 2 after `LocalInit`; use unknown | `LocalInit` |
-| +0x155 / +0x156 | u8 | movement-division threshold counts (without / with high profile), 3 after `LocalInit` | `LocalInit`; Mac `GetMovementDivisionFromSpeedRatio` 0x1119F44 |
-| +0x158 / +0x16C | float[5] | movement-division thresholds, {0, 0.9, 1} after `LocalInit` | same |
-| +0x180 | bool | cleared by `LocalInit`; use unknown | `LocalInit` |
-| +0x181 | bool | high-profile request (→ `this+0x7B4`); for the player, on while high profile (right mouse, the run) is held (live row 5) | `UpdateMovementIntention` 0x5E03E0 |
-| +0x150 | int | set to 1 by `EnterMove` | `EnterMove` 0x60C610 |
-| +0x1A0 | int | **`HumanGroundData::MovementState`**: how `EnterMove` starts (section 11) | `EnterMove` 0x60C610 |
-| +0x1A8 / +0x204 | `ActionTransition` / bool | the transition action into Move, and whether there is one | Mac `SetupTransitionData` 0x111AAC6 |
-| +0x20C / +0x210 | int | feet position / a flags word passed to `SetTargetAction` | same; Mac `EnterMoveCycle` 0xFBE706 |
-| +0x214 | float array | blend factors for the first action | same |
-| +0x21C | float | rotation ratio (scales the heading rotation angles); `SetRotationRatio` 0x90E250 | `UpdateOrientation` |
-| +0x220 | float | rotation ratio step per second; Mac `SetRotationRatioStep` 0x1119FAE; `ExitMove` sets ratio 1, step 0.5 | `UpdateOrientation`; Mac `ExitMove` 0xFAFB48 |
-| +0x224 | u8 | a transition flag (1 after `LocalInit` and for MovementState 14); use unknown | `LocalInit`, `EnterMove` |
-| +0x228 | int | **`TransitionToMotionType`**: `EnterMoveCycle` copies it into the speed restriction mode (+0x994); reset to 1 | Mac `EnterMoveCycle`, `ResetTransitionData` 0x1119FE2 |
+| +0x150 | `IHumanGround::HumanGroundStage` | `m_HumanGroundStage`; `EnterMove` sets 1 (Navigation) | `EnterMove` 0x60C610 |
+| +0x154 | u8 | `m_NbMvtTypes`: 2 after `LocalInit` (Low, High) | `LocalInit` |
+| +0x155 / +0x156 | u8 | `m_NbMvtDivisions[2]`: threshold counts (movement type Low / High), 3 after `LocalInit` | `LocalInit`; Mac `GetMovementDivisionFromSpeedRatio` 0x1119F44 |
+| +0x158 / +0x16C | float[5] | `m_MvtDivThreshold[2][5]`, {0, 0.9, 1} after `LocalInit` | same |
+| +0x180 | u8 | `m_CurMvtType`, cleared by `LocalInit` | `LocalInit` |
+| +0x181 | u8 | **`m_DestMvtType`** (→ `m_IntentionMvtType` +0x7B4); for the player, 1 (High) while high profile (right mouse, the run) is held (live row 5) | `UpdateMovementIntention` 0x5E03E0 |
+| +0x1A0 | `MovementState` | **`m_DestMovementState`**: how `EnterMove` starts (section 11) | `EnterMove` 0x60C610 |
+| +0x1A8 / +0x204 | `ActionTransition` / bool | `m_DestTransition` / `m_IsCustomTransitionSet` | Mac `SetupTransitionData` 0x111AAC6 |
+| +0x20C / +0x210 | int | feet position / a flags word passed to `SetTargetAction`. The PDB order is `m_DestTransitionFlags` then `m_DestFeetPos`: re-check which is which | same; Mac `EnterMoveCycle` 0xFBE706 |
+| +0x214 | float array | `m_DestBlendFactors` for the first action | same |
+| +0x21C | float | `m_RotationRatio` (scales the heading rotation angles); `SetRotationRatio` 0x90E250 | `UpdateOrientation` |
+| +0x220 | float | `m_RotationRatioStep` per second; Mac `SetRotationRatioStep` 0x1119FAE; `ExitMove` sets ratio 1, step 0.5 | `UpdateOrientation`; Mac `ExitMove` 0xFAFB48 |
+| +0x224 | bool | `m_SkipActionOnStateEntry` (1 after `LocalInit` and for `MovementState_MAX`) | `LocalInit`, `EnterMove` |
+| +0x228 | `TransitionToMotionType` | **`m_TransitionToMotionType`**: `EnterMoveCycle` copies it into `m_TransitionToMotionTypeInternal` (+0x994); reset to BlendWalkToJog | Mac `EnterMoveCycle`, `ResetTransitionData` 0x1119FE2 |
 | +0x22C | u8 | a transition flag; when set, `EnterMove` zeroes the character controller's local offset | `EnterMove` |
 
 ## 5. MoveCycle: the speed model (`UpdateMoveCycleMain` PC 0x61BB60 [0xFCD20A])
@@ -350,23 +355,25 @@ restriction mode.
 (+0x1A0) picks Move's first child and seeds the gait fields; afterwards high profile := running and division :=
 gait level. `_EnterMove` (PC 0x621720 [0xFD43E0]) then enters that child (PC inlines most children's Enter).
 
-| MovementState (name, hypothesis) | First child | Running | Gait level | Speed ratio |
+| `MovementState` (PDB names) | First child | Running | Gait level | Speed ratio |
 |---|---|---|---|---|
-| 0 (WaitLow) | Wait | 0 | 0 | 0 |
-| 1 (WaitHigh) | Wait | 1 | 0 | 0 |
-| 2 (WalkVerySlow) | MoveCycle | 0 | 1 | 0 |
-| 3 (Walk) | MoveCycle | 0 | 2 | 0.2 |
-| 4, 5 (Jog, Run) | MoveCycle | 1 | 2 | 0.6 |
-| 6 (Sprint) | MoveCycle (motion type 1 → 5) | 1 | 2 | 1.0 |
-| 7 | CrouchWait | 0 | 0 | 0 |
-| 10 | Landing | 0 | 0 | 0 |
-| 11 | LandingHard | 0 | 0 | 0 |
-| 12 | LandingBalanceFall | 1 | 0 | 0 |
-| 13 | HandPassOverReception | 1 | 2 | 0.6 |
-| 14 (default) | Wait (+0x224 := 1) | 0 | 0 | 0 |
+| 0 WaitLow | Wait | 0 | 0 | 0 |
+| 1 WaitHigh | Wait | 1 | 0 | 0 |
+| 2 WalkVerySlow | MoveCycle | 0 | 1 | 0 |
+| 3 Walk | MoveCycle | 0 | 2 | 0.2 |
+| 4, 5 Jog, Run | MoveCycle | 1 | 2 | 0.6 |
+| 6 Sprint | MoveCycle (motion type 1 → 5) | 1 | 2 | 1.0 |
+| 7 Crouch | CrouchWait | 0 | 0 | 0 |
+| 10 Landing | Landing | 0 | 0 | 0 |
+| 11 LandingHard | LandingHard | 0 | 0 | 0 |
+| 12 LandingBalanceFall | LandingBalanceFall | 1 | 0 | 0 |
+| 13 HandPassOverReception | HandPassOverReception | 1 | 2 | 0.6 |
+| 14 MAX (none) | Wait (`m_SkipActionOnStateEntry` := 1) | 0 | 0 | 0 |
 
-`MovementState` isn't reflected; the names 0–6 are a guess from the reflected enum
-`ActingClip::ExitMovementState` (WaitLow, WaitHigh, WalkVerySlow, Walk, Jog, Run, Sprint), which fits the table. A separate reflected enum `LandingType` (Safe,
+`MovementState`'s names are the Revelations PDB's (`HumanGroundData::MovementState`). AC2 numbers 0–7 like
+Revelations; its 10–13 are Revelations' 11–14 and 14 is `MovementState_MAX`, so AC2 has two of Revelations'
+Collide / CarryObject / CustomAction at 8 and 9 (which two isn't decoded; `EnterMove` has no case for them, so they
+keep Move's previous child). A separate reflected enum `LandingType` (Safe,
 SmallDamage, HeavyDamage, Fatal) is InAir's, and most likely what picks 10 / 11 / 12.
 
 **The landing states** play the action the handing-over context set up and leave when it ends:

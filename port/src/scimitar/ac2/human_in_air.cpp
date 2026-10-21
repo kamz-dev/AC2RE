@@ -19,8 +19,8 @@ void HumanInAir::Update(const port::MoveInput&, const port::World& world, float 
         // The game hands over through TransitionSetupDataToMovement (HumanGround::EnterMove reads the MovementState).
         // PORT: InAir's choice of landing (LandingType: Safe / SmallDamage / HeavyDamage / Fatal) isn't decoded; the
         // port always lands with a plain Landing.
-        TransitionSetupDataToMovement{movement_state::Landing, h.GetGroundData().m_RotationRatio,
-                                      h.GetGroundData().m_RotationRatioStep, 1}
+        TransitionSetupDataToMovement{HumanGroundData::MovementState_Landing, h.GetGroundData().m_RotationRatio,
+                                      h.GetGroundData().m_RotationRatioStep, TransitionToMotionType_BlendWalkToJog}
             .SetupTransitionData(h.GetGroundData());
         h.RequestContext(HumanContextId::Ground);
         return;

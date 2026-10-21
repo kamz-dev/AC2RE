@@ -45,6 +45,17 @@ From Revelations, take **names, types and layouts as leads**: struct definitions
 what a PC structure probably holds, but its offsets, sizes and code differ (another game, another platform).
 Verify on the PC decompilation before anything goes in `sdk/`.
 
+**Reading the PDB:** IDA imported most types but not all (e.g. `scimitar::ac2::HumanGround` is only a forward
+declaration in the IDB), and llvm-pdbutil refuses this PDB. Use `py RE/tools/pdbtypes.py "<full name>"` for a
+class's members and bases or an enum's values, and `--find <text>` to search type names.
+
+**Matching members to AC2** (how HumanGround and HumanGroundData were named, 2026-10-21): the movement members keep
+their order from AC2 to Revelations, with a block offset (HumanGroundData: +0x20 after 0x150; HumanGround: +0x150
+around +0x464, +0x18C to +0x200 later on, because Revelations added members in between). A run of neighbouring
+members whose types and AC2 uses agree one for one is the evidence; the PDB's enums then have to agree with the
+values the PC code uses (e.g. `TransitionToMotionType` with the speed caps). Members Revelations added (combat,
+bombs, the apple) have no AC2 counterpart; leave AC2 fields with no clear partner named after what they do.
+
 ## Where things go
 - Names, comments, prototypes and types: in the PC IDB, shared through `IDB/annotations/` (`CLAUDE.md`).
 - Layouts confirmed on PC: `sdk/include/ac2sdk/` with offset checks; addresses in `addresses.h`.

@@ -9,12 +9,12 @@
 
 using scimitar::ac2::Human;
 using scimitar::ac2::HumanGround;
-namespace ms = scimitar::ac2::movement_state;
+using HGD = scimitar::ac2::HumanGroundData;
 using State = HumanGround::State;
 
 namespace {
 struct Row {
-    int movementState;
+    HGD::MovementState movementState;
     State first;
     int running, gait;
     float ratio;
@@ -23,22 +23,22 @@ struct Row {
 
 TEST(ground_enter_move_table) {
     const Row rows[] = {
-        {ms::WaitLow, State::Wait, 0, 0, 0.0f},
-        {ms::WaitHigh, State::Wait, 1, 0, 0.0f},
-        {ms::WalkVerySlow, State::MoveCycle, 0, 1, 0.0f},
-        {ms::Walk, State::MoveCycle, 0, 2, 0.2f},
-        {ms::Jog, State::MoveCycle, 1, 2, 0.6f},
-        {ms::Run, State::MoveCycle, 1, 2, 0.6f},
-        {ms::Sprint, State::MoveCycle, 1, 2, 1.0f},
-        {ms::Landing, State::Landing, 0, 0, 0.0f},
-        {ms::LandingHard, State::LandingHard, 0, 0, 0.0f},
-        {ms::LandingBalanceFall, State::LandingBalanceFall, 1, 0, 0.0f},
-        {ms::Default, State::Wait, 0, 0, 0.0f},
+        {HGD::MovementState_WaitLow, State::Wait, 0, 0, 0.0f},
+        {HGD::MovementState_WaitHigh, State::Wait, 1, 0, 0.0f},
+        {HGD::MovementState_WalkVerySlow, State::MoveCycle, 0, 1, 0.0f},
+        {HGD::MovementState_Walk, State::MoveCycle, 0, 2, 0.2f},
+        {HGD::MovementState_Jog, State::MoveCycle, 1, 2, 0.6f},
+        {HGD::MovementState_Run, State::MoveCycle, 1, 2, 0.6f},
+        {HGD::MovementState_Sprint, State::MoveCycle, 1, 2, 1.0f},
+        {HGD::MovementState_Landing, State::Landing, 0, 0, 0.0f},
+        {HGD::MovementState_LandingHard, State::LandingHard, 0, 0, 0.0f},
+        {HGD::MovementState_LandingBalanceFall, State::LandingBalanceFall, 1, 0, 0.0f},
+        {HGD::MovementState_MAX, State::Wait, 0, 0, 0.0f},
     };
     for (const Row& r : rows) {
         Human human;
         HumanGround& ground = human.GetContextBundle().GetGround();
-        human.GetGroundData().m_MovementState = r.movementState;
+        human.GetGroundData().m_DestMovementState = r.movementState;
         ground.Enter();
         CHECK(ground.GetMoveState() == r.first);
         CHECK_NEAR(ground.GetSpeedRatio(), r.ratio, 1e-6f);
@@ -47,7 +47,7 @@ TEST(ground_enter_move_table) {
             CHECK(ground.GetGaitLevel() == r.gait);
             CHECK(ground.IsRunning() == (r.running != 0));
             // ...and the transition data is reset
-            CHECK(human.GetGroundData().m_MovementState == ms::Default);
+            CHECK(human.GetGroundData().m_DestMovementState == HGD::MovementState_MAX);
         } else {
             CHECK(ground.GetGaitLevel() == r.gait);
             CHECK(ground.IsRunning() == (r.running != 0));
