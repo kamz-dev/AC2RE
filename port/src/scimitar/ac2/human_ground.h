@@ -31,6 +31,8 @@ public:
     virtual void SetBreakHard(bool breakHard) = 0;                    // PC 0x632E20, Mac 0x153B958
     virtual void SetSprint(bool sprint) = 0;                          // PC 0x632E80, Mac 0x153B9D0
     virtual void SetCrouch(bool crouch) = 0;                          // Mac 0x153B994
+    // IHumanGround::TurnMode in the game; TurnOnSpot needs 1 (value names unknown). Target hypothesis: +0x464.
+    virtual void SetTurnMode(int mode) = 0;                           // Mac 0x153B87E
 };
 
 // Mac 0xFB4A3C, PC 0x5FF930. Turns `from` towards `to` (about +Z) by one frame at an angular speed that grows with
@@ -61,6 +63,11 @@ public:
     void SetBreakHard(bool v) override;
     void SetSprint(bool v) override;
     void SetCrouch(bool v) override;
+    void SetTurnMode(int v) override { m_TurnMode = v; }
+
+    // Mac 0xFB3550, PC 0x5FDF00: which of the 8 turn-on-spot animations turns the sight towards `target`; the
+    // signed angle sight -> target about +Z picks the size (25 / 70 / 135 degrees) and the side (even = positive).
+    static int GetTurnAnimation(float signedAngle);
 
     State GetMoveState() const { return m_MoveState; }
     float GetSpeedRatio() const { return m_SpeedRatio; }
@@ -117,6 +124,15 @@ private:
     bool TestRollToWaitMain(float dt) const;          // Mac 0xF9DAB2
     bool TestRollToMoveCycleMain(float dt) const;     // Mac 0xF9DAF6
 
+    bool TestWaitToTurnOnSpotMain() const;            // PC 0x5F4F30, Mac 0xF9E9F8
+    bool TestWaitToCrouchWaitMain() const;            // PC 0x5F4FC0, Mac 0xF9E9C2
+    bool TestMoveCycleToCrouchMoveMain() const;       // inlined in Mac 0xFE05A2 (PC 0x5E1AC0)
+    bool TestCrouchWaitToWaitMain() const;            // inlined in PC 0x623FA0, Mac 0xFDEBB8
+    bool TestCrouchWaitToCrouchMoveMain() const;      // PC 0x5EBDD0, Mac 0xF9DF6A
+    bool TestCrouchMoveToMoveCycleMain() const;       // inlined in PC 0x61E620, Mac 0xFDEB1A
+    bool ActorCanPhysicallyStandUp() const;           // PC 0x5F72C0, Mac 0xFDEA42
+    bool PortIsActionInterruptibleByMovement() const;
+
     void EnterMove();        // PC 0x60C610, Mac 0xFA3D06
     void EnterMoveCycle();   // Mac 0xFBE706 (PC _EnterMoveCycle 0x619DD0)
     void EnterTurnStart();   // PC 0x614BB0, Mac 0xFBE3D6
@@ -139,6 +155,7 @@ private:
 
     // Mirrors of HumanGround's fields (PC offsets).
     State m_MoveState = State::Wait;     // the Move record's current child (+0x94)
+    int m_TurnMode = 0;                  // +0x464 (hypothesis: SetTurnMode's target); TurnOnSpot needs 1
     int m_TurnStartSide = 0;             // +0x468 1 when the turn angle is >= 0
     float m_TurnStartAngle = 0;          // +0x480 the turn angle when TurnStart was entered
     bool m_BlockTurnStartFromWait = false;  // +0x7A0

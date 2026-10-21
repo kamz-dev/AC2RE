@@ -280,6 +280,59 @@ void HumanGround::SetBreakHard(bool v) { m_Human.GetGroundData().m_BreakHard = v
 void HumanGround::SetSprint(bool v) { m_Human.GetGroundData().m_Sprint = v; }
 void HumanGround::SetCrouch(bool v) { m_Human.GetGroundData().m_Crouch = v; }
 
+int HumanGround::GetTurnAnimation(float a) {
+    if (a <= 0.0f) {
+        if (a > -0.43633232f) return 1;
+        if (a > -1.2217305f) return 3;
+        if (a > -2.3561945f) return 5;
+        return 7;
+    }
+    if (a < 0.43633232f) return 0;
+    if (a < 1.2217305f) return 2;
+    if (a < 2.3561945f) return 4;
+    return 6;
+}
+
+// --- Crouch and TurnOnSpot (RE/11_ground.md 13) ---
+
+bool HumanGround::PortIsActionInterruptibleByMovement() const {
+    // PORT: the game reads the current action item's flags; the port treats a finished (or absent) stand-in action as
+    // interruptible and a playing one as not.
+    return m_PortAction.HasFinished();
+}
+
+bool HumanGround::ActorCanPhysicallyStandUp() const {
+    // PC 0x5F72C0: a 0.38 m capsule test from 0.42 m to 1.42 m above the feet. PORT: the port has no collision.
+    return true;
+}
+
+bool HumanGround::TestWaitToTurnOnSpotMain() const {
+    // PORT: the custom-action orientation check is left out (no custom actions).
+    return m_TurnMode == 1 && PortIsActionInterruptibleByMovement() && m_MovementDivision == 0 &&
+           std::fabs(m_TurnAngle) >= 0.017453292f;
+}
+
+bool HumanGround::TestWaitToCrouchWaitMain() const {
+    return m_Human.GetGroundData().m_Crouch && m_HighProfileIntention == 0 && PortIsActionInterruptibleByMovement();
+}
+
+bool HumanGround::TestMoveCycleToCrouchMoveMain() const {
+    return m_Human.GetGroundData().m_Crouch && m_Running == 0;
+}
+
+bool HumanGround::TestCrouchWaitToWaitMain() const {
+    return !m_Human.GetGroundData().m_Crouch && PortIsActionInterruptibleByMovement() && ActorCanPhysicallyStandUp();
+}
+
+bool HumanGround::TestCrouchWaitToCrouchMoveMain() const {
+    // PORT: the transition-animation check behind the flag at Mac +0x8B5 is left out.
+    return m_MovementDivision != 0;
+}
+
+bool HumanGround::TestCrouchMoveToMoveCycleMain() const {
+    return (!m_Human.GetGroundData().m_Crouch || m_HighProfileIntention == 1) && ActorCanPhysicallyStandUp();
+}
+
 // --- Locomotion transitions (RE/11_ground.md 6 and 10) ---
 // PORT: without an action system, "the current action can be cut by movement" (IsActionInterruptibleByMovement) is
 // never true; WillActionFinish / HasActionFinished read the stand-in action; in MoveCycle the current action is
@@ -446,6 +499,24 @@ void HumanGround::SwitchMoveState(State next) {
             m_PortAction.Start(m_Human.GetPortActionLengths().roll);
             m_PortEntrySpeed = m_PortSpeed;
             break;
+        case State::CrouchWait:  // Mac 0xFC316C: capsule height 1.0 (PORT: no capsule), running and gait 0
+            m_Running = 0;
+            m_GaitLevel = 0;
+            break;
+        case State::CrouchMove:  // Mac 0xFC3338: capsule height 1.0, running 0, gait 1
+            m_Running = 0;
+            m_GaitLevel = 1;
+            break;
+        case State::CrouchTurn:  // the game turns by the character controller's displacement (progression ratio)
+            m_PortAction.Start(m_Human.GetPortActionLengths().crouchTurn);
+            m_PortTurnToApply = m_TurnAngle;
+            break;
+        case State::TurnOnSpot: {  // StartTurnOnSpotAnim PC 0x606B70: one turn animation towards the target
+            const int anim = GetTurnAnimation(m_TurnAngle);
+            m_PortAction.Start(m_Human.GetPortActionLengths().turnOnSpot[anim / 2]);
+            m_PortTurnToApply = m_TurnAngle;
+            break;
+        }
         default: break;
     }
 }
@@ -474,11 +545,15 @@ void HumanGround::Update(const port::MoveInput&, const port::World& world, float
     // game's order.
     UpdateMoveMain(dt);
     switch (m_MoveState) {
-        case State::Wait:  // _UpdateWait PC 0x621A80 (TurnOnSpot and CrouchWait not in the port yet)
+        case State::Wait:  // _UpdateWait PC 0x621A80
             if (TestWaitToTurnStartMain())
                 SwitchMoveState(State::TurnStart);
             else if (TestWaitToMoveCycleMain())
                 SwitchMoveState(State::MoveCycle);
+            else if (TestWaitToTurnOnSpotMain())
+                SwitchMoveState(State::TurnOnSpot);
+            else if (TestWaitToCrouchWaitMain())
+                SwitchMoveState(State::CrouchWait);
             break;
         case State::MoveCycle:  // _UpdateMoveCycle PC 0x621B90 (CrouchMove not in the port yet)
             UpdateMoveCycleMain(dt);
@@ -488,6 +563,8 @@ void HumanGround::Update(const port::MoveInput&, const port::World& world, float
                 SwitchMoveState(State::Wait);
             else if (TestMoveCycleToTurnStartMain())
                 SwitchMoveState(State::TurnStart);
+            else if (TestMoveCycleToCrouchMoveMain())
+                SwitchMoveState(State::CrouchMove);
             break;
         case State::MoveStop:  // _UpdateMoveStop PC 0x621C80
             if (TestMoveStopToRunTurnMain(dt))
@@ -535,6 +612,29 @@ void HumanGround::Update(const port::MoveInput&, const port::World& world, float
         case State::LandingBalanceFall:  // _UpdateLandingBalanceFall PC 0x630940
             if (TestLandingBalanceFallToWaitMain(dt)) SwitchMoveState(State::Wait);
             break;
+        case State::TurnOnSpot:  // TurnOnSpotStep (PORT: one step; the game chains steps while its cycle flag is set)
+            if (m_PortAction.HasFinished()) SwitchMoveState(State::Wait);
+            break;
+        case State::CrouchWait:  // _UpdateCrouchWait PC 0x623FA0
+            if (TestCrouchWaitToWaitMain())
+                SwitchMoveState(State::Wait);
+            else if (TestCrouchWaitToCrouchMoveMain())
+                SwitchMoveState(State::CrouchMove);
+            // (high profile -> JumpImpulsion: not in the port, JumpImpulsion needs the free-run system)
+            else if (Has180TurnIntention())
+                SwitchMoveState(State::CrouchTurn);
+            break;
+        case State::CrouchMove:  // _UpdateCrouchMove PC 0x61E620
+            if (m_MovementDivision == 0)
+                SwitchMoveState(State::CrouchWait);
+            else if (TestCrouchMoveToMoveCycleMain())
+                SwitchMoveState(State::MoveCycle);
+            else if (Has180TurnIntention())
+                SwitchMoveState(State::CrouchTurn);
+            break;
+        case State::CrouchTurn:  // _UpdateCrouchTurn PC 0x5FA510
+            if (m_PortAction.HasFinished()) SwitchMoveState(State::CrouchWait);
+            break;
         case State::Roll:  // _UpdateRoll PC 0x621D10
             if (TestRollToWaitMain(dt)) {
                 SwitchMoveState(State::Wait);
@@ -558,6 +658,9 @@ void HumanGround::Update(const port::MoveInput&, const port::World& world, float
         case State::MoveCycle:
             m_PortSpeed = PortSpeedFromRatio();
             break;
+        case State::CrouchMove:
+            m_PortSpeed = h.GetPortGroundSpeeds().crouchMove;
+            break;
         case State::MoveStop:
         case State::RunTurn:
         case State::Roll:
@@ -567,7 +670,9 @@ void HumanGround::Update(const port::MoveInput&, const port::World& world, float
             m_PortSpeed = 0;
             break;
     }
-    if ((m_MoveState == State::TurnStart || m_MoveState == State::RunTurn) && m_PortAction.duration > 0) {
+    const bool turning = m_MoveState == State::TurnStart || m_MoveState == State::RunTurn ||
+                         m_MoveState == State::TurnOnSpot || m_MoveState == State::CrouchTurn;
+    if (turning && m_PortAction.duration > 0) {
         float step = m_PortTurnToApply * (scaledDt / m_PortAction.duration);
         h.m_Yaw += step;
     }

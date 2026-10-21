@@ -51,6 +51,10 @@ inline constexpr std::uint32_t HumanGround_UpdateLandingHard = 0x630890;      //
 inline constexpr std::uint32_t HumanGround_UpdateJumpImpulsion = 0x624060;    // Mac 0xFD5078; static
 inline constexpr std::uint32_t HumanGround_UpdateJumpImpulsionStraight = 0x6240A0;  // Mac 0xFD4FF4; static
 inline constexpr std::uint32_t HumanGround_UpdateEdgeStop = 0x624150;         // Mac 0xFD4F0C; static
+inline constexpr std::uint32_t HumanGround_UpdateCrouchWait = 0x623FA0;       // Mac 0xFDEBF6; static
+inline constexpr std::uint32_t HumanGround_UpdateCrouchMove = 0x61E620;       // Mac 0xFDEB50; static
+inline constexpr std::uint32_t HumanGround_UpdateCrouchTurn = 0x5FA510;       // Mac 0xFC3300; static
+inline constexpr std::uint32_t HumanGround_ActorCanPhysicallyStandUp = 0x5F72C0;  // Mac 0xFDEA42; static
 inline constexpr std::uint32_t ActionComponent_WillActionFinish = 0x165C90;    // named by call shape; static
 inline constexpr std::uint32_t ActionComponent_HasActionFinished = 0x165C20;   // named by call shape; static
 

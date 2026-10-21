@@ -17577,6 +17577,8 @@ FFF84	c	char *
 5F70C7	c	int
 5F7167	c	int
 5F721E	c	int
+5F72C0	F	Mac ActorCanPhysicallyStandUp 0xFDEA42: Human::CheckClearanceCapsuleGlobal radius 0.38 from feet +0.42 to +1.42.
+5F72C0	c	Mac ActorCanPhysicallyStandUp 0xFDEA42: Human::CheckClearanceCapsuleGlobal radius 0.38 from feet +0.42 to +1.42.
 5F8180	c	int
 5F85B3	c	int
 5F8810	F	Microsoft VisualC 2-14/net runtime
@@ -17799,6 +17801,8 @@ FFF84	c	char *
 622E9B	c	void *
 623081	c	struct Concurrency::details::QuickBitSet *
 623082	c	this
+623FA0	F	Mac _UpdateCrouchWait 0xFDEBF6: UpdateCrouchWaitMain, then -> Wait (crouch released, interruptible, can stand up), -> CrouchMove (division != 0), -> JumpImpulsion (high profile), -> CrouchTurn (180 intention). RE/11_ground.md 13
+623FA0	c	Mac _UpdateCrouchWait 0xFDEBF6: UpdateCrouchWaitMain, then -> Wait (crouch released, interruptible, can stand up), -> CrouchMove (division != 0), -> JumpImpulsion (high profile), -> CrouchTurn (180 intention). RE/11_ground.md 13
 624060	c	int
 624067	c	int
 6240F0	c	int

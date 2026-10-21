@@ -3,8 +3,9 @@
 Status 2026-10-21: the class, its vftable, the FSM layout and the locomotion branch of the state tree are matched
 Mac → PC; the MoveCycle speed model, the Wait / MoveCycle transitions and ground turning are decoded from both
 builds, and so are MoveStop, TurnStart, RunTurn and TurnOnSpot with the action maps they play, entering Move
-(the hand-over from other contexts), the landings and Roll, and the jump / edge entry points. Idle, crouching,
-ObstacleCollision and WallingImpulsion are next.
+(the hand-over from other contexts), the landings and Roll, the jump / edge / obstacle entry points, crouching,
+TurnOnSpot and Idle. Left: the property names of `HumanGroundData` (reflection, `22_reflection.md`) and the
+outside systems that drive HumanGround (controller, free-run / guidance).
 
 Addresses: **PC** first (IDB rebased to 0), Mac (`IDB/scimitar_sf.i64`) in brackets.
 
@@ -254,14 +255,14 @@ values are open (live row 6).
 ## 9. Open
 - [ ] Who calls `IHumanGround`'s heading setters, `SetBreakHard` and `SetSprint` for the player, and with what (live
       rows 5–7; `21_input.md`).
-- [ ] Wait → CrouchWait (0x5F4FC0), the crouch states, and the custom-action orientation check in TurnOnSpot.
-- [ ] `IHumanGround::SetTurnMode` (+0x464?) and `SetUseTurnOnSpotCycle` (the TurnOnSpot cycle flag).
-- [ ] Idle and its children (IdleStill, IdleBreaker: `g_IdleBreakerActions`).
+- [ ] The custom-action orientation check in TurnOnSpot; `SetTurnMode`'s target (+0x464?) and
+      `SetUseTurnOnSpotCycle` (the TurnOnSpot cycle flag); who sets the turn-on-spot target (+0x8C0 Mac).
+- [ ] CrouchWait's transition-animation check (flag Mac +0x8B5); `ActorCanPhysicallyStandUp`'s collision query.
 - [ ] InAir's side of the hand-over: which `MovementState` / landing action it sets from `LandingType`
       (`12_in_air.md`); EdgeLanding.
-- [ ] Who sends the jump / edge interface commands (the free-run / guidance system), ObstacleCollision and
-      WallingImpulsion, JumpImpulsionForwardFromIdle (`JumpToTarget`).
-- [ ] `HumanGroundData`'s full field list from its reflection properties.
+- [ ] Who sends the jump / edge / obstacle interface commands (the free-run / guidance system); `CanWallingVertical`,
+      `TestForPotentialObstacleCollision`, `IsNarrowEdge`.
+- [ ] `HumanGroundData`'s property names: crack the hashes in its reflection table (section 15).
 - [ ] The actions' animations: root-motion speeds and turns, lengths (needed for the port's speeds, turns and the
       animation-driven states).
 
@@ -386,3 +387,55 @@ guidance code) are outside this doc.
   PC 0x5FE750) when the target action has finished.
 - **EdgeStop**: plays the unbalance action 115916159, then loops 115916157 (`UpdateEdgeStopMain` PC 0x5E8FC0); →
   Move when the target action has finished (PC `_UpdateEdgeStop` 0x624150).
+
+## 13. Crouching, TurnOnSpot, Idle
+**Crouch** (`HumanGroundData`+0xF3, `IHumanGround::SetCrouch`):
+
+| From → to | Test (PC [Mac]) | Condition |
+|---|---|---|
+| Wait → CrouchWait | 0x5F4FC0 [0xF9E9C2] | crouch, no high profile, the current action interruptible by movement |
+| MoveCycle → CrouchMove | inline [0xFE05A2] | crouch and not running |
+| CrouchWait → Wait | inline in PC 0x623FA0 [0xFDEBB8] | crouch released, interruptible, `ActorCanPhysicallyStandUp` (PC 0x5F72C0: a 0.38 m capsule from 0.42 m to 1.42 m above the feet is clear) |
+| CrouchWait → CrouchMove | 0x5EBDD0 [0xF9DF6A] | division ≠ 0 (and, with the flag Mac +0x8B5, a transition animation past 75 %) |
+| CrouchWait → JumpImpulsion | 0x622580 [0xFC2E48] | high profile pressed |
+| CrouchWait → CrouchTurn | 0x603690 | `Has180TurnIntention` (PC 0x5E1FA0) |
+| CrouchMove → CrouchWait | inline | division 0 |
+| CrouchMove → MoveCycle | inline [0xFDEB1A] | (crouch released or high profile) and can stand up |
+| CrouchMove → CrouchTurn | 0x6036B0 | `Has180TurnIntention` |
+| CrouchTurn → CrouchWait | inline in PC 0x5FA510 | the character controller's displacement is done (`DisplacementManager::GetProgressionRatio` PC 0x487340 ≥ 1) |
+
+`EnterCrouchWait` [0xFC316C] / `EnterCrouchMove` [0xFC3338] set the **capsule height to 1.0** (standing: 1.8,
+`LocalInit`), running 0, gait 0 / 1, and restart a timer (0.5 s; `UpdateCrouchWaitMain` PC 0x5E1EC0 calls a
+virtual every 0.5 s, `UpdateCrouchMoveMain` restarts it at 1 s). CrouchTurn plays `g_CrouchTurnActionMap`.
+
+**TurnOnSpot** (from Wait, `TestWaitToTurnOnSpotMain` PC 0x5F4F30): turn mode (+0x464) == 1, the custom-action
+orientation check, free, no movement intended, \|turn angle\| ≥ 1°. So it serves turns asked for without
+movement (AI, scripted look-at turns), not the stick. `StartTurnOnSpotAnim` (section 10) plays one of the 8 turn
+animations; TurnOnSpotStep chains further steps while the cycle flag (Mac +0x8BD, `SetUseTurnOnSpotCycle`) is set and
+there is time for the next animation, else returns to Wait when the action has finished.
+
+**Idle** (Wait's child) alternates IdleStill (id 6) and IdleBreaker (id 7): a breaker plays when `HumanData`+0x133
+[Mac] allows it, a timer (Mac +0x31C) has run out and `g_IdleBreakerActions` has a block for the actor
+(`TestIdleStillToIdleBreakerMain` [0xFB341E]). Presentation only; nothing moves.
+
+## 14. ObstacleCollision, WallingImpulsion, JumpImpulsionForwardFromIdle
+- **ObstacleCollision** (Navigation's child) is entered by interface transition from Move when
+  `Human::TestForPotentialObstacleCollision` [0x12EACEC] reports one ([0xF99344]). It leaves to Move when the
+  movement mode (`HumanGroundData`+0x80) is 0 [0xF984D0], to the NarrowObject context when a byte (Mac +0x6EA) is set
+  [0xF96AA8], to InAir by interface unless the action item flag 0x20 is set [0xF9D314], to Push or Riding by
+  interface, or to WallingImpulsion on `EnterWallingVertical`. `EnterObstacleCollision` [0xFCA224] is large (the
+  bump reaction); not decoded.
+- **WallingImpulsion** (from JumpImpulsion or ObstacleCollision on `EnterWallingVertical`; from JumpImpulsion only
+  when standing, after the 0.2 s window, and `CanWallingVertical` [0xFD295A]): → the **Walling** context when its
+  action has finished [0xF9DF10].
+- **JumpImpulsionForwardFromIdle** (`JumpToTarget` from Move: item flag 0x20 clear and either standing, factor 1, or
+  an action other than the move cycle / 228159995 / 228159996 under 75 %, factor = ratio / 0.75, stored at +0x45C
+  [0xFB5A9E]; or from JumpImpulsion): → **InAir** when its action has finished [0xF9DEB6].
+
+## 15. The reflection table (for `22_reflection.md`)
+`HumanGroundData_ClassData::m_Properties` (Mac 0x2C6C000; the PC copy is still to be found) is an array of 36-byte
+property descriptors: +0x04 the CRC-32 of the property's name, +0x08 a type hash for struct members, +0x0E a type
+code (0x0A float, 0x0D int, 0x19 struct), +0x12 the member's offset. The first entries: 0x87954054 float @0x320,
+0xBD94B0BC float @0x330, 0xE5E3E4DE int @0x340, 0xE1977073 struct (type 0x2CF49A65) @0x200, 0x8B89ADEC int @0x80
+(the movement mode), 0x9E77B818 float @0x210, 0x0CBE043C float @0x220. The names come from cracking the hashes
+(AC1: `reference/ac1/re_tools/crack.py`).

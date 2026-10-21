@@ -71,6 +71,7 @@ struct TransitionSetupDataToMovement {
 // speeds at ratio 0, 0.2, 0.4, 0.6, 0.8 and 1.0 (linear in between).
 struct PortGroundSpeeds {
     float atRatio[6] = {0.0f, 1.2f, 1.8f, 3.0f, 4.5f, 6.0f};
+    float crouchMove = 1.0f;  // PORT: CrouchMove's speed (its animation's root motion)
     // PORT: how far below the feet still counts as ground, metres. Not decoded.
     float stepDownHeight = 0.3f;
 };
@@ -95,6 +96,8 @@ struct PortActionLengths {
     float landingHard = 0.9f;
     float landingBalanceFall = 1.2f;
     float roll = 0.8f;
+    float crouchTurn = 0.6f;
+    float turnOnSpot[4] = {0.4f, 0.6f, 0.8f, 1.0f};  // by GetTurnAnimation's size (< 25, 70, 135 degrees, more)
 };
 
 struct HumanInAirData {

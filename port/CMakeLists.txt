@@ -24,6 +24,7 @@ add_executable(ac2_tests
   tests/test_ground.cpp
   tests/test_ground_turning.cpp
   tests/test_ground_landing.cpp
+  tests/test_ground_crouch.cpp
   tests/test_movement.cpp
   tests/test_sim.cpp
   tests/test_sdk.cpp
