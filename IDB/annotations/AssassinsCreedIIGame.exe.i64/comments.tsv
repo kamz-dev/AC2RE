@@ -4222,6 +4222,12 @@ D0812	c	Size
 D0814	c	int
 D099C	c	Size
 D09A4	c	int
+D0EA0	F	Baseline name doubtful: returns the control scheme that holds a button (a hijack lookup on PadManager), not a press state. See 0xD1170.
+D0EA0	c	Baseline name doubtful: returns the control scheme that holds a button (a hijack lookup on PadManager), not a press state. See 0xD1170.
+D1170	F	Was named ControlScheme::ButtonPressed in the baseline, but it returns true when ANOTHER control scheme holds the button (PadManager lookup at 0xD0EA0 != this). The real press test is !this && Pad::ButtonPressed_0 (0x10B1710) on the scheme's pad (+0x10); inlined that way in UpdateGroundMovement.
+D1170	c	Was named ControlScheme::ButtonPressed in the baseline, but it returns true when ANOTHER control scheme holds the button (PadManager lookup at 0xD0EA0 != this). The real press test is !this && Pad::ButtonPressed_0 (0x10B1710) on the scheme's pad (+0x10); inlined that way in UpdateGroundMovement.
+D11B0	F	The stick version of 0xD1170: true when another control scheme holds the stick. JoyThresholdPressed is inlined after it (ControlScheme +0x5C0 stick length vs the thresholds at *(+0x738)).
+D11B0	c	The stick version of 0xD1170: true when another control scheme holds the stick. JoyThresholdPressed is inlined after it (ControlScheme +0x5C0 stick length vs the thresholds at *(+0x738)).
 D1A00	F	Microsoft VisualC 2-14/net runtime
 D1E11	c	Block
 D2270	F	Microsoft VisualC 2-14/net runtime
@@ -20364,6 +20370,8 @@ FFF84	c	char *
 6CC930	F	Microsoft VisualC 2-14/net runtime
 6CC980	F	Microsoft VisualC 2-14/net runtime
 6CCAB0	F	Microsoft VisualC 2-14/net runtime
+6CCC40	F	Mac AssassinAbilities::GetMaxSpeed; returns AssassinAbilitySet::MaxSpeed (ACR PDB: 0 NoMovementAllowed, 1 Walk, 2 Jog, 3 Run, 4 Sprint, 5 WalkSlowest, 6 WalkSlightlySlow, 7 WalkSlow)
+6CCC40	c	Mac AssassinAbilities::GetMaxSpeed; returns AssassinAbilitySet::MaxSpeed (ACR PDB: 0 NoMovementAllowed, 1 Walk, 2 Jog, 3 Run, 4 Sprint, 5 WalkSlowest, 6 WalkSlightlySlow, 7 WalkSlow)
 6CCEF2	c	Size
 6CCEF4	c	int
 6CD06C	c	Size
@@ -36251,6 +36259,8 @@ DD932B	r	jumptable 00DD9301 case 1
 DD9337	r	jumptable 00DD9301 case 5
 DD9357	r	jumptable 00DD9301 default case
 DD9360	c	jump table for switch statement
+DD9520	F	Mac AssassinTask::IsPlayerNavigatingInAGroupFormation (break hard in UpdateGroundMovement)
+DD9520	c	Mac AssassinTask::IsPlayerNavigatingInAGroupFormation (break hard in UpdateGroundMovement)
 DD996A	c	int
 DD9973	c	float
 DD9976	c	int
@@ -36263,6 +36273,8 @@ DDB8A0	c	int
 DDB904	c	int
 DDBE9E	c	int
 DDC423	c	float
+DDD960	F	Mac AssassinTask::ReorientCaracterInFirstPerson (the first call in UpdateGroundMovement on both builds)
+DDD960	c	Mac AssassinTask::ReorientCaracterInFirstPerson (the first call in UpdateGroundMovement on both builds)
 DDDB19	c	int
 DDDB8B	c	int
 DDDB8D	c	int
@@ -36295,6 +36307,8 @@ DDF903	c	float
 DDF995	c	float
 DDF9C1	c	float
 DDFB62	c	float
+DE1720	F	Mac AssassinTask::GetCrowdObstructionFactor
+DE1720	c	Mac AssassinTask::GetCrowdObstructionFactor
 DE1824	c	char
 DE1826	c	int
 DE182B	c	int
@@ -36448,6 +36462,8 @@ DEABAD	c	float
 DEABB0	c	int
 DEACF7	c	float
 DEACFA	c	int
+DEB5E0	F	Mac 0x104EA26 AssassinTask::OnSprintBegin
+DEB5E0	c	Mac 0x104EA26 AssassinTask::OnSprintBegin
 DEC0A1	c	void *
 DEC330	c	switch 5 cases
 DEC338	c	switch jump
@@ -36531,6 +36547,8 @@ DF3067	c	int
 DF306B	c	int
 DF30B3	c	void *
 DF3340	c	void *
+DF3590	F	Mac AssassinTask::ReorientDirectionFromWallCollision(dir, 0, pi/4, target, out)
+DF3590	c	Mac AssassinTask::ReorientDirectionFromWallCollision(dir, 0, pi/4, target, out)
 DF3E30	c	int
 DF3E36	c	float
 DF3E39	c	int
@@ -36594,6 +36612,8 @@ DF7D7C	c	int
 DF7D80	c	int
 DF7D84	c	int
 DF7F4B	c	int
+DF7FE0	F	Mac 0x107F0EC __ZN8scimitar3ac212AssassinTask20UpdateGroundMovement... The player's stick/buttons -> IHumanGround (RE/21_input.md).
+DF7FE0	c	Mac 0x107F0EC __ZN8scimitar3ac212AssassinTask20UpdateGroundMovement... The player's stick/buttons -> IHumanGround (RE/21_input.md).
 DF82FA	c	float
 DF8D20	c	int
 DF9D8A	c	float
@@ -36678,6 +36698,8 @@ E03CFC	c	int
 E03E78	c	float
 E03E7B	c	int
 E03EAF	c	float
+E049A0	F	Mac 0x1082F62 AssassinTask::UpdateGround (calls UpdateGroundMovement; the PC function's only caller)
+E049A0	c	Mac 0x1082F62 AssassinTask::UpdateGround (calls UpdateGroundMovement; the PC function's only caller)
 E05000	F	Microsoft VisualC 2-14/net runtime
 E05010	F	Microsoft VisualC 2-14/net runtime
 E05831	c	Block

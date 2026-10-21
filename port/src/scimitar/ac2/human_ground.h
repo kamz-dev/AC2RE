@@ -20,6 +20,21 @@ namespace scimitar::ac2 {
 class IHumanGround {
 public:
     virtual ~IHumanGround() = default;
+    // The movement requests (RE/21_input.md; the game's slots in the Mac secondary vftable 0x281AC70 in brackets).
+    virtual void SetDirection(const Vec3& direction) = 0;  // [+0x00] Mac 0xF98EE6
+    virtual void SetSpeedRatio(float ratio) = 0;           // [+0x04] Mac 0xF9B710
+    virtual void SetMovementType(int type) = 0;            // [+0x0C] Mac 0xFBA59A; IHumanGroundAccess::MovementType
+    virtual bool GetSprint() const = 0;                    // [+0x84]
+    virtual bool GetForceTurnAround() const = 0;           // [+0x540] Mac 0x153B8AC (thunk)
+    // Queries for contexts and systems the port doesn't have (carrying, crowds, praying, obstacles). PORT: always
+    // false until those are ported.
+    virtual bool IsInObstacleCollision() const { return false; }  // [+0x420] Mac 0x153CD96 (thunk)
+    virtual bool IsCarryingObject() const { return false; }       // [+0x7C0] Mac 0x153DAC8 (thunk)
+    virtual bool IsPickPocketing() const { return false; }        // [+0x61C] Mac 0x153BD80 (thunk)
+    virtual bool IsPushing() const { return false; }              // [+0x584] Mac 0x153BC90 (thunk)
+    virtual bool GetGentlePushIntention() const { return false; } // [+0x580] Mac 0x153BA1E (thunk)
+    virtual bool IsInCrowdShove() const { return false; }         // [+0x588] Mac 0x153BD8A (thunk)
+    virtual bool IsPraying() const { return false; }              // [+0x674] Mac 0x153C3AA (thunk)
     virtual bool CanRoll() { return false; }  // Mac 0xEFE534 (not decoded)
     virtual void SetHeadingMinRotationSpeed(float radPerSecond) = 0;  // Mac 0xF9771C
     virtual void SetHeadingMaxRotationSpeed(float radPerSecond) = 0;  // Mac 0xF9772E
@@ -60,6 +75,11 @@ public:
     void Update(const port::MoveInput& input, const port::World& world, float dt) override;
 
     // IHumanGround
+    void SetDirection(const Vec3& direction) override;
+    void SetSpeedRatio(float ratio) override;
+    void SetMovementType(int type) override;
+    bool GetSprint() const override;
+    bool GetForceTurnAround() const override { return m_ForceTurnAround; }
     void SetHeadingMinRotationSpeed(float v) override { m_HeadingMinRotationSpeed = v; }
     void SetHeadingMaxRotationSpeed(float v) override { m_HeadingMaxRotationSpeed = v; }
     void SetHeadingMinRotationAngle(float v) override { m_HeadingMinRotationAngle = v; }
@@ -81,6 +101,8 @@ public:
     static int GetTurnAnimation(float signedAngle);
 
     State GetMoveState() const { return m_MoveState; }
+    float GetHeadingMinRotationSpeed() const { return m_HeadingMinRotationSpeed; }
+    float GetHeadingMaxRotationSpeed() const { return m_HeadingMaxRotationSpeed; }
     float GetSpeedRatio() const { return m_CurrentSpeedRatio; }
     int GetGaitLevel() const { return m_CurrentMvtState; }
     int GetMovementDivision() const { return m_IntentionMvtState; }

@@ -294,6 +294,26 @@ void HumanGround::UpdateMoveCycleMain(float dt) {
 
 // --- IHumanGround setters that write HumanGroundData ---
 
+void HumanGround::SetDirection(const Vec3& direction) {
+    // Mac 0xF98EE6.
+    m_Human.GetGroundData().m_DestHeading = direction;
+}
+
+void HumanGround::SetSpeedRatio(float ratio) {
+    // Mac 0xF9B710. PORT: the game also sets m_IntentionSpeed to GetMovementSpeedFromRatio(ratio) (0 when |ratio| <=
+    // 0.0005); the port has no speed table field yet.
+    m_SpeedControlType = 0;  // SpeedControlType_MvtTypeAndMvtState
+    m_Human.GetGroundData().m_DestSpeedRatio = ratio;
+    m_IntentionSpeedRatio = ratio;
+}
+
+void HumanGround::SetMovementType(int type) {
+    // Mac 0xFBA59A. The ProfileChangeEvent it sends when the type changes (presentation) isn't ported.
+    m_Human.GetGroundData().m_DestMvtType = static_cast<unsigned char>(type);
+}
+
+bool HumanGround::GetSprint() const { return m_Human.GetGroundData().m_Sprint; }
+
 void HumanGround::SetBreakHard(bool v) { m_Human.GetGroundData().m_BreakHard = v; }
 void HumanGround::SetSprint(bool v) { m_Human.GetGroundData().m_Sprint = v; }
 void HumanGround::SetCrouch(bool v) { m_Human.GetGroundData().m_Crouch = v; }

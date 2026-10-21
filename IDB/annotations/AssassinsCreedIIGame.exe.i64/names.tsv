@@ -285,7 +285,8 @@ D0EA0	scimitar::Pad::ButtonPressed
 D0FF0	scimitar::ControlScheme::RequestButtonHijack
 D1080	scimitar::ControlScheme::RequestAnalogStickHijack
 D1120	scimitar::ControlScheme::ReleaseAllHijacks
-D1170	scimitar::ControlScheme::ButtonPressed
+D1170	scimitar::ControlScheme::unk_IsButtonHijackedByOther
+D11B0	scimitar::ControlScheme::unk_IsStickHijackedByOther
 D1A30	__RTC_NumErrors_107
 D2200	__RTC_NumErrors_108
 D3000	__RTC_NumErrors_109
@@ -2856,6 +2857,9 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 6CB230	__RTC_NumErrors_1541
 6CB240	__RTC_NumErrors_1542
 6CC520	scimitar::ac2::EconomicSystemSettings::GetInventoryItemSettingsFromRepositoryByCategory
+6CC7C0	scimitar::ac2::AssassinAbilitySet::GetAllActions
+6CCC40	scimitar::ac2::AssassinAbilities::GetMaxSpeed
+6CCCB0	scimitar::ac2::AssassinAbilities::GetAbility
 6CDA10	__RTC_NumErrors_1543
 6CDA20	__RTC_NumErrors_1544
 6CDA30	__RTC_NumErrors_1545
@@ -8800,8 +8804,12 @@ DD6640	_DllMain@12_163
 DD9357	def_DD9301
 DD9360	jpt_DD9301
 DD9380	scimitar::ac2::AssassinTask::LockInputForNFrames
+DD9520	scimitar::ac2::AssassinTask::IsPlayerNavigatingInAGroupFormation
+DDD960	scimitar::ac2::AssassinTask::ReorientCaracterInFirstPerson
 DDF6EB	def_DDF6B0
 DDF6FC	jpt_DDF6B0
+DE1720	scimitar::ac2::AssassinTask::GetCrowdObstructionFactor
+DE36E0	scimitar::ac2::AssassinTask::GetAbilities
 DE3899	def_DE382B
 DE38A0	jpt_DE382B
 DE8194	def_DE80EC
@@ -8811,8 +8819,12 @@ DE92F6	def_DE90D3
 DE9300	jpt_DE90D3
 DE9911	def_DE98A7
 DE991C	jpt_DE98A7
+DEB5E0	scimitar::ac2::AssassinTask::OnSprintBegin
 DEC380	def_DEC338
 DEC530	jpt_DEC338
+DF3590	scimitar::ac2::AssassinTask::ReorientDirectionFromWallCollision
+DF7FE0	scimitar::ac2::AssassinTask::UpdateGroundMovement
+E049A0	scimitar::ac2::AssassinTask::UpdateGround
 E05040	__RTC_NumErrors_6447
 E05F40	__RTC_NumErrors_6448
 E05F50	__RTC_NumErrors_6449

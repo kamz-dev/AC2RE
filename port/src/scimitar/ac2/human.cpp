@@ -61,7 +61,8 @@ Human::Human() {
 }
 
 void Human::SetPortHeading(const PortHeadingSettings& heading) {
-    // PORT: stands in for the player's controller, which sets the heading rotation through IHumanGround.
+    // PORT: the initial heading rotation. The player's controller sets the speeds every ground frame
+    // (AssassinTask::UpdateGroundMovement); who sets the angles isn't decoded (live values, RE/20 row 6).
     IHumanGround& ground = m_ContextBundle.GetGround();
     ground.SetHeadingMinRotationSpeed(heading.minRotationSpeed);
     ground.SetHeadingMaxRotationSpeed(heading.maxRotationSpeed);
@@ -77,21 +78,8 @@ void Human::ForceContext(HumanContextId id) {
 }
 
 void Human::Update(const port::MoveInput& input, const port::World& world, float dt) {
-    // PORT: the game's controller / action interpreter (not decoded) sets HumanGroundData's DestHeading and
-    // DestSpeedRatio; the port copies the input's world direction and stick magnitude in. Live (RE/20 row 5,
-    // session 2): legs (Space, the fast walk) sets Sprint (target 0.4); high profile (right mouse, the run) sets
-    // +0x181 (target 0.8); both give the sprint (target 1). Each flag follows its own button.
-    const bool sprint = input.held(port::kLegs);
-    m_GroundData.m_DestHeading = input.moveDir;
-    m_GroundData.m_DestSpeedRatio = input.moveMag;
-    m_GroundData.m_DestMvtType = input.held(port::kHighProfile);
-    IHumanGround& ground = m_ContextBundle.GetGround();
-    ground.SetSprint(sprint);
-    SetPortHeading(sprint ? kPortHeadingSprint : kPortHeadingNormal);  // live row 6: follows Sprint
-    // PORT: who calls SetBreakHard for the player isn't decoded (LIVE row 7). Live it is set while DestSpeedRatio is
-    // 0 and cleared ~0.1 s after a move starts; the port follows the stick without that lag.
-    ground.SetBreakHard(input.moveMag <= 0.0f);
-
+    // The player's controller (AssassinTask, port/src/scimitar/ac2/assassin_task.h) or an AI drives the contexts
+    // through their interfaces before this runs.
     m_RequestedContext = HumanContextId::None;
     if (ActorContext* ctx = m_ContextBundle.Get(m_CurrentContext)) ctx->Update(input, world, dt);
     m_TimeInContext += dt;

@@ -9,7 +9,8 @@
 
 namespace port {
 
-// AC-style "puppeteer" buttons. LIVE: map them to AC2's pad proxy fields once decoded.
+// AC-style "puppeteer" buttons. AssassinTask reads Pad::PadButton 0 (legs) and 13 (high profile; RE/21_input.md);
+// LIVE row 3: the pad proxy fields.
 enum Button : std::uint32_t {
     kHighProfile = 1u << 0,  // RT / right mouse: the run; with legs, the sprint
     kLegs = 1u << 1,         // A / space: the fast walk; jump, free-run

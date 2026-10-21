@@ -95,7 +95,7 @@ struct HumanGroundData {
     std::uint32_t m_CustomActionControlChannel = 0;    // +0xE0
     std::uint32_t m_CustomActionSecondaryChannel = 0;  // +0xE4
     bool m_IsSet = false;                          // +0xEC
-    bool m_BreakHard = false;                      // +0xED IHumanGround::SetBreakHard; while running -> MoveStop (LIVE row 7)
+    bool m_BreakHard = false;                      // +0xED IHumanGround::SetBreakHard; while running -> MoveStop (the player: AssassinTask, RE/21)
     bool m_Sprint = false;                         // +0xEE IHumanGround::SetSprint; +0.2 to the target ratio (LIVE row 5)
     bool m_ForceFallFromGrabThrow = false;         // +0xEF
     bool m_ForceRemainStandingOnAnyWallImpact = false;  // +0xF0
@@ -174,11 +174,10 @@ struct PortHeadingSettings {
     float minRotationAngle;  // rad
     float maxRotationAngle;  // rad
 };
-// The player's values, read live from HumanGround +0x8B8..+0x8C4 (RE/20_live_checks.md row 6, 2026-10-21): one set
-// while Sprint (HumanGroundData +0xEE) is off, the other while it is on (the speeds x 0.65). Who sets them (the
-// player's controller) isn't decoded, so they stay PORT stand-ins with live-verified values.
+// The player's values, read live from HumanGround +0x8B8..+0x8C4 (RE/20_live_checks.md row 6, 2026-10-21). The speeds
+// are set every ground frame by AssassinTask::UpdateGroundMovement (1.5 / 4.0, or 0.975 / 2.6 with pad button 0,
+// RE/21_input.md); the angles' setter isn't decoded, so these stay the initial values (PORT).
 inline constexpr PortHeadingSettings kPortHeadingNormal{1.5f, 4.0f, 0.17453292f, 1.0471976f};
-inline constexpr PortHeadingSettings kPortHeadingSprint{0.975f, 2.6f, 0.17453292f, 1.0471976f};
 
 // PORT: the lengths of the animation-driven ground states' actions (TurnStart, MoveStop, RunTurn), which the game
 // takes from the animations (g_TurnStartActionMap etc., RE/11_ground.md 10). Stand-ins until they are loaded.

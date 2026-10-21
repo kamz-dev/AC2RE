@@ -71,6 +71,15 @@ inline constexpr std::uint32_t HumanGround_ActorCanPhysicallyStandUp = 0x5F72C0;
 inline constexpr std::uint32_t ActionComponent_WillActionFinish = 0x165C90;    // named by call shape; static
 inline constexpr std::uint32_t ActionComponent_HasActionFinished = 0x165C20;   // named by call shape; static
 
+// scimitar::ac2::AssassinTask, the player's controller (RE/21_input.md)
+inline constexpr std::uint32_t AssassinTask_UpdateGround = 0xE049A0;           // Mac 0x1082F62; static
+inline constexpr std::uint32_t AssassinTask_UpdateGroundMovement = 0xDF7FE0;   // Mac 0x107F0EC; static (constants)
+inline constexpr std::uint32_t AssassinTask_ReorientDirectionFromWallCollision = 0xDF3590;  // static
+inline constexpr std::uint32_t AssassinTask_GetCrowdObstructionFactor = 0xDE1720;           // static
+inline constexpr std::uint32_t AssassinTask_OnSprintBegin = 0xDEB5E0;          // Mac 0x104EA26; static
+inline constexpr std::uint32_t AssassinAbilities_GetMaxSpeed = 0x6CCC40;       // static
+inline constexpr std::uint32_t AssassinAbilities_GetAbility = 0x6CCCB0;        // static
+
 // Action-id maps (filled by HumanGround::InitializeGlobalActions)
 inline constexpr std::uint32_t g_GroundWaitActionMap = 0x1E13600;
 inline constexpr std::uint32_t g_MoveStopActionMap = 0x1E13694;

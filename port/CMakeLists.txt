@@ -6,6 +6,7 @@ add_library(ac2_sdk INTERFACE)
 target_include_directories(ac2_sdk INTERFACE ../sdk/include)
 
 add_library(ac2_movement STATIC
+  src/scimitar/ac2/assassin_task.cpp
   src/scimitar/ac2/human.cpp
   src/scimitar/ac2/human_ground.cpp
   src/scimitar/ac2/human_in_air.cpp
@@ -21,6 +22,7 @@ target_link_libraries(ac2sim PRIVATE ac2_movement)
 add_executable(ac2_tests
   tests/main.cpp
   tests/test_math.cpp
+  tests/test_assassin_task.cpp
   tests/test_ground.cpp
   tests/test_ground_turning.cpp
   tests/test_ground_landing.cpp

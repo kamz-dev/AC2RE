@@ -1,6 +1,7 @@
 // HumanGround's decoded rules (RE/11_ground.md 5; UpdateMoveCycleMain PC 0x61BB60, Mac 0xFCD20A).
 
 #include "check.h"
+#include "drive.h"
 #include "port/input.h"
 #include "port/world.h"
 #include "scimitar/ac2/human.h"
@@ -73,31 +74,32 @@ TEST(ground_gait_bands) {
 TEST(ground_wait_movecycle_wait) {
     port::BoxWorld world;
     Human human;
+    scimitar::ac2::AssassinTask task;
     HumanGround& ground = human.GetContextBundle().GetGround();
     const float dt = 1.0f / 30.0f;
     port::MoveInput walk;
     walk.moveDir = {0, 1, 0};
     walk.moveMag = 1;
 
-    human.Update(walk, world, dt);
+    PlayerStep(task, human, walk, world, dt);
     CHECK(ground.GetMoveState() == State::MoveCycle);  // Wait -> MoveCycle this frame, ratio not yet updated
     CHECK_NEAR(ground.GetSpeedRatio(), 0.0f, 1e-6f);
 
-    for (int i = 0; i < 30; ++i) human.Update(walk, world, dt);
+    for (int i = 0; i < 30; ++i) PlayerStep(task, human, walk, world, dt);
     CHECK_NEAR(ground.GetSpeedRatio(), 0.2f, 1e-5f);  // walk target, reached at dt per frame
     CHECK(human.m_Position.y > 0.0f);
 
     port::MoveInput run = walk;
     run.buttons = port::kHighProfile;  // the run: +0x181, target 0.8 (live row 5)
-    for (int i = 0; i < 30; ++i) human.Update(run, world, dt);
+    for (int i = 0; i < 30; ++i) PlayerStep(task, human, run, world, dt);
     CHECK_NEAR(ground.GetSpeedRatio(), 0.8f, 1e-5f);
     CHECK(ground.IsRunning());
 
     // Released while running: BreakHard (the port's stand-in controller) sends MoveCycle to MoveStop, and MoveStop to
     // Wait once its action is over and the division is 0.
-    human.Update({}, world, dt);
+    PlayerStep(task, human, {}, world, dt);
     CHECK(ground.GetMoveState() == State::MoveStop);
-    for (int i = 0; i < 60 && ground.GetMoveState() == State::MoveStop; ++i) human.Update({}, world, dt);
+    for (int i = 0; i < 60 && ground.GetMoveState() == State::MoveStop; ++i) PlayerStep(task, human, {}, world, dt);
     CHECK(ground.GetMoveState() == State::Wait);
     // ExecMoveStopToWaitMain (PC 0x61F200) zeroes the speed ratio; live 2026-10-21 (RE/20 row 8).
     CHECK_NEAR(ground.GetSpeedRatio(), 0.0f, 1e-6f);

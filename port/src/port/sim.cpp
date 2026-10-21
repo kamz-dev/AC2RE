@@ -9,6 +9,7 @@ Sim::Sim(const World& world, SpawnState spawn, float dt) : world_(world), dt_(dt
 }
 
 void Sim::step(const MoveInput& in) {
+    task_.Update(in, human_, dt_);
     human_.Update(in, world_, dt_);
     time_ += dt_;
     timeline_.push_back(

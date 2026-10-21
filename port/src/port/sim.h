@@ -8,6 +8,7 @@
 
 #include "port/input.h"
 #include "port/world.h"
+#include "scimitar/ac2/assassin_task.h"
 #include "scimitar/ac2/human.h"
 
 namespace port {
@@ -44,12 +45,14 @@ public:
 
     const Human& human() const { return human_; }
     Human& human() { return human_; }
+    scimitar::ac2::AssassinTask& task() { return task_; }
     const std::vector<Frame>& timeline() const { return timeline_; }
     float time() const { return time_; }
 
 private:
     const World& world_;
     Human human_;
+    scimitar::ac2::AssassinTask task_;  // the player's controller
     float dt_;
     float time_ = 0;
     std::vector<Frame> timeline_;
