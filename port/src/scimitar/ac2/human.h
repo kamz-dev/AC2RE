@@ -26,14 +26,14 @@ public:
     // Not implemented yet: GetLedge 0x12C48EA, GetClimb 0x12C48C8, GetWalling 0x12C48A6, GetLadder 0x12C492E,
     // GetNarrowObject 0x12C46A8, GetHayStack 0x12C4774, GetKiosk 0x12C47B8, GetSwim 0x12C4686.
 
-    HumanContextBase* Get(HumanContextId id);  // PORT: by id, for the port's switching
+    ActorContext* Get(HumanContextId id);  // PORT: by id, for the port's switching
 
 private:
     template <class T>
     T& CreateContextOnDemand(HumanContextId id);
 
     Human& m_Human;
-    std::array<std::unique_ptr<HumanContextBase>, static_cast<size_t>(HumanContextId::Count)> m_Contexts;
+    std::array<std::unique_ptr<ActorContext>, static_cast<size_t>(HumanContextId::Count)> m_Contexts;
 };
 
 class Human {
@@ -50,8 +50,10 @@ public:
     HumanContextId GetPreviousContextID() const { return m_PreviousContext; }
     float GetTimeInContext() const { return m_TimeInContext; }
 
+    HumanGroundData& GetGroundData() { return m_GroundData; }
     const HumanGroundData& GetGroundData() const { return m_GroundData; }
     const HumanInAirData& GetInAirData() const { return m_InAirData; }
+    const PortGroundSpeeds& GetPortGroundSpeeds() const { return m_PortGroundSpeeds; }
 
     // A context asks to hand over to another one; the switch happens at the end of the update.
     void RequestContext(HumanContextId id) { m_RequestedContext = id; }
@@ -72,6 +74,7 @@ private:
     float m_TimeInContext = 0;
     HumanGroundData m_GroundData;
     HumanInAirData m_InAirData;
+    PortGroundSpeeds m_PortGroundSpeeds;
 };
 
 }  // namespace scimitar::ac2

@@ -6,9 +6,9 @@
 
 namespace scimitar::ac2 {
 
-class HumanInAir final : public HumanContextBase {
+class HumanInAir final : public ActorContext {
 public:
-    using HumanContextBase::HumanContextBase;
+    using ActorContext::ActorContext;
     HumanContextId GetID() const override { return HumanContextId::InAir; }
     void Update(const port::MoveInput& input, const port::World& world, float dt) override;
 };

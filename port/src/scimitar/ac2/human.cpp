@@ -1,5 +1,6 @@
 #include "scimitar/ac2/human.h"
 
+#include "port/input.h"
 #include "scimitar/ac2/human_ground.h"
 #include "scimitar/ac2/human_in_air.h"
 
@@ -28,7 +29,7 @@ T& HumanContextBundle::CreateContextOnDemand(HumanContextId id) {
 HumanGround& HumanContextBundle::GetGround() { return CreateContextOnDemand<HumanGround>(HumanContextId::Ground); }
 HumanInAir& HumanContextBundle::GetInAir() { return CreateContextOnDemand<HumanInAir>(HumanContextId::InAir); }
 
-HumanContextBase* HumanContextBundle::Get(HumanContextId id) {
+ActorContext* HumanContextBundle::Get(HumanContextId id) {
     switch (id) {
         case HumanContextId::Ground: return &GetGround();
         case HumanContextId::InAir: return &GetInAir();
@@ -46,16 +47,23 @@ void Human::ForceContext(HumanContextId id) {
 }
 
 void Human::Update(const port::MoveInput& input, const port::World& world, float dt) {
+    // PORT: the game fills HumanGroundData from its controller / action interpreter (not decoded); the port copies
+    // the input in. LIVE rows 3 and 5: which buttons set +0xEE and +0x181.
+    m_GroundData.m_MoveDirection = input.moveDir;
+    m_GroundData.m_StickMagnitude = input.moveMag;
+    m_GroundData.m_HighProfileRequest = input.held(port::kHighProfile);
+    m_GroundData.m_SpeedBandUp = input.held(port::kLegs);
+
     m_RequestedContext = HumanContextId::Count;
-    if (HumanContextBase* ctx = m_ContextBundle.Get(m_CurrentContext)) ctx->Update(input, world, dt);
+    if (ActorContext* ctx = m_ContextBundle.Get(m_CurrentContext)) ctx->Update(input, world, dt);
     m_TimeInContext += dt;
 
     // PORT: the game's switching goes through its FSMs and interface commands; not decoded yet.
     HumanContextId next = m_RequestedContext;
     if (next == HumanContextId::Count || next == m_CurrentContext) return;
-    HumanContextBase* to = m_ContextBundle.Get(next);
+    ActorContext* to = m_ContextBundle.Get(next);
     if (!to) return;  // a context the port doesn't have yet: stay
-    if (HumanContextBase* from = m_ContextBundle.Get(m_CurrentContext)) from->Exit();
+    if (ActorContext* from = m_ContextBundle.Get(m_CurrentContext)) from->Exit();
     m_PreviousContext = m_CurrentContext;
     m_CurrentContext = next;
     m_TimeInContext = 0;

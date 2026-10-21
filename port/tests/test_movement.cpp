@@ -25,11 +25,14 @@ TEST(ground_idle_stays_put) {
     CHECK(sim.human().m_Position == Vec3{});
 }
 
-TEST(ground_run_speed) {
+TEST(ground_walk_moves_forward) {
     BoxWorld world;
     Sim sim(world);
     sim.run(1.0f, [](float) { return forward(); });
-    CHECK_NEAR(sim.human().m_Position.y, sim.human().GetGroundData().runSpeed, 1e-3f);
+    // PORT: the distance depends on the stand-in speeds; only the direction and an upper bound are checked.
+    CHECK(sim.human().m_Position.y > 0.0f);
+    CHECK(sim.human().m_Position.y < sim.human().GetPortGroundSpeeds().atRatio[1]);
+    CHECK_NEAR(sim.human().m_Position.x, 0.0f, 1e-6f);
     CHECK_NEAR(sim.human().m_Yaw, 0.0f, 1e-6f);
 }
 
@@ -37,7 +40,11 @@ TEST(walk_off_edge_falls_and_lands) {
     BoxWorld world;
     world.add({{-5, -5, 0}, {5, 5, 3}});
     Sim sim(world, {.position = {0, 0, 3}});
-    sim.run(4.0f, [](float) { return forward(); });
+    sim.run(4.0f, [](float) {
+        MoveInput in = forward();
+        in.buttons = kHighProfile;  // run: a stick-only walk (ratio 0.2) wouldn't reach the edge in time
+        return in;
+    });
 
     bool sawAir = false;
     for (const Frame& f : sim.timeline()) sawAir |= f.context == HumanContextId::InAir;

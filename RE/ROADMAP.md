@@ -30,7 +30,7 @@ Status: `open` / `claimed` / `partial` / `done`.
 ## P2: Contexts (one RE doc + port module + sim tests each)
 | Context | Owner | Status | RE doc |
 |---|---|---|---|
-| Ground (locomotion only) | | open | `11_ground.md` |
+| Ground (locomotion only) | kamz-dev (`kamz-dev/ground-re`) | partial | `11_ground.md`: class, vftable, FSM tree and the MoveCycle speed model done 2026-10-21; transitions, other states, data fields open |
 | InAir (jumps, falls, catches, landings) | | open | `12_in_air.md` |
 | Ledge + Climb | | open | `13_ledge_climb.md` |
 | NarrowObject (beams, poles) | | open | `14_narrow_object.md` |
@@ -51,11 +51,12 @@ against the game, or still to decode. Regenerate the list with `git grep -n "POR
 
 | Where | What | Class |
 |---|---|---|
-| `scimitar/ac2/human_data.h` | all speeds, step-down and gravity are placeholders | to decode (reflection) |
-| `scimitar/ac2/human_ground.cpp` | gait choice, instant acceleration and turning; direct switch to InAir | to decode (Ground FSM) |
+| `scimitar/ac2/human_data.h` | `PortGroundSpeeds`: ratio → m/s stand-in for MoveCycle's root motion; step-down; gravity | to decode (animations) |
+| `scimitar/ac2/human_ground.cpp` | Wait ↔ MoveCycle tests; the restriction-mode branch unused (no action system); slow-down curve = 1; instant turning; direct switch to InAir | to decode (Ground FSM, 11_ground.md 6) |
+| `scimitar/ac2/human.cpp` (input) | HumanGroundData filled straight from the input | live rows 3, 5 |
 | `scimitar/ac2/human_in_air.cpp` | ballistic fall, no catches | to decode (InAir FSM) |
 | `scimitar/ac2/human.cpp` / `human.h` | context switching; Update's arguments; position / velocity stand-ins | to decode (P0) |
-| `scimitar/ac2/human_context.h` | context id order; the port's own context base class | to decode (P0) |
+| `scimitar/ac2/human_context.h` | context id order; `ActorContext` has only Enter / Exit / Update | to decode (P0) |
 | `scimitar/math.h` | vector type and yaw convention | live row 1 |
 | `port/sim.h` | 30 Hz tick | live row 2 |
 | `port/input.h` | input arrives as a world direction | engine adaptation until `21_input.md` |
@@ -64,4 +65,5 @@ against the game, or still to decode. Regenerate the list with `git grep -n "POR
 | Date | Decision |
 |---|---|
 | 2026-10-21 | The port mirrors the game as closely as possible (names, structure, rules, layouts), to serve as an SDK. |
+| 2026-10-21 | Port member fields use `m_` (the game's name when known, else a descriptive one with its PC offset in a comment). |
 | 2026-10-21 | C++ / CMake. One repository for RE, SDK and port; IDBs and game files stay out of git. |

@@ -1,6 +1,7 @@
 // The sdk/ headers compile in the port's build, and the address table stays inside the PC image.
 
 #include "ac2sdk/addresses.h"
+#include "ac2sdk/human_ground.h"
 #include "ac2sdk/layout.h"
 #include "check.h"
 
@@ -11,8 +12,11 @@ constexpr std::uint32_t kTextBegin = 0x1000, kTextEnd = 0x18A5000;
 
 TEST(sdk_function_addresses_are_in_text) {
     using namespace ac2sdk::addr;
-    for (std::uint32_t a : {Human_Update, Human_ApplyDeath, HumanInAirData_FastLoad, Engine_BeginFrame, World_GetPlayer})
+    for (std::uint32_t a : {Human_Update, Human_ApplyDeath, HumanInAirData_FastLoad, Engine_BeginFrame, World_GetPlayer,
+                            HumanGround_ctor, HumanGround_Update, HumanGround_LinkFSM, HumanGround_UpdateHumanGround,
+                            HumanGround_UpdateMove, HumanGround_UpdateMoveCycle, HumanGround_UpdateMoveCycleMain})
         CHECK(a >= kTextBegin && a < kTextEnd);
+    static_assert(ac2sdk::addr::HumanGround_vftable >= kTextEnd);  // in .rdata
 }
 
 TEST(sdk_layout_macros_compile) {

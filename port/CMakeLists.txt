@@ -21,6 +21,7 @@ target_link_libraries(ac2sim PRIVATE ac2_movement)
 add_executable(ac2_tests
   tests/main.cpp
   tests/test_math.cpp
+  tests/test_ground.cpp
   tests/test_movement.cpp
   tests/test_sim.cpp
   tests/test_sdk.cpp

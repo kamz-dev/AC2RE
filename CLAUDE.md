@@ -69,6 +69,10 @@ Open them with the IDA MCP's `idb_open` using the absolute path of `<repo>/IDB/<
 - **Port code mirrors the game:**
   - classes, methods and fields keep the game's names and structure; each class and function cites its PC address
     and the symbol it was named from;
+  - member fields use the `m_` prefix (`m_SpeedRatio`). Where the game's name isn't known yet, pick a descriptive
+    one and give the field's PC offset in its comment (`// +0x7BC`), so it can be renamed once the reflection or
+    symbols give the real name. Port-only helpers that stand in for undecoded code are named `Port...` and tagged
+    `PORT:`;
   - a rule is written the way the game computes it (same order, same conditions, same constants), not an
     "equivalent" rewrite, and cites its RE section and address;
   - anything that departs from the game is a stand-in tagged `PORT:` with its reason, and is logged in

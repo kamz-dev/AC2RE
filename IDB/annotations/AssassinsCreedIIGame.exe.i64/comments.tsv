@@ -17589,6 +17589,8 @@ FFF84	c	char *
 60116A	c	int
 60116C	c	int
 60117C	c	float
+602270	F	Mac HumanGround::LinkFSM 0xFA4130 (identical byte stores). Simple FSM state records are 3 bytes {id, initialChild, currentChild} from this+0x8C (id 1 Vulnerable); FSMClassStateWrapper sub-machines are 8 bytes (id at +5). Root: this+0x41 initial, this+0x42 current. 147 ids. RE/11_ground.md
+602270	c	Mac HumanGround::LinkFSM 0xFA4130 (identical byte stores). Simple FSM state records are 3 bytes {id, initialChild, currentChild} from this+0x8C (id 1 Vulnerable); FSMClassStateWrapper sub-machines are 8 bytes (id at +5). Root: this+0x41 initial, this+0x42 current. 147 ids. RE/11_ground.md
 60380E	c	int
 603811	c	float
 603A42	c	float
@@ -17695,6 +17697,8 @@ FFF84	c	char *
 618655	c	void *
 61A00D	c	float
 61B642	c	float
+61BB60	F	Mac HumanGround::UpdateMoveCycleMain 0xFCD20A. Speed ratio this+0x7BC (Mac +0x79C): target = data+0x88 (stick mag) * 0.2 + {0, 0.2 if data+0xEE, 0.6 if HP this+0x7B4, 0.8 if both}, clamped 1; AI override this+0x8A8/+0x7C0; restriction mode this+0x994. Bands of 0.2 pick MoveCycle blend slots 0-3,3-6,6-9,9-13,13-16 (+1/+2 = turn variants). RE/11_ground.md
+61BB60	c	Mac HumanGround::UpdateMoveCycleMain 0xFCD20A. Speed ratio this+0x7BC (Mac +0x79C): target = data+0x88 (stick mag) * 0.2 + {0, 0.2 if data+0xEE, 0.6 if HP this+0x7B4, 0.8 if both}, clamped 1; AI override this+0x8A8/+0x7C0; restriction mode this+0x994. Bands of 0.2 pick MoveCycle blend slots 0-3,3-6,6-9,9-13,13-16 (+1/+2 = turn variants). RE/11_ground.md
 61BCF6	c	float
 61BF4E	c	int
 61BF68	c	float
@@ -18391,7 +18395,13 @@ FFF84	c	char *
 630524	c	hinstDLL
 6327B6	c	void *
 633821	c	void *
+634D20	F	Mac HumanGround::_UpdateMove 0xFE069C. data+0x80 == 3 -> OrientedMove; Poisoned; walking-on-horse flag this+0x6F9 (Mac +0x6E9) -> InAir.
+634D20	c	Mac HumanGround::_UpdateMove 0xFE069C. data+0x80 == 3 -> OrientedMove; Poisoned; walking-on-horse flag this+0x6F9 (Mac +0x6E9) -> InAir.
 6367D1	c	Block
+6371E0	F	Mac HumanGround::_UpdateNavigation 0xFE35FA. TestNavigationToInAirMain inlined: entity type (entity+0xA8 &7)==2 and CheckForBoatCollision (Mac 0xFA05DC).
+6371E0	c	Mac HumanGround::_UpdateNavigation 0xFE35FA. TestNavigationToInAirMain inlined: entity type (entity+0xA8 &7)==2 and CheckForBoatCollision (Mac 0xFA05DC).
+6381D0	F	Mac HumanGround::_UpdateHumanGround 0xFED468. a2: 0 = main update, 1 = after physics. Dispatches on root current state this+0x42.
+6381D0	c	Mac HumanGround::_UpdateHumanGround 0xFED468. a2: 0 = main update, 1 = after physics. Dispatches on root current state this+0x42.
 6388D1	c	lpvReserved
 6388D6	c	fdwReason
 6388D8	c	hinstDLL
@@ -90276,6 +90286,7 @@ FFFF48	c	Source
 18A6290	c	SizeOfData
 18A6294	c	AddressOfRawData
 18A6298	c	PointerToRawData
+19BFCD8	c	vftable scimitar::ac2::HumanGround (primary, ActorContext). 24 slots; PC slot k = Mac __ZTVN8scimitar3ac211HumanGroundE slot k+1 (Itanium has D1+D0). RE/11_ground.md
 1ABB720	c	jump table for switch statement
 1ABB800	c	jump table for switch statement
 1ABB840	c	jump table for switch statement

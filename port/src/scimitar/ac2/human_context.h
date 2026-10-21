@@ -45,19 +45,29 @@ enum class HumanContextId : std::uint8_t {
 
 std::string_view HumanContextName(HumanContextId id);
 
-// PORT: the common base the game's contexts share is not identified yet; this is the port's.
-class HumanContextBase {
+}  // namespace scimitar::ac2
+
+namespace scimitar {
+
+// The contexts' engine base class (Mac scimitar::ActorContext; HumanGround's primary base, RE/11_ground.md 1). Its
+// vftable in the game: dtor, CreateAI, LocalInit, GlobalInit(World*), TriggerEnter, Shutdown(World*),
+// UpdateAfterPhysics, ReleaseResources, QueryInterface, GetActorContextData (x2), SetAIActorData, Enter, Exit,
+// Update(long), LinkFSM, GetCurrentStateName. The game's contexts also derive from
+// DataContext<Human, HumanData, *Data>.
+// PORT: only Enter / Exit / Update so far. The game's Update(long) takes the update phase (0 = main, 1 = after
+// physics; HumanGround::_UpdateHumanGround PC 0x6381D0) and reads input and time from its own systems; the port
+// passes them in. GetID and the Human reference stand in for the DataContext's typed accessors.
+class ActorContext {
 public:
-    explicit HumanContextBase(Human& human) : m_Human(human) {}
-    virtual ~HumanContextBase() = default;
-    virtual HumanContextId GetID() const = 0;
+    explicit ActorContext(ac2::Human& human) : m_Human(human) {}
+    virtual ~ActorContext() = default;
+    virtual ac2::HumanContextId GetID() const = 0;
     virtual void Enter() {}
     virtual void Exit() {}
-    // Mac HumanGround::Update(long) takes a long; its meaning is not decoded. PORT: the port passes dt and input.
     virtual void Update(const port::MoveInput& input, const port::World& world, float dt) = 0;
 
 protected:
-    Human& m_Human;
+    ac2::Human& m_Human;
 };
 
-}  // namespace scimitar::ac2
+}  // namespace scimitar

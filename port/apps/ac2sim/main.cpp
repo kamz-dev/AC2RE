@@ -1,6 +1,6 @@
 // ac2sim: run the movement headless and print or save the timeline.
 //
-//   ac2sim                  the built-in demo (run forward off a 3 m box), context timeline on stdout
+//   ac2sim                  the built-in demo (high-profile run off a 3 m box), context timeline on stdout
 //   ac2sim --csv out.csv    also write every frame as CSV
 
 #include <cstdio>
@@ -30,6 +30,7 @@ int main(int argc, char** argv) {
         MoveInput in;
         in.moveDir = {0, 1, 0};
         in.moveMag = 1;
+        in.buttons = kHighProfile;  // run
         return in;
     });
 
