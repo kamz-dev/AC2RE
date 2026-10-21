@@ -128,6 +128,33 @@ TEST(controller_turn_slowdown_in_high_profile) {
     CHECK_NEAR(task.m_TurnSlowdownFactor, 0.1f + 5.0f * kDt, 1e-5f);
 }
 
+TEST(controller_forced_turn_around_on_entering_a_band_for_0_3_s) {
+    // Live: thresholds 0.35 / 0.9 / 1.0 (RE/20 row 11); the flag lasts 0.30 s (PC 0xDF81F7).
+    Human human;  // facing +Y
+    AssassinTask task;
+    auto& ground = human.GetContextBundle().GetGround();
+    task.Update(Stick(3.0f, 0.35f), human, kDt);  // still band 0: nothing entered
+    CHECK(!task.m_ForceTurnAround);
+    task.Update(Stick(3.0f, 0.36f), human, kDt);  // band 1 entered, about 172 degrees behind
+    CHECK(task.m_ForceTurnAround);
+    CHECK(ground.GetForceTurnAround());
+    int frames = 1;
+    while (task.m_ForceTurnAround && frames < 30) {
+        task.Update(Stick(3.0f, 0.36f), human, kDt);
+        ++frames;
+    }
+    CHECK(frames == 10);  // set on frame 1, cleared on the first frame at or past 0.3 s (frame 10 at 30 Hz)
+
+    task.Update(Stick(3.0f, 0.9f), human, kDt);  // 0.9 is still band 1: not a new band
+    CHECK(!task.m_ForceTurnAround);
+    task.Update(Stick(3.0f, 0.95f), human, kDt);  // band 2 entered
+    CHECK(task.m_ForceTurnAround);
+    for (int i = 0; i < 10; ++i) task.Update({}, human, kDt);  // released; the 0.3 s run out
+    CHECK(!task.m_ForceTurnAround);
+    task.Update(Stick(1.0f, 1.0f), human, kDt);  // band 2 entered about 57 degrees off: no forced turn
+    CHECK(!task.m_ForceTurnAround);
+}
+
 TEST(controller_without_all_actions_stops) {
     Human human;
     AssassinTask task;

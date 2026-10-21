@@ -64,23 +64,38 @@ the same place, hypothesis), +0x94E the forced turn-around, +0x968 [+0x964] its 
   stick goes under 0.35.
 
 ## UpdateGroundMovement 0xDF7FE0 [0x107F0EC]
+`UpdateGround` 0xE049A0 [0x1082F62] gets here only when none of its handlers takes the frame. In order (PC names
+from the Mac symbols): `UpdateCape` 0xDD82B0, `UpdateCarryNPCDetection` 0xDEEA20, a ground-state check
+(IHumanGround +0x7E0 ≠ 7), `CheckForMissionInteraction` 0xDE37C0, `UpdateWeapon` 0xDE7D60,
+`CheckForWeaponSwitchRequest` 0xDEAEC0, `UpdateRest` 0xE04490, `UpdateGroundLoot` 0xDF3CB0,
+`UpdateFormationControl` 0xE04040, `UpdateDrawWeapon` 0xDEA970, `UpdateFight` 0xDFD7C0, `UpdateGrabbed` 0xDED850,
+`UpdatePickUp` 0xDEAB40, `UpdateCarry` 0xDD9910, `UpdateControls` 0xDF7630, `UpdateMissionInteractionControls`
+0xDD9290, `CheckForFightInteraction` 0xE02C00, `UpdateAnimusDB` 0xDD9A80, `CheckDoGroupManip` 0xDEC550, then
+`UpdateGroundMovement`, `UpdateMainCharacterActionIDs` 0xDEC210, `UpdateObjectCollision` 0xDD80F0,
+`UpdateGroundCharge` 0xDE5430. The `Check*` / `Update*` ones whose result is tested end the frame when they return
+true.
+
 In order (`sight` is `BaseEntity::GetSight`; `dt` the entity's world dt, PC entity +0x6C → +0x5D8):
 1. `ReorientCaracterInFirstPerson` 0xDDD960 (first person only).
 2. Without the GetAllActions ability: `SetSpeedRatio(0)`, `SetDirection(normalised sight)`, return.
 3. **Break hard** (0xDF8139): `true` while the stick is in band 0 (`JoyThresholdPressed(stick 0, 0)`; PC inlines it
-   as `unk_IsStickHijackedByOther` 0xD11B0 and a compare of the length, ControlScheme +0x5C0, against the
-   thresholds at `*(ControlScheme +0x738)`). Otherwise, if +0x8C0 ≠ 0 and the stick isn't in band 1: `false`.
+   as `unk_IsStickHijackedByOther` 0xD11B0 and a compare of the length, AssassinTask +0x630 (ControlScheme +0x5C0),
+   against the thresholds at `*(AssassinTask +0x7A8)` (ControlScheme +0x738): **0.35, 0.9, 1.0** live; band 0 is
+   length ≤ 0.35, band 1 up to 0.9, band 2 up to 1.0). Otherwise, if +0x8C0 ≠ 0 and the stick isn't in band 1: `false`.
    Otherwise `true` when dot(damped stick, sight) < −0.70710677 (**more than 135° from the facing**) and
    `IsPlayerNavigatingInAGroupFormation` 0xDD9520 is false; else `false`. (+0x8C0 is always 0 here, see 9.)
-4. **Forced turn-around** (0xDF81F7): when the stick just entered band 1 or 2 (current band ControlScheme +0x7D4,
+4. **Forced turn-around** (0xDF81F7): when the stick just entered band 1 or 2 (current band AssassinTask +0x7D4,
    last frame's +0x7D6), not already forced, and |+0xEE4| > 2.0943952 (120°): set +0x94E and start the timer for
    0.3 s. Otherwise it is cleared once the timer has run out or HumanGround's `GetForceTurnAround` is false. Then
-   `SetForceTurnAround(+0x94E)`.
+   `SetForceTurnAround(+0x94E)`. The elapsed test is `scimitar::Timer::sub_6BCC0` (now ≥ end, the clock at
+   *(timer +0x1C)). Live (2026-10-21): five forced turn-arounds lasted 0.30 s each.
 5. **The speed ratio** (+0x8B0, 0xDF834B): (length − 0.35) / 0.65, at most 1; 0 at or below 0.35. Then by
    `AssassinAbilities::GetMaxSpeed` 0x6CCC40 (`AssassinAbilitySet::MaxSpeed`: 0 NoMovementAllowed, 1 Walk, 2 Jog,
    3 Run, 4 Sprint, 5–7 slow walks): NoMovementAllowed → 0; Jog in high profile → at most 0.3.
 6. **The turn slowdown** (+0x8B8, 0xDF83F3): t = clamp((|+0xEE4| − π/4) / (π/4), 0, 1). If the factor is above
    1 − t it falls by 10·dt (not below 0.1), else it rises by 5·dt (not above 1). Outside high profile it is 1.
+   Live (2026-10-21, high profile, the stick swung 81° off the facing): it fell about 0.04 per 4 ms frame and rose
+   about 0.02 per frame once the facing caught up, as the rule gives.
 7. **Walls, crowds, beams** (0xDF8518): above 0.35 and not in obstacle collision,
    `ReorientDirectionFromWallCollision(dir, 0, π/4, target, dir)` 0xDF3590 may bend the direction (target: 0.2 ×
    the damped stick while carrying a body, else zero); a result of 2 brakes hard and stops. In low profile with the
@@ -111,16 +126,24 @@ PC naming note: the baseline's `scimitar::ControlScheme::ButtonPressed` at 0xD11
 true when **another** control scheme holds the button; the press test is "not held by another" and then
 `Pad::ButtonPressed_0` 0x10B1710. It is renamed `unk_IsButtonHijackedByOther`.
 
+## Live (2026-10-21, keyboard)
+The player's AssassinTask was found by scanning for the player entity at +0x0C; its vftable is PC 0x1A23360. With
+the keyboard the stick length is 0 or 1 (no ramp), so the stick goes straight from band 0 to band 2 and the previous
+band (+0x7D6) follows one frame later. The damped stick (+0xEF0) equalled the stick (+0xED0) on every one of 4755
+samples. +0xEC0 and +0x630 always held the same length.
+
 ## Port
 `scimitar::ac2::AssassinTask` (`port/src/scimitar/ac2/assassin_task.h`) runs steps 2–13 as above; `port::Sim` runs it
-before `Human::Update`, as the game's task runs before the contexts. PORT stand-ins: the stick bands (0.35 / 0.75 /
-1.0) and the damped stick (= the stick) until live row 11; no crowds, carrying, praying, walls or group formations
+before `Human::Update`, as the game's task runs before the contexts. The stick thresholds are the live values; the
+damped stick is the stick (true for the keyboard live; a gamepad's damping is unmeasured). PORT stand-ins: the
+`UpdateGround` handlers are skipped (out of scope); no crowds, carrying, praying, walls or group formations
 (their queries answer false or 0); the abilities default to everything allowed; `OnSprintBegin` and the first-person
 reorientation aren't ported.
 
 ## Open
 - [ ] `UpdateGlobal`'s PC address.
 - [ ] The rest of `UpdateGroundMovement` (from PC 0xDF8C2D).
-- [ ] The stick bands' thresholds and the damping (live row 11; `ControlScheme::SetupStickThresholds`,
-      `GetDampedRelativeStick`).
+- [x] The stick thresholds (0.35 / 0.9 / 1.0, live 2026-10-21, row 11).
+- [ ] Where the thresholds come from (`ControlScheme::SetupStickThresholds`), and `GetDampedRelativeStick`'s damping
+      with a gamepad (the keyboard gives a 0 / 1 stick and no damping).
 - [ ] `ReorientDirectionFromWallCollision`, `GetCrowdObstructionFactor`, `OnSprintBegin`.

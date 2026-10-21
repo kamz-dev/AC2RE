@@ -74,7 +74,7 @@ private:
     // PORT: AssassinTask::GetCrowdObstructionFactor (PC 0xDE1720) isn't decoded; the port has no crowds (0).
     float PortGetCrowdObstructionFactor(const Vec3&) const { return 0; }
 
-    // PORT: the ControlScheme's stick band (+0x7D4) and last frame's (+0x7D6), and the pad buttons the port has.
+    // PORT: the stick band (AssassinTask +0x7D4) and last frame's (+0x7D6), and the pad buttons the port has.
     int m_PortStickBand = 0;
     int m_PortPreviousStickBand = 0;
     bool m_PortButton0 = false;  // Pad button 0

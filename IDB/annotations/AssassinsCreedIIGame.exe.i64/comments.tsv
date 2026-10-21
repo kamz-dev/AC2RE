@@ -2887,6 +2887,8 @@ FFD1	c	Size
 6B290	c	int
 6B2D9	c	dwTlsIndex
 6B930	F	Microsoft VisualC 2-14/net runtime
+6BCC0	F	An elapsed test like Timer::IsElapsed (0x34B80): now (frozen value at +0x10, else the clock at *(+0x1C), ~30000 ticks/s live) >= end (+8). The elapsed test of AssassinTask's forced turn-around timer; live 2026-10-21 the flag lasts 0.30 s.
+6BCC0	c	An elapsed test like Timer::IsElapsed (0x34B80): now (frozen value at +0x10, else the clock at *(+0x1C), ~30000 ticks/s live) >= end (+8). The elapsed test of AssassinTask's forced turn-around timer; live 2026-10-21 the flag lasts 0.30 s.
 6BD12	c	Block
 6BE3C	c	Size
 6BE47	c	Val
@@ -36698,8 +36700,8 @@ E03CFC	c	int
 E03E78	c	float
 E03E7B	c	int
 E03EAF	c	float
-E049A0	F	Mac 0x1082F62 AssassinTask::UpdateGround (calls UpdateGroundMovement; the PC function's only caller)
-E049A0	c	Mac 0x1082F62 AssassinTask::UpdateGround (calls UpdateGroundMovement; the PC function's only caller)
+E049A0	F	Mac 0x1082F62 AssassinTask::UpdateGround. Handler chain named from the Mac function (same call order): each handler that returns true takes the frame and UpdateGroundMovement doesn't run.
+E049A0	c	Mac 0x1082F62 AssassinTask::UpdateGround. Handler chain named from the Mac function (same call order): each handler that returns true takes the frame and UpdateGroundMovement doesn't run.
 E05000	F	Microsoft VisualC 2-14/net runtime
 E05010	F	Microsoft VisualC 2-14/net runtime
 E05831	c	Block
@@ -90418,6 +90420,7 @@ FFFF48	c	Source
 19C0010	c	vftable scimitar::ac2::HumanLedge (primary, ActorContext) by its bundle slot (Human +0x44C = slot 3, Mac GetLedge +0xC); live: current while hanging after a vault. RE/20 row 9
 19C05B0	c	vftable scimitar::ac2::HumanInAir (primary, ActorContext); slot 2 LocalInit 0x6911A0. Human +0x440 bundle slot 2. RE/20 row 9
 19E6968	c	vftable scimitar::ac2::HumanUpperBody (ActorContext); slot 2 LocalInit 0x63B6B0. Bundle slot 20 (Human +0x490). RE/20 row 9
+1A23360	c	scimitar::ac2::AssassinTask vftable (live 2026-10-21: the player's task, entity at +0x0C, stick thresholds via +0x7A8 = 0.35 / 0.9 / 1.0)
 1A2EC08	c	vftable scimitar::ac2::HumanWalling (primary, ActorContext); slot 2 LocalInit 0xFA4760. Bundle slot 5 (Human +0x454). RE/20 row 9
 1A2FB98	c	vftable scimitar::ac2::HumanLookAt (ActorContext); slot 2 LocalInit 0xFE0E00. Bundle slot 17 (Human +0x484). RE/20 row 9
 1A2FC70	c	vftable scimitar::ac2::DebugContext (ActorContext) by its bundle slot 15 (Human +0x47C); live context id 3 = Mac AddContextToMainAITrack case 3. RE/20 row 9

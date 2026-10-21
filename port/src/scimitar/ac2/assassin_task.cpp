@@ -12,13 +12,15 @@ namespace {
 constexpr float kHalfPi = 1.5707964f;
 constexpr float kQuarterPi = 0.78539819f;
 
-// PORT: the stick bands' upper limits (ControlScheme thresholds, PC *(ControlScheme +0x738); not decoded, LIVE row
-// 11). Band 0 is the rest band; the stand-in uses UpdateGlobal's 0.35 dead zone for it.
-constexpr float kPortStickThresholds[] = {0.35f, 0.75f, 1.0f};
+// The player's stick bands' upper limits: the thresholds at *(AssassinTask +0x7A8), i.e. *(ControlScheme +0x738).
+// Read live 2026-10-21 (RE/20 row 11). PORT: the table's source (ControlScheme::SetupStickThresholds) isn't decoded,
+// so the values are constants here.
+constexpr float kStickThresholds[] = {0.35f, 0.9f, 1.0f};
 
+// JoyThresholdPressed's test, inlined on PC (0xDF8139): band 0 is length <= t0, band n is t(n-1) < length <= tn.
 int PortStickBand(float length) {
     for (int band = 0; band < 3; ++band)
-        if (length <= kPortStickThresholds[band]) return band;
+        if (length <= kStickThresholds[band]) return band;
     return 3;
 }
 
@@ -54,8 +56,9 @@ void AssassinTask::Update(const port::MoveInput& input, Human& human, float dt) 
     else if (m_PortAllActions)
         m_IsHighProfile = input.held(port::kHighProfile);
     // The camera-relative stick, normalised, and its damped version. PORT: the port's input is already the
-    // camera-relative direction; ControlScheme::GetDampedRelativeStick's damping isn't decoded, so the damped stick
-    // is the stick (LIVE row 11).
+    // camera-relative direction. ControlScheme::GetDampedRelativeStick's damping isn't decoded; with the keyboard the
+    // damped stick equals the stick on every frame (live, RE/20 row 11), which the port keeps for any input. A
+    // gamepad's damping is unmeasured.
     m_LastRelativeDirection = input.moveMag > 0 ? NormalizeAny(input.moveDir) : Vec3{};
     m_LastDampedRelativeDirection = m_LastRelativeDirection;
     m_LastInputLength = input.moveMag;  // ControlScheme::GetStickLength
@@ -68,7 +71,10 @@ void AssassinTask::Update(const port::MoveInput& input, Human& human, float dt) 
     m_PortStickBand = PortStickBand(m_LastInputLength);
     m_PortButton0 = input.held(port::kLegs);
 
-    // PORT: the task's FSM runs the current context's update; the port has the ground one.
+    // PORT: the task's FSM runs the current context's update; the port has the ground one. The game's UpdateGround
+    // (PC 0xE049A0) first runs a chain of handlers (mission interaction, rest, loot, formations, weapons, fight,
+    // pick-up, carry, fight interaction; RE/21_input.md); any of them can take the frame. They are out of scope, so
+    // the port always reaches UpdateGroundMovement.
     if (human.GetCurrentContextID() == HumanContextId::Ground)
         UpdateGroundMovement(human.GetContextBundle().GetGround(), sight, dt);
 }
