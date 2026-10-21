@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
         return in;
     });
 
-    HumanContextId last = HumanContextId::Count;
+    HumanContextId last = HumanContextId::None;
     for (const Frame& f : sim.timeline()) {
         if (f.context != last) {
             std::printf("%6.3f s  %-8s pos (%.2f, %.2f, %.2f)\n", f.t,

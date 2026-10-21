@@ -33,7 +33,7 @@ private:
     T& CreateContextOnDemand(HumanContextId id);
 
     Human& m_Human;
-    std::array<std::unique_ptr<ActorContext>, static_cast<size_t>(HumanContextId::Count)> m_Contexts;
+    std::array<std::unique_ptr<ActorContext>, kHumanContextBundleSlotCount> m_Contexts;  // game slot order
 };
 
 class Human {
@@ -73,7 +73,7 @@ private:
     HumanContextBundle m_ContextBundle{*this};
     HumanContextId m_CurrentContext = HumanContextId::Ground;
     HumanContextId m_PreviousContext = HumanContextId::Ground;
-    HumanContextId m_RequestedContext = HumanContextId::Count;
+    HumanContextId m_RequestedContext = HumanContextId::None;
     float m_TimeInContext = 0;
     HumanGroundData m_GroundData;
     HumanInAirData m_InAirData;

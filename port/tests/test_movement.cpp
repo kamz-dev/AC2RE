@@ -72,6 +72,10 @@ TEST(context_bundle_creates_on_demand) {
 }
 
 TEST(context_names_cover_every_id) {
-    for (int i = 0; i < static_cast<int>(HumanContextId::Count); ++i)
-        CHECK(scimitar::ac2::HumanContextName(static_cast<HumanContextId>(i)) != "?");
+    for (HumanContextId id : scimitar::ac2::kHumanContextBundleSlots) CHECK(scimitar::ac2::HumanContextName(id) != "?");
+    // The game's ids and bundle slots (RE/20 row 9).
+    static_assert(static_cast<int>(HumanContextId::Ground) == 4 && static_cast<int>(HumanContextId::InAir) == 6);
+    static_assert(scimitar::ac2::HumanContextBundleSlot(HumanContextId::InAir) == 2);
+    static_assert(scimitar::ac2::HumanContextBundleSlot(HumanContextId::NarrowObject) == 18);
+    static_assert(scimitar::ac2::kHumanContextBundleSlotCount == 23);
 }

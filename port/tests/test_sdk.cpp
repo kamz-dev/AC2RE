@@ -1,6 +1,7 @@
 // The sdk/ headers compile in the port's build, and the address table stays inside the PC image.
 
 #include "ac2sdk/addresses.h"
+#include "ac2sdk/human.h"
 #include "ac2sdk/human_ground.h"
 #include "ac2sdk/layout.h"
 #include "check.h"

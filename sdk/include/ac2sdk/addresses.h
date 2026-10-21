@@ -47,6 +47,14 @@ inline constexpr std::uint32_t HumanGround_ExecTurnStartToMoveCycleMain = 0x6151
 inline constexpr std::uint32_t HumanGround_TransitFromMoveStopToWaitMain = 0x61F200; // Mac 0xFD1C64; named
 inline constexpr std::uint32_t EngineContext_GetCurrentGameWorld = 0x2C4B0;  // named; ms_Instance +0x4C
 inline constexpr std::uint32_t EngineContextImp_ms_Instance = 0x1E10AC0;     // .data; named (live path: RE/20)
+inline constexpr std::uint32_t ActorContext_LocalInit = 0x16EEF30;          // Mac 0x509920; static
+inline constexpr std::uint32_t HumanInAir_vftable = 0x19C05B0;              // LocalInit 0x6911A0 = Mac 0x122B552; live 2026-10-21
+inline constexpr std::uint32_t HumanLedge_vftable = 0x19C0010;              // by bundle slot 3; live 2026-10-21
+inline constexpr std::uint32_t HumanWalling_vftable = 0x1A2EC08;            // LocalInit 0xFA4760 = Mac 0x1178ED8; live 2026-10-21
+inline constexpr std::uint32_t HumanNarrowObject_vftable = 0x1A30588;       // LocalInit 0xFF1110 = Mac 0x1131AAE; live 2026-10-21
+inline constexpr std::uint32_t HumanLookAt_vftable = 0x1A2FB98;             // LocalInit 0xFE0E00 = Mac 0xEB7B58; live 2026-10-21
+inline constexpr std::uint32_t HumanUpperBody_vftable = 0x19E6968;          // LocalInit 0x63B6B0 = Mac 0x1374282; live 2026-10-21
+inline constexpr std::uint32_t Vocalization_vftable = 0x1A30160;            // by bundle slot 16; live 2026-10-21
 inline constexpr std::uint32_t HumanGround_SetBreakHard = 0x632E20;            // IHumanGround slot 30, Mac 0x153B958
 inline constexpr std::uint32_t HumanGround_SetSprint = 0x632E80;               // IHumanGround, Mac 0x153B9D0
 inline constexpr std::uint32_t HumanGround_EnterMove = 0x60C610;              // Mac 0xFA3D06; static

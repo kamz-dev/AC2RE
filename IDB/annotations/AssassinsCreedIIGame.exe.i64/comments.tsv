@@ -18477,6 +18477,8 @@ FFF84	c	char *
 63A8A1	c	lpvReserved
 63A8A6	c	fdwReason
 63A8A8	c	hinstDLL
+63B6B0	F	Mac HumanUpperBody::LocalInit 0x1374282.
+63B6B0	c	Mac HumanUpperBody::LocalInit 0x1374282.
 63CEE0	c	int
 63CEE2	c	int
 63CEE4	c	int
@@ -19521,6 +19523,8 @@ FFF84	c	char *
 68F1BB	c	void *
 68F24C	c	void *
 690D61	c	Block
+6911A0	F	Mac HumanInAir::LocalInit 0x122B552 (same writes: layer 5, timers +0xC0.., HumanInAirData LandingTestDelay / HayStackIgnore / BoatIgnore timers).
+6911A0	c	Mac HumanInAir::LocalInit 0x122B552 (same writes: layer 5, timers +0xC0.., HumanInAirData LandingTestDelay / HayStackIgnore / BoatIgnore timers).
 691317	c	float
 691347	c	float
 691377	c	float
@@ -39749,6 +39753,8 @@ FA168F	c	void *
 FA16FD	c	void *
 FA1C3C	c	float
 FA1C3F	c	int
+FA4760	F	Mac HumanWalling::LocalInit 0x1178ED8 (data +0x18 = -3.75, +0x1C = 5.85).
+FA4760	c	Mac HumanWalling::LocalInit 0x1178ED8 (data +0x18 = -3.75, +0x1C = 5.85).
 FA49A1	c	Block
 FA4A90	F	Microsoft VisualC 2-14/net runtime
 FA4AE0	F	Microsoft VisualC 2-14/net runtime
@@ -40129,6 +40135,8 @@ FDFFFB	c	int
 FDFFFD	c	float
 FE0000	c	int
 FE00B7	c	int
+FE0E00	F	Mac HumanLookAt::LocalInit 0xEB7B58.
+FE0E00	c	Mac HumanLookAt::LocalInit 0xEB7B58.
 FE1111	c	Block
 FE1C3F	c	float
 FE1DE4	c	void *
@@ -40206,6 +40214,8 @@ FF0566	c	int
 FF05E3	c	float
 FF05E6	c	int
 FF070C	c	float
+FF1110	F	Mac HumanNarrowObject::LocalInit 0x1131AAE (this[67] = 1.0).
+FF1110	c	Mac HumanNarrowObject::LocalInit 0x1131AAE (this[67] = 1.0).
 FF1343	c	float
 FF1346	c	int
 FF15BE	c	float
@@ -79663,6 +79673,8 @@ FFFF48	c	Source
 16ED8A1	c	Src
 16ED8A5	c	void *
 16EE242	c	void *
+16EEF30	F	Mac scimitar::ActorContext::LocalInit 0x509920 (the base every context LocalInit ends with).
+16EEF30	c	Mac scimitar::ActorContext::LocalInit 0x509920 (the base every context LocalInit ends with).
 16EEFB2	c	Block
 16EF4A0	c	dwTlsIndex
 16EF96A	c	dwTlsIndex
@@ -90349,6 +90361,14 @@ FFFF48	c	Source
 18A6294	c	AddressOfRawData
 18A6298	c	PointerToRawData
 19BFCD8	c	vftable scimitar::ac2::HumanGround (primary, ActorContext). 24 slots; PC slot k = Mac __ZTVN8scimitar3ac211HumanGroundE slot k+1 (Itanium has D1+D0). RE/11_ground.md
+19C0010	c	vftable scimitar::ac2::HumanLedge (primary, ActorContext) by its bundle slot (Human +0x44C = slot 3, Mac GetLedge +0xC); live: current while hanging after a vault. RE/20 row 9
+19C05B0	c	vftable scimitar::ac2::HumanInAir (primary, ActorContext); slot 2 LocalInit 0x6911A0. Human +0x440 bundle slot 2. RE/20 row 9
+19E6968	c	vftable scimitar::ac2::HumanUpperBody (ActorContext); slot 2 LocalInit 0x63B6B0. Bundle slot 20 (Human +0x490). RE/20 row 9
+1A2EC08	c	vftable scimitar::ac2::HumanWalling (primary, ActorContext); slot 2 LocalInit 0xFA4760. Bundle slot 5 (Human +0x454). RE/20 row 9
+1A2FB98	c	vftable scimitar::ac2::HumanLookAt (ActorContext); slot 2 LocalInit 0xFE0E00. Bundle slot 17 (Human +0x484). RE/20 row 9
+1A2FC70	c	vftable scimitar::ac2::DebugContext (ActorContext) by its bundle slot 15 (Human +0x47C); live context id 3 = Mac AddContextToMainAITrack case 3. RE/20 row 9
+1A30160	c	vftable scimitar::ac2::Vocalization (ActorContext) by its bundle slot 16 (Human +0x480); slot 2 = ActorContext::LocalInit (no override, as on Mac). RE/20 row 9
+1A30588	c	vftable scimitar::ac2::HumanNarrowObject (primary, ActorContext); slot 2 LocalInit 0xFF1110. Bundle slot 18 (Human +0x488). RE/20 row 9
 1ABB720	c	jump table for switch statement
 1ABB800	c	jump table for switch statement
 1ABB840	c	jump table for switch statement

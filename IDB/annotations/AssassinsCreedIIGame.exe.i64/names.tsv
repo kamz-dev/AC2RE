@@ -2741,6 +2741,7 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 63B4C0	_DllMain@12_106
 63B4D0	_DllMain@12_107
 63B4E0	_DllMain@12_108
+63B6B0	scimitar::ac2::HumanUpperBody::LocalInit
 63C7C0	_DllMain@12_109
 63C88B	__cfltcvt_init_18
 63C8F3	__cfltcvt_init_19
@@ -2766,6 +2767,7 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 64D4D0	_DllMain@12_127
 64D83D	def_64D815
 64D844	jpt_64D815
+64D880	j_scimitar::ActorContext::LocalInit
 64D969	__cfltcvt_init_20
 64D9A5	__cfltcvt_init_21
 64D9E1	__cfltcvt_init_22
@@ -2799,6 +2801,7 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 690490	_DllMain@12_140
 6904A0	_DllMain@12_141
 6904B0	_DllMain@12_142
+6911A0	scimitar::ac2::HumanInAir::LocalInit
 69149C	__cfltcvt_init_34
 6914D8	__cfltcvt_init_35
 691514	__cfltcvt_init_36
@@ -9331,6 +9334,7 @@ F68210	?MarkAsVirtualProcessorRoot@ExecutionResource@details@Concurrency@@QAEXPA
 F69CA0	_DllMain@12_268
 F69CB0	_DllMain@12_269
 F69CC0	_DllMain@12_270
+F69D20	j_scimitar::ActorContext::LocalInit_0
 F6D4FF	def_F6D472
 F6D504	jpt_F6D472
 F6EC40	__RTC_NumErrors_6710
@@ -9394,6 +9398,7 @@ F9D00C	def_F9CFE1
 F9D228	jpt_F9CFE1
 FA4650	_DllMain@12_306
 FA4660	_DllMain@12_307
+FA4760	scimitar::ac2::HumanWalling::LocalInit
 FA4790	?SetScheduler@?$ListArray@VScheduleGroupBase@details@Concurrency@@@details@Concurrency@@QAEXPAVSchedulerBase@23@@Z_14
 FAB2A0	_DllMain@12_308
 FAB2B0	_DllMain@12_309
@@ -9467,12 +9472,14 @@ FCAACA	def_FCAA90
 FCAAEC	jpt_FCAA90
 FD1600	_DllMain@12_363
 FD1610	_DllMain@12_364
+FD1660	j_scimitar::ActorContext::LocalInit_1
 FD3830	_DllMain@12_365
 FD3840	_DllMain@12_366
 FD3850	_DllMain@12_367
 FD3860	_DllMain@12_368
 FD5370	_DllMain@12_369
 FD5380	_DllMain@12_370
+FD53E0	j_scimitar::ActorContext::LocalInit_2
 FD6650	_DllMain@12_371
 FD6660	_DllMain@12_372
 FD6670	_DllMain@12_373
@@ -9493,6 +9500,7 @@ FD6884	jpt_FD6855
 FD6F90	_DllMain@12_386
 FE0D80	_DllMain@12_387
 FE0D90	_DllMain@12_388
+FE0E00	scimitar::ac2::HumanLookAt::LocalInit
 FE1210	_DllMain@12_389
 FE15A0	_DllMain@12_390
 FE4530	_DllMain@12_391
@@ -9531,6 +9539,7 @@ FEF2D0	_DllMain@12_415
 FEF2E0	_DllMain@12_416
 FEF3E8	def_FEF3B5
 FEF3F0	jpt_FEF3B5
+FF1110	scimitar::ac2::HumanNarrowObject::LocalInit
 FF7BD2	def_FF79F9
 FF7BF4	jpt_FF79F9
 FF8224	def_FF81B4
@@ -9568,7 +9577,9 @@ FFFBB4	jpt_FFF967
 100A064	jpt_100A01C
 100D780	_DllMain@12_443
 100D790	_DllMain@12_444
+100D7F0	j_scimitar::ActorContext::LocalInit_3
 100F240	_DllMain@12_445
+100F290	j_scimitar::ActorContext::LocalInit_4
 1010440	_DllMain@12_446
 1010450	_DllMain@12_447
 1010460	_DllMain@12_448
@@ -9577,9 +9588,11 @@ FFFBB4	jpt_FFF967
 1010490	_DllMain@12_451
 10104A0	_DllMain@12_452
 10104B0	_DllMain@12_453
+10107D0	j_scimitar::ActorContext::LocalInit_5
 1014EB0	?GetNumberOfBoundContexts@SchedulerBase@details@Concurrency@@IBEKXZ_3
 1015E6E	def_1015DF5
 1015F04	jpt_1015DF5
+1017460	j_scimitar::ActorContext::LocalInit_6
 101CFE9	def_101CF3D
 101CFF0	jpt_101CF3D
 101E0A0	scimitar::ac2::DebugTask::ToggleInteractionWithTriggerZones
@@ -14059,6 +14072,7 @@ FFFBB4	jpt_FFF967
 16DF990	__RTC_NumErrors_7275
 16DF9B0	__RTC_NumErrors_7276
 16E9860	__RTC_NumErrors_7277
+16EEF30	scimitar::ActorContext::LocalInit
 16EF000	?AddThreadSubscription@SchedulerProxy@details@Concurrency@@QAEXPAVExecutionResource@23@@Z_3
 16F1B80	??0DNameNode@@IAE@XZ_48
 16F1F70	scimitar__CullPlaneAABBoxRes

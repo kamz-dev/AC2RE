@@ -7,21 +7,40 @@
 namespace scimitar::ac2 {
 
 std::string_view HumanContextName(HumanContextId id) {
-    static constexpr std::string_view kNames[] = {
-        "Ground", "InAir", "Ledge", "Climb", "Walling", "Ladder", "NarrowObject", "HayStack",
-        "Kiosk", "Swim", "Riding", "Boat", "GliderPilot", "Cart", "Wagon", "CannonOperator",
-        "CarriedBody", "Dead", "RagdollGround", "LookAt", "Vocalization", "UpperBody", "DebugContext",
-    };
-    static_assert(std::size(kNames) == static_cast<size_t>(HumanContextId::Count));
-    auto i = static_cast<size_t>(id);
-    return i < std::size(kNames) ? kNames[i] : "?";
+    switch (id) {
+        case HumanContextId::DebugContext: return "DebugContext";
+        case HumanContextId::Ground: return "Ground";
+        case HumanContextId::Ladder: return "Ladder";
+        case HumanContextId::InAir: return "InAir";
+        case HumanContextId::Ledge: return "Ledge";
+        case HumanContextId::Climb: return "Climb";
+        case HumanContextId::Walling: return "Walling";
+        case HumanContextId::NarrowObject: return "NarrowObject";
+        case HumanContextId::Swim: return "Swim";
+        case HumanContextId::Riding: return "Riding";
+        case HumanContextId::Boat: return "Boat";
+        case HumanContextId::Cart: return "Cart";
+        case HumanContextId::GliderPilot: return "GliderPilot";
+        case HumanContextId::Wagon: return "Wagon";
+        case HumanContextId::CannonOperator: return "CannonOperator";
+        case HumanContextId::RagdollGround: return "RagdollGround";
+        case HumanContextId::Vocalization: return "Vocalization";
+        case HumanContextId::CarriedBody: return "CarriedBody";
+        case HumanContextId::LookAt: return "LookAt";
+        case HumanContextId::Kiosk: return "Kiosk";
+        case HumanContextId::Dead: return "Dead";
+        case HumanContextId::HayStack: return "HayStack";
+        case HumanContextId::UpperBody: return "UpperBody";
+        case HumanContextId::None: break;
+    }
+    return "?";
 }
 
 HumanContextBundle::~HumanContextBundle() = default;
 
 template <class T>
 T& HumanContextBundle::CreateContextOnDemand(HumanContextId id) {
-    auto& slot = m_Contexts[static_cast<size_t>(id)];
+    auto& slot = m_Contexts[static_cast<size_t>(HumanContextBundleSlot(id))];
     if (!slot) slot = std::make_unique<T>(m_Human);
     return static_cast<T&>(*slot);
 }
@@ -53,7 +72,7 @@ Human::~Human() = default;
 
 void Human::ForceContext(HumanContextId id) {
     m_CurrentContext = m_PreviousContext = id;
-    m_RequestedContext = HumanContextId::Count;
+    m_RequestedContext = HumanContextId::None;
     m_TimeInContext = 0;
 }
 
@@ -73,13 +92,13 @@ void Human::Update(const port::MoveInput& input, const port::World& world, float
     // 0 and cleared ~0.1 s after a move starts; the port follows the stick without that lag.
     ground.SetBreakHard(input.moveMag <= 0.0f);
 
-    m_RequestedContext = HumanContextId::Count;
+    m_RequestedContext = HumanContextId::None;
     if (ActorContext* ctx = m_ContextBundle.Get(m_CurrentContext)) ctx->Update(input, world, dt);
     m_TimeInContext += dt;
 
     // PORT: the game's switching goes through its FSMs and interface commands; not decoded yet.
     HumanContextId next = m_RequestedContext;
-    if (next == HumanContextId::Count || next == m_CurrentContext) return;
+    if (next == HumanContextId::None || next == m_CurrentContext) return;
     ActorContext* to = m_ContextBundle.Get(next);
     if (!to) return;  // a context the port doesn't have yet: stay
     if (ActorContext* from = m_ContextBundle.Get(m_CurrentContext)) from->Exit();
