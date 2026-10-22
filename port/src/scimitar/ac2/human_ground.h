@@ -254,8 +254,8 @@ private:
     // kept in m_MoveState with Move's children.
     State m_WaitState = State::Idle;
     Gap m_LookDownGap;                   // the gap ExecIdleToLookDown stores (Mac +0x9B0)
-    // The interface command waiting for the FSM's update (the game queues it at +0x84; RE/11_ground.md 12).
-    // PORT: only the edge commands that leave the context are queued; the others run at once.
+    // PORT: the game switches context inside the Do* call (AIActor::TransitToContext, RE/10_human_update.md 3). Until
+    // the port's switch mirrors it, the edge commands that leave the context wait for the ground's next update.
     enum class PortCommand { None, FallOffEdge, LedgePullDown };
     PortCommand m_PortPendingCommand = PortCommand::None;
     Gap m_PortPendingGap;

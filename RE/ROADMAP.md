@@ -16,7 +16,7 @@ Status: `open` / `claimed` / `partial` / `done`.
 | Pin the exe, triage | owner | partial | `01_triage.md`; `triage.py` not yet run on the owner's exe |
 | Symbol sources and the matching method | | partial | `02_symbol_sources.md` |
 | Reflection: descriptor format, property names, every `Human*Data` field | | partial | `22_reflection.md`, `RE/tools/refl.py`; HumanGroundData done 2026-10-21, the other `Human*Data` classes next |
-| Match `Human`, `HumanContextBundle` and its getters on PC; the context switch | kamz-dev (`kamz-dev/ground-re`, PR #1) | claimed | → `10_human_update.md`; the bundle's slot order and context ids done (live row 9) |
+| Match `Human`, `HumanContextBundle` and its getters on PC; the context switch | kamz-dev (`kamz-dev/ground-re`, PR #1) | partial | `10_human_update.md`: the tracks, the frame's phases and `AIActor::TransitToContext` (immediate Exit → Exec → Enter) decoded (2026-10-22); the bundle's slot order and context ids done (live row 9); left: porting the switch, the controller / Human::Update call order |
 | The FSM runtime: what `LinkFSM` builds, how Test / Exec / Enter / Exit run | | open | → `00_overview.md`; feeds `port/src/scimitar/fsm.h` |
 | Data loading: the archive format of AC2 (forge), reading the `*Data` objects from the install | | open | AC1 readers in `reference/ac1/re_tools/` (forge v25) as templates |
 

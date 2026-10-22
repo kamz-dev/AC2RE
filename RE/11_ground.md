@@ -429,8 +429,9 @@ over two seconds):
 (`TestMoveCycleToRollInterface` [0xF96DB6]).
 
 ## 12. Jumps and edges (entry points)
-These states start from **interface commands** sent to HumanGround (queued as member-function pointers at
-`this+0x84`; each `_ExecInterfaceTransitionX` checks whether its command is pending). The senders (the free-run /
+These states start from **interface commands** sent to HumanGround: `CanX` records the passing tests in the
+tracker at +0x44 and `DoX` fires the transition at once through `_ExecInterfaceTransitionHumanGround` PC 0x637FA0
+(`10_human_update.md` 3; an older reading here had them queued at +0x84). The senders (the free-run /
 guidance code) are outside this doc.
 
 | Command | From → to | Accepted when |
@@ -696,8 +697,9 @@ to the right** of the sight. The port had the opposite sign until 2026-10-22, wh
 The controller's edge reactions (`21_input.md`, "Edge reactions") send these interface commands with a Gap
 parameter. Mac symbols; the PC Can / Do entries are named (PC addresses in `21_input.md`).
 - **EnterLookDown (136), Idle → LookDown** [`TestIdleToLookDown…` 0xF9832A]:
-  - The test passes while `*(HumanGround +0x790 PC / +0x770 Mac) + 0x24 == 1`. That object comes from LocalInit's
-    `Human->vfunc+0x24(4, 0x1B)`, which may be the UpperBody context (id 27) (hypothesis).
+  - The test passes while `*(HumanGround +0x790 PC / +0x770 Mac) + 0x24 == 1`. That object is the **UpperBody
+    context**: LocalInit's `Human->vfunc+0x24(4, 0x1B)` is `GetContextByID(track 4, UpperBody)`
+    (`10_human_update.md` 1).
   - The Exec copies the gap to +0x9B0 (Mac).
   - `EnterLookDown` [0xFD1248]: pushes state 9, sets +0x954 = 1, plays 0x2669E0F7 / 0x2669E0F8 by the front foot
     blended by the sight-to-edge angle, and emits a `StandOnLegdeEvent`.
@@ -751,8 +753,9 @@ parameter. Mac symbols; the PC Can / Do entries are named (PC addresses in `21_i
 **Port (2026-10-22):**
 - `HumanGround` has EdgeStop (kept with Move's children) and Wait's child LookDown, and the commands' tests as above.
 - `AssassinTask` sends LookDown, Unbalance, FallOffEdge and the EdgeStop pull-down.
-- FallOffEdge and LedgePullDown are queued and run at the start of the ground's update, as the game's interface
-  commands are; the others run at once (as TurnOnSpot already did).
+- The game runs every command at once, switching context inside the controller's call (`10_human_update.md` 3).
+  PORT: FallOffEdge and LedgePullDown are deferred to the start of the ground's update until the port's context
+  switch mirrors `TransitToContext`; the others run at once.
 - PORT stand-ins:
   - the two clearance tests pass;
   - no upper body (LookDown's +0x24 taken as 1);

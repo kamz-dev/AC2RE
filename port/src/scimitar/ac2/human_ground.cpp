@@ -792,7 +792,7 @@ void HumanGround::Update(const port::MoveInput&, const port::World& world, float
 
     // _UpdateMove (PC 0x634D20): UpdateMoveMain, then the current child's update and its transitions, in the
     // game's order.
-    // The queued interface command runs first (the game's _ExecInterfaceTransition* in the state's update).
+    // PORT: the deferred edge command (see m_PortPendingCommand).
     if (RunPendingCommand()) return;  // the context is being left
     // PORT: EdgeStop is Navigation's child, not Move's, so Move's update doesn't run in it.
     if (m_MoveState != State::EdgeStop) UpdateMoveMain(dt);
@@ -1079,8 +1079,8 @@ void HumanGround::DoFallOffEdge(const Gap& gap, float value) {
 }
 
 bool HumanGround::CanEnterLookDown() {
-    // Command 136 is offered by Wait's Idle (Mac 0xF9832A) while the object at +0x790 (Mac +0x770; the UpperBody
-    // context, hypothesis) has 1 at +0x24. PORT: no upper body; taken as 1.
+    // Command 136 is offered by Wait's Idle (Mac 0xF9832A) while the UpperBody context (HumanGround +0x790, Mac
+    // +0x770; RE/10_human_update.md 1) has 1 at +0x24. PORT: no UpperBody context; taken as 1.
     return m_MoveState == State::Wait && m_WaitState == State::Idle;
 }
 
