@@ -1,9 +1,9 @@
 # 10: Human::Update and the context switch
 
-Status 2026-10-22: static, read from the Mac symbols and matched on PC by call shape and vftable slots. Covers how
-`scimitar::AIActor` holds the Human's contexts in tracks, how a frame updates them, and how one locomotion
-context hands over to another. Nothing here has been renamed in the PC IDB yet. The PC functions without names
-there are given as `sub_` addresses, with the Mac name they match.
+Status 2026-10-22: static, read from the Mac symbols and matched on PC by call shape and vftable slots; the core
+(`TransitToContext` 0x7B1D0, `UpdateTracks` 0x7A8C0, `_ExecInterfaceTransitionHumanGround` 0x637FA0) re-read on PC.
+Covers how `scimitar::AIActor` holds the Human's contexts in tracks, how a frame updates them, and how one locomotion
+context hands over to another. The functions are named in the PC IDB (open item 5). **Ported** (section "Port").
 
 Addresses: **PC** first (IDB rebased to 0), Mac (`IDB/scimitar_sf.i64`) in brackets. Field names are the
 Revelations PDB's (`py RE/tools/pdbtypes.py scimitar::AIActor`, `scimitar::ActorTrack`).
@@ -217,7 +217,7 @@ MovementState 0 (WaitLow), `TransitionToMotionType` 1, and a 0.5 float (rotation
 3. The PC addresses of the LedgePullDown wrappers and Exec (Mac 0xF99D34, 0xF9A45A, 0xF98DA6), and of the
    `HumanGround::Exec…` for each InAir Main transition.
 4. The exact field order of the default `TransitionSetupDataToMovement` in `InitMainTrack` (which float is 0.5).
-5. Nothing here is named in the PC IDB yet: `AIActor::UpdateTracks` 0x7A8C0, `Update` 0x7AC40, `UpdateAfterPhysics`
+5. ~~Naming~~ done 2026-10-22: `AIActor::UpdateTracks` 0x7A8C0, `Update` 0x7AC40, `UpdateAfterPhysics`
    0x7AC50, `TransitToContext` 0x7A9D0 / 0x7AC80 / 0x7B1D0, `GetContextByID` 0x7B000, `AddContext` 0x7B530,
    `SetInitialContext` 0x7A830 / 0x7AB70, `Enter` 0x7AE30, `Exit` 0x7B060, `Reset` 0x7ABF0, `CreateAI` 0x7B760;
    `Human::GetContextByID` 0x91CD80, `AddContextToMainAITrack` 0x91CB10, `CreateAI` 0x9333A0,
@@ -228,10 +228,15 @@ MovementState 0 (WaitLow), `TransitionToMotionType` 1, and a 0.5 float (rotation
    `ExecuteFallOffEdge` 0x5FC890; `HumanInAir::_TransitFromMainToGroundMain` 0x69DB60.
 
 ## Port
-`port/src/scimitar/ac2/human.cpp` currently queues a request (`RequestContext` sets `m_RequestedContext`). After the
-context's update, `EdgeClampingComputation` and `UpdateAfterPhysics`, `Human::Update` runs the old context's
-`Exit` and the new one's `Enter`. HumanGround also defers its FallOffEdge / LedgePullDown commands to
-`RunPendingCommand`. To mirror the game:
+**Done 2026-10-22** (`port/src/scimitar/ai_actor.*`, `human.*`; tests `port/tests/test_context_switch.cpp`):
+`scimitar::AIActor` has the five `ActorTrack`s, `SetInitialContext` / `Enter`, `UpdateTracks` / `UpdateAfterPhysics`
+with the skip-once rule, and `TransitToContext(id, exec)`. `Human` derives from it: `GetContextByID` (the bundle),
+`InitMainTrack`, and `Update` = `UpdateTracks(0)`, edge clamping, then the main track's `Update(1)` (PORT: in the same
+call, as the port's physics step). `ActorContext::Update(long phase, PortUpdateArgs)` replaces the two port methods.
+HumanGround's Main transition to InAir, its FallOffEdge / LedgePullDown commands and InAir's landing (with
+`ExecMainToGroundMain` as the Exec) call `TransitToContext` at once. PORT: `TransitToContext` to a context the port
+doesn't have (Ledge) returns false and changes nothing; `ForceContext` stays as a test / spawn helper; the
+transitions' own Execs other than the landing aren't ported. The plan it followed:
 - Give `Human` an `AIActor`-style **main track**: `m_CurrentContext`, `m_PreviousContextID`, `m_ContextHasChanged`
   (+0x48 / +0x44 / +0x34).
 - Replace `RequestContext` with **`TransitToContext(id, exec)`**. It gets the context from the bundle (creating it,

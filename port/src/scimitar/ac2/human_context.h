@@ -80,20 +80,27 @@ namespace scimitar {
 // UpdateAfterPhysics, ReleaseResources, QueryInterface, GetActorContextData (x2), SetAIActorData, Enter, Exit,
 // Update(long), LinkFSM, GetCurrentStateName. The game's contexts also derive from
 // DataContext<Human, HumanData, *Data>.
-// PORT: only Enter / Exit / Update so far. The game's Update(long) takes the update phase (0 = main, 1 = after
-// physics; HumanGround::_UpdateHumanGround PC 0x6381D0) and reads input and time from its own systems; the port
-// passes them in. GetID and the Human reference stand in for the DataContext's typed accessors.
+// PORT: only Enter / Exit / Update so far. GetID and the Human reference stand in for the DataContext's typed
+// accessors.
+//
+// PORT: the game's contexts read input and time from their own systems; the port passes them in.
+struct PortUpdateArgs {
+    const port::MoveInput& input;
+    const port::World& world;
+    float dt;
+};
+
 class ActorContext {
 public:
     explicit ActorContext(ac2::Human& human) : m_Human(human) {}
     virtual ~ActorContext() = default;
-    virtual ac2::HumanContextId GetID() const = 0;
-    virtual void Enter() {}
-    virtual void Exit() {}
-    virtual void Update(const port::MoveInput& input, const port::World& world, float dt) = 0;
-    // The game's UpdateAfterPhysics slot. PORT: the port's physics step (moving by the root motion, the ground test)
-    // happens here.
-    virtual void UpdateAfterPhysics(const port::World& world, float dt) { (void)world, (void)dt; }
+    virtual ac2::HumanContextId GetID() const = 0;  // the id in GetActorContextData() +4 (slots 9 / 10)
+    virtual void Enter() {}                        // slot 12 (+0x30)
+    virtual void Exit() {}                         // slot 13 (+0x34)
+    // Slot 14 (+0x38), Update(long phase): 0 = the main update (AIActor::UpdateTracks, every track), 1 = after
+    // physics (AIActor::UpdateAfterPhysics, the main track only); RE/10_human_update.md 2. (The base's own
+    // UpdateAfterPhysics slot 6 is empty and never called.)
+    virtual void Update(long phase, const PortUpdateArgs& args) = 0;
 
 protected:
     ac2::Human& m_Human;

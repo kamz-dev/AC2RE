@@ -169,7 +169,18 @@
 7993B	def_7985A
 79988	jpt_7985A
 79E20	__RTC_NumErrors_45
+7A830	scimitar::AIActor::SetInitialContext
+7A8C0	scimitar::AIActor::UpdateTracks
 7A980	scimitar::AIActor::GetCurrentContextID
+7A9D0	scimitar::AIActor::TransitToContext
+7AC40	scimitar::AIActor::Update
+7AC50	scimitar::AIActor::UpdateAfterPhysics
+7AC80	scimitar::AIActor::TransitToContext_Functor0
+7AE30	scimitar::AIActor::Enter
+7B000	scimitar::AIActor::GetContextByID
+7B060	scimitar::AIActor::Exit
+7B1D0	scimitar::AIActor::TransitToContext_Functor1
+7B530	scimitar::AIActor::AddContext
 7BC70	?MarkAsVirtualProcessorRoot@ExecutionResource@details@Concurrency@@QAEXPAVVirtualProcessorRoot@23@@Z_1
 7C080	__RTC_NumErrors_46
 7D320	Possibly_SaveFileLoad
@@ -2601,6 +2612,7 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 5ECD30	scimitar::ac2::HumanGround::IsActionInterruptibleByMovement
 5ECDE0	scimitar::ac2::HumanGround::GetCurrentFoot
 5ED4E0	scimitar::ac2::HumanGround::PreprocessCharge
+5F1370	scimitar::ac2::HumanGround::_TransitFromHumanGroundToInAirMain
 5F13E0	scimitar::ac2::HumanGround::_TransitFromVulnerableToInAirMain
 5F1450	scimitar::ac2::HumanGround::_TransitFromVulnerableToHayStackMain
 5F14C0	scimitar::ac2::HumanGround::_TransitFromMoveToInAirMain
@@ -2621,6 +2633,7 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 5FA7D0	scimitar::ac2::HumanGround::_TransitFromNavigationToInAirMain
 5FB130	scimitar::ac2::HumanGround::GetCurrentStateName
 5FBCE0	scimitar::ac2::HumanGround::IsWalkingOnHorse
+5FC890	scimitar::ac2::HumanGround::ExecuteFallOffEdge
 5FD110	scimitar::ac2::HumanGround::ProcessCrowdDodge
 5FD620	scimitar::ac2::HumanGround::TestVulnerableToHayStackMain
 5FDF00	scimitar::ac2::HumanGround::GetTurnAnimation
@@ -2647,7 +2660,9 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 609950	scimitar::EventFactory::Instanciate<scimitar::ac2::FightDamageEvent>
 60B220	_DllMain@12_85
 60B960	scimitar::ac2::HumanGround::_TransitFromTurnOnSpotStepToTurnOnSpotStepMain
+60BA30	scimitar::ac2::HumanGround::_TransitFromHumanGroundToInAirOnHumanGroundInterfaceCommand_FallOffEdge
 60BBA0	scimitar::ac2::HumanGround::DoBreak
+60C400	scimitar::ac2::HumanGround::ExitHumanGround
 60C610	scimitar::ac2::HumanGround::EnterMove
 60CE67	def_60CE4D
 60CED0	jpt_60CE4D
@@ -2704,6 +2719,8 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 624150	scimitar::ac2::HumanGround::_UpdateEdgeStop
 624200	scimitar::ac2::HumanGround::_UpdateHumanGroundDodge
 626410	scimitar::ac2::HumanGround::_UpdateEdgeLanding
+627490	scimitar::ac2::HumanGround::EnterHumanGround
+628710	scimitar::ac2::HumanGround::_EnterHumanGround
 62B9B0	scimitar::ac2::HumanGround::_TestInterfaceTransitionsHumanGround
 62F0D0	scimitar::ac2::HumanGround::CanFallOffEdge
 62F140	scimitar::ac2::HumanGround::CanUnbalanceOnEdge
@@ -2718,6 +2735,7 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 632E40	scimitar::ac2::HumanGround::unk_GetBreakHard
 632E80	scimitar::ac2::HumanGround::SetSprint
 632EA0	scimitar::ac2::HumanGround::unk_GetSprint
+633730	j_scimitar::ac2::HumanGround::_EnterHumanGround
 633740	scimitar::ac2::HumanGround::dtor
 633E90	scimitar::ac2::HumanGround::InitializeGlobalActions
 633F78	__cfltcvt_init
@@ -2739,8 +2757,10 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 634B54	__cfltcvt_init_15
 634B90	__cfltcvt_init_16
 634BCD	__cfltcvt_init_17
+634C00	scimitar::ac2::HumanGround::_ExitHumanGround
 634D20	scimitar::ac2::HumanGround::_UpdateMove
 6367C0	scimitar::ac2::HumanGround::scalar_deleting_dtor
+6367F0	j_scimitar::ac2::HumanGround::_ExitHumanGround
 6371E0	scimitar::ac2::HumanGround::_UpdateNavigation
 637D40	scimitar::ac2::HumanGround::_UpdateVulnerable
 637FA0	scimitar::ac2::HumanGround::_ExecInterfaceTransitionHumanGround
@@ -2843,6 +2863,7 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 6927A0	scimitar::ac2::HumanInAir::ComputeFallDamage
 69AF20	scimitar::ac2::HumanInAir::ConvertLandingToDamageAndSendEvent
 69B730	scimitar::ac2::HumanInAir::ExecMainToGroundMain
+69DB60	scimitar::ac2::HumanInAir::_TransitFromMainToGroundMain
 6A9E30	__RTC_NumErrors_1521
 6AAC20	__RTC_NumErrors_1522
 6ADB30	?SetExecutingCollection@ContextBase@details@Concurrency@@QAEXPAV_TaskCollectionBase@23@@Z_2
@@ -4427,12 +4448,17 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 914CE0	__RTC_NumErrors_2510
 914D30	__RTC_NumErrors_2511
 914D40	__RTC_NumErrors_2512
+914F20	scimitar::ac2::Human::InitMainTrack
 9183D0	scimitar::ac2::Human::GetFrontFoot
 91A160	def_91A133
 91A168	jpt_91A133
+91CB10	scimitar::ac2::Human::AddContextToMainAITrack
 91CCF8	def_91CB28
 91CD14	jpt_91CB28
+91CD80	scimitar::ac2::Human::GetContextByID
+91CE20	scimitar::ac2::Human::InitializeInGroundState
 91F1F0	scimitar::ac2::Human::GetBestGapInDirectionInList
+922390	scimitar::ac2::Human::UpdateAfterPhysics
 9251D0	scimitar::ac2::Human::GetDepthInFrontOfEdge
 9282B0	scimitar::ac2::Human::GetGapList
 929510	scimitar::ac2::Human::EmitPresentationEvent
@@ -4440,6 +4466,7 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 92E420	scimitar::ac2::Human::UpdateUnbalanceIgnoreList
 930540	scimitar::ac2::Human::GetModifiedSpeed
 931330	scimitar::ac2::Human::EdgeClampingComputation
+9333A0	scimitar::ac2::Human::CreateAI
 933480	scimitar::ac2::Human::Update
 934800	scimitar::ac2::Human::CheckClearanceCapsuleGlobal
 937BA0	__RTC_NumErrors_2513
@@ -4562,6 +4589,7 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 990760	__RTC_NumErrors_2573
 990A40	j_nullsub_1599_27
 990A80	__RTC_NumErrors_2574
+992A70	j_scimitar::AIActor::UpdateAfterPhysics
 994990	__RTC_NumErrors_2575
 994D40	__RTC_NumErrors_2576
 994D50	__RTC_NumErrors_2577

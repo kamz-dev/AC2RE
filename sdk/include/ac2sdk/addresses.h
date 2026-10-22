@@ -15,6 +15,18 @@ namespace ac2sdk::addr {
 inline constexpr std::uint32_t Human_Update = 0x933480;      // Mac __ZN8scimitar3ac25Human6UpdateEv 0x12EDA06; named
 inline constexpr std::uint32_t Human_ApplyDeath = 0x929650;  // named
 inline constexpr std::uint32_t Human_ctor = 0x932DC0;                     // static (writes both vftables)
+inline constexpr std::uint32_t Human_CreateAI = 0x9333A0;                 // Mac 0x12CD932; static (RE/10)
+inline constexpr std::uint32_t Human_GetContextByID = 0x91CD80;           // Mac 0x12CD3AE; static
+inline constexpr std::uint32_t Human_AddContextToMainAITrack = 0x91CB10;  // Mac 0x12CD0AC; static
+inline constexpr std::uint32_t Human_InitMainTrack = 0x914F20;            // Mac 0x12C3820; static
+inline constexpr std::uint32_t Human_UpdateAfterPhysics = 0x922390;       // Mac 0x12EDFBC; static
+// scimitar::AIActor (RE/10_human_update.md)
+inline constexpr std::uint32_t AIActor_Update = 0x7AC40;                  // Mac 0x2AFAE0; static
+inline constexpr std::uint32_t AIActor_UpdateTracks = 0x7A8C0;            // Mac 0x2AFA70; checked 2026-10-22
+inline constexpr std::uint32_t AIActor_UpdateAfterPhysics = 0x7AC50;      // Mac 0x2AFA30; static
+inline constexpr std::uint32_t AIActor_TransitToContext_Functor0 = 0x7AC80;  // Mac 0x2AFC20; static
+inline constexpr std::uint32_t AIActor_TransitToContext_Functor1 = 0x7B1D0;  // Mac 0x2AFCB0; checked 2026-10-22
+inline constexpr std::uint32_t AIActor_Enter = 0x7AE30;                   // Mac 0x2AFB70; static
 inline constexpr std::uint32_t Human_vftable = 0x19E6B70;                 // static
 inline constexpr std::uint32_t Human_IHuman_vftable = 0x19E69B0;          // at +0x100; slots match Mac 0x2842CA8
 inline constexpr std::uint32_t Human_EdgeClampingComputation = 0x931330;  // Mac 0x12ED4B6; static (RE/11_ground.md 16)

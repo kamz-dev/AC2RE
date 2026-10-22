@@ -20,7 +20,10 @@ TEST(sdk_function_addresses_are_in_text) {
                             HumanGround_TransitFromMoveStopToWaitMain, EngineContext_GetCurrentGameWorld,
                             Human_ctor, Human_EdgeClampingComputation, Human_GetModifiedSpeed, Human_GetGapList,
                             Human_GetBestGapInDirectionInList, Human_GetDepthInFrontOfEdge,
-                            GetEdgeSegmentNearCharacterPos, DisplacementCullingBySegment})
+                            GetEdgeSegmentNearCharacterPos, DisplacementCullingBySegment, Human_CreateAI,
+                            Human_GetContextByID, Human_AddContextToMainAITrack, Human_InitMainTrack,
+                            Human_UpdateAfterPhysics, AIActor_Update, AIActor_UpdateTracks, AIActor_UpdateAfterPhysics,
+                            AIActor_TransitToContext_Functor0, AIActor_TransitToContext_Functor1, AIActor_Enter})
         CHECK(a >= kTextBegin && a < kTextEnd);
     static_assert(ac2sdk::addr::HumanGround_vftable >= kTextEnd);  // in .rdata
 }

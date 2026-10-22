@@ -87,8 +87,7 @@ public:
     void LocalInit();  // PC 0x61F920 (vftable slot 2)
     void Enter() override;
     void Exit() override;
-    void Update(const port::MoveInput& input, const port::World& world, float dt) override;
-    void UpdateAfterPhysics(const port::World& world, float dt) override;
+    void Update(long phase, const PortUpdateArgs& args) override;
 
     // IHumanGround
     void SetDirection(const Vec3& direction) override;
@@ -233,7 +232,9 @@ private:
     // TestFallOffEdgeClearance aren't decoded: always clear.
     bool PortTestPullDownToLedgeClearance(const Gap&, bool) const { return true; }
     bool PortTestFallOffEdgeClearance(const Gap&) const { return true; }
-    bool RunPendingCommand();  // true when the context is being left
+    void UpdateMainPhase(const port::World& world, float dt);  // phase 0: the FSM's states and transitions
+    // Phase 1. PORT: the port's physics step: the (possibly clamped) root motion is applied and the ground tested.
+    void UpdateAfterPhysicsPhase(const port::World& world, float dt);
 
     float PortSpeedFromRatio() const;
 
@@ -254,11 +255,7 @@ private:
     // kept in m_MoveState with Move's children.
     State m_WaitState = State::Idle;
     Gap m_LookDownGap;                   // the gap ExecIdleToLookDown stores (Mac +0x9B0)
-    // PORT: the game switches context inside the Do* call (AIActor::TransitToContext, RE/10_human_update.md 3). Until
-    // the port's switch mirrors it, the edge commands that leave the context wait for the ground's next update.
-    enum class PortCommand { None, FallOffEdge, LedgePullDown };
-    PortCommand m_PortPendingCommand = PortCommand::None;
-    Gap m_PortPendingGap;
+
     // Names from the Revelations PDB's HumanGround (RE/11_ground.md 2); the enums' values are in the comments.
     int m_TurnMode = 0;                  // +0x464 IHumanGround::TurnMode: 0 MainCharacter, 1 NPC (TurnOnSpot needs 1)
     int m_TurnIntention = 0;             // +0x468 HumanGround::TurnIntention: 0 Left, 1 Right, 2 Back, 3 Unknown

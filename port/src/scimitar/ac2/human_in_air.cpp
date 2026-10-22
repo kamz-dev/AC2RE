@@ -16,7 +16,10 @@ void HumanInAir::Enter() {
     m_PortEntered = true;
 }
 
-void HumanInAir::Update(const port::MoveInput&, const port::World& world, float dt) {
+void HumanInAir::Update(long phase, const PortUpdateArgs& args) {
+    if (phase != 0) return;
+    const port::World& world = args.world;
+    const float dt = args.dt;
     Human& h = m_Human;
     if (!m_PortEntered) Enter();
     // PORT: plain ballistic fall with no air control and no catches.
@@ -28,9 +31,9 @@ void HumanInAir::Update(const port::MoveInput&, const port::World& world, float 
         h.m_Position = next;
         const Vec3 velocity = h.m_Velocity;
         h.m_Velocity = {};
-        ExecMainToGroundMain(velocity);
-        m_PortEntered = false;
-        h.RequestContext(HumanContextId::Ground);
+        // _TransitFromMainToGroundMain (PC 0x69DB60): TransitToContext(Ground) with ExecMainToGroundMain as its Exec,
+        // which runs after this context's Exit and before Ground's Enter.
+        h.TransitToContext(HumanContextId::Ground, [this, velocity] { ExecMainToGroundMain(velocity); });
         return;
     }
     h.m_Position = next;

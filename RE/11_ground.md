@@ -753,9 +753,8 @@ parameter. Mac symbols; the PC Can / Do entries are named (PC addresses in `21_i
 **Port (2026-10-22):**
 - `HumanGround` has EdgeStop (kept with Move's children) and Wait's child LookDown, and the commands' tests as above.
 - `AssassinTask` sends LookDown, Unbalance, FallOffEdge and the EdgeStop pull-down.
-- The game runs every command at once, switching context inside the controller's call (`10_human_update.md` 3).
-  PORT: FallOffEdge and LedgePullDown are deferred to the start of the ground's update until the port's context
-  switch mirrors `TransitToContext`; the others run at once.
+- Every command runs at once, as in the game: FallOffEdge and LedgePullDown switch context inside the controller's
+  call (`AIActor::TransitToContext`, `10_human_update.md` 3).
 - PORT stand-ins:
   - the two clearance tests pass;
   - no upper body (LookDown's +0x24 taken as 1);

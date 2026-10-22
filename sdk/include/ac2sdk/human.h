@@ -56,11 +56,29 @@ struct EdgeClampingSettings {
     float rejectAngle;                   // 0x20  0 or pi/3
 };
 
+// scimitar::ActorTrack (Revelations PDB names), 0x30 bytes; AIActor holds five from +0x04 (RE/10_human_update.md 1;
+// AIActor::UpdateTracks PC 0x7A8C0 walks them with stride 0x30).
+struct ActorTrack {
+    bool contextHasChanged;           // 0x00  set by TransitToContext; the next update of the track is skipped once
+    AC2_PAD(0x03);                    // 0x01
+    void* contextList;                // 0x04  Array<ActorContext*> (data; the size word at +0x0A)
+    std::uint32_t contextListCount;   // 0x08
+    std::uint32_t initialContextID;   // 0x0C
+    std::uint32_t previousContextID;  // 0x10
+    void* currentContext;             // 0x14
+    AC2_PAD(0x10);                    // 0x18  the init Functor0
+    void* owner;                      // 0x28  the AIActor
+    std::uint32_t trackID;            // 0x2C
+};
+
+// The Human's tracks (Human::CreateAI PC 0x9333A0): 1 the locomotion contexts, 2 Vocalization, 3 LookAt, 4 UpperBody.
+inline constexpr int kMainTrack = 1;
+
 struct Human {
     void* vftable;                    // 0x000  0x19E6B70 (ctor 0x932DC0)
-    AC2_PAD(0x48 - 0x04);             // 0x004
-    void* currentContext;             // 0x048  the context being updated (live: follows Ground / InAir / Ledge ...)
-    AC2_PAD(0x100 - 0x4C);            // 0x04C
+    ActorTrack tracks[5];             // 0x004  AIActor's tracks: tracks[1].currentContext is Human +0x48 (live: follows
+                                      //        Ground / InAir / Ledge ...), tracks[1].previousContextID +0x44
+    AC2_PAD(0x100 - 0xF4);            // 0x0F4
     void* iHumanVftable;              // 0x100  the IHuman base: 0x19E69B0 (ctor 0x932DC0)
     AC2_PAD(0x440 - 0x104);           // 0x104
     HumanContextBundle contexts;      // 0x440  (Mac Human::AddContextToMainAITrack: this + 1088)
@@ -80,7 +98,14 @@ AC2_ASSERT_SIZE(HumanContextBundle, 23 * sizeof(void*));
 AC2_ASSERT_OFFSET(HumanContextBundle, inAir, 0x08);
 AC2_ASSERT_OFFSET(HumanContextBundle, narrowObject, 0x48);
 AC2_ASSERT_OFFSET(HumanContextBundle, upperBody, 0x50);
-AC2_ASSERT_OFFSET(Human, currentContext, 0x048);
+AC2_ASSERT_SIZE(ActorTrack, 0x30);
+AC2_ASSERT_OFFSET(ActorTrack, previousContextID, 0x10);
+AC2_ASSERT_OFFSET(ActorTrack, currentContext, 0x14);
+AC2_ASSERT_OFFSET(ActorTrack, trackID, 0x2C);
+AC2_ASSERT_OFFSET(Human, tracks, 0x004);
+static_assert(!AC2_GAME_ABI || offsetof(Human, tracks) + kMainTrack * sizeof(ActorTrack) +
+                                       offsetof(ActorTrack, currentContext) == 0x48,
+              "the main track's current context is Human +0x48");
 AC2_ASSERT_OFFSET(Human, iHumanVftable, 0x100);
 AC2_ASSERT_OFFSET(Human, contexts, 0x440);
 AC2_ASSERT_OFFSET(Human, isEdgeClampingActive, 0x991);

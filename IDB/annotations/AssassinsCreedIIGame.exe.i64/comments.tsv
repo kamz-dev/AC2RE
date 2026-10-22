@@ -3223,10 +3223,32 @@ FFD1	c	Size
 79DF0	F	Microsoft VisualC 2-14/net runtime
 7A197	c	Block
 7A580	F	Microsoft VisualC 2-14/net runtime
+7A830	F	Mac 0x2AF740
+7A830	c	Mac 0x2AF740
+7A8C0	F	Mac 0x2AFA70 AIActor::UpdateTracks(long). RE/10_human_update.md 2
+7A8C0	c	Mac 0x2AFA70 AIActor::UpdateTracks(long). RE/10_human_update.md 2
+7A9D0	F	Mac 0x2AFBB0 AIActor::TransitToContext(long)
+7A9D0	c	Mac 0x2AFBB0 AIActor::TransitToContext(long)
+7AC40	F	Mac 0x2AFAE0 AIActor::Update
+7AC40	c	Mac 0x2AFAE0 AIActor::Update
+7AC50	F	Mac 0x2AFA30 AIActor::UpdateAfterPhysics (track 1, Update(1))
+7AC50	c	Mac 0x2AFA30 AIActor::UpdateAfterPhysics (track 1, Update(1))
+7AC80	F	Mac 0x2AFC20 AIActor::TransitToContext(long, Functor0&): Main transitions. RE/10 3
+7AC80	c	Mac 0x2AFC20 AIActor::TransitToContext(long, Functor0&): Main transitions. RE/10 3
+7AE30	F	Mac 0x2AFB70
+7AE30	c	Mac 0x2AFB70
+7B000	F	Mac 0x2AF660
+7B000	c	Mac 0x2AF660
+7B060	F	Mac 0x2AF870
+7B060	c	Mac 0x2AF870
+7B1D0	F	Mac 0x2AFCB0 AIActor::TransitToContext(long, Functor1<FSMParam const*>&, FSMParam const*): interface commands. Exit, prev id, Exec, current+flag, Enter
+7B1D0	c	Mac 0x2AFCB0 AIActor::TransitToContext(long, Functor1<FSMParam const*>&, FSMParam const*): interface commands. Exit, prev id, Exec, current+flag, Enter
 7B4F7	c	void (__thiscall *)(void *)
 7B4FC	c	int
 7B4FE	c	unsigned int
 7B503	c	void *
+7B530	F	Mac 0x2AFE70 AIActor::AddContext
+7B530	c	Mac 0x2AFE70 AIActor::AddContext
 7B660	c	void (__thiscall *)(void *)
 7B665	c	void (__thiscall *)(void *)
 7B66A	c	int
@@ -17565,6 +17587,8 @@ FFF84	c	char *
 5F1320	c	int
 5F1322	c	int
 5F1330	c	float
+5F1370	F	Mac 0xF9A8A4
+5F1370	c	Mac 0xF9A8A4
 5F1B5E	c	int
 5F1B61	c	float
 5F2320	F	Mac GetCurrentCustomActionOrientation 0xF9BDE0: 2 (CustomActionOrientation_None) unless the upper body (+0x790) plays a custom action (+0x24 == 11), then its orientation (0 Aggressive, 1 Progressive).
@@ -17621,6 +17645,8 @@ FFF84	c	char *
 5FB138	c	Source
 5FC062	c	float
 5FC10C	c	float
+5FC890	F	Mac 0xFCB4B2
+5FC890	c	Mac 0xFCB4B2
 5FCB5A	c	float
 5FD67B	c	float
 5FDF00	F	Mac GetTurnAnimation 0xFB3550: signed angle sight -> target about +Z; |a| < 25 deg 0/1, < 70 deg 2/3, < 135 deg 4/5, else 6/7 (even = positive). 8 only for NaN.
@@ -17692,12 +17718,16 @@ FFF84	c	char *
 60B00E	c	hinstDLL
 60B960	F	Mac _TransitFromTurnOnSpotStepToTurnOnSpotStepMain 0xFB39D4: target +0x8E0 := HumanUpperBody::GetCustomActionTargetDirection (Mac ExecTurnOnSpotStepToTurnOnSpotStepMain 0xF98E10), StartTurnOnSpotAnim.
 60B960	c	Mac _TransitFromTurnOnSpotStepToTurnOnSpotStepMain 0xFB39D4: target +0x8E0 := HumanUpperBody::GetCustomActionTargetDirection (Mac ExecTurnOnSpotStepToTurnOnSpotStepMain 0xF98E10), StartTurnOnSpotAnim.
+60BA30	F	Mac 0xF9951A
+60BA30	c	Mac 0xF9951A
 60BCDD	c	int
 60BCDF	c	int
 60BCE1	c	int
 60BCE4	c	float
 60BCE7	c	int
 60BCEC	c	int
+60C400	F	Mac 0xFC25D8
+60C400	c	Mac 0xFC25D8
 60C4B5	c	float
 60C610	F	Mac HumanGround::EnterMove 0xFA3D06. Switch on HumanGroundData+0x1A0 (HumanGroundData::MovementState, from TransitionSetupDataToMovement) picks Move's first child and seeds running +0x7B0 / gait +0x7A8 / speed ratio +0x7BC: 0 Wait; 1 Wait running; 2 MoveCycle gait 1; 3 MoveCycle 0.2; 4/5 MoveCycle running 0.6; 6 MoveCycle running 1.0 (data+0x228 1->5); 7 CrouchWait; 10 Landing; 11 LandingHard; 12 LandingBalanceFall running; 13 HandPassOverReception running 0.6; 14 Wait. Then HP := running, division := gait. RE/11_ground.md 11
 60C610	c	Mac HumanGround::EnterMove 0xFA3D06. Switch on HumanGroundData+0x1A0 (HumanGroundData::MovementState, from TransitionSetupDataToMovement) picks Move's first child and seeds running +0x7B0 / gait +0x7A8 / speed ratio +0x7BC: 0 Wait; 1 Wait running; 2 MoveCycle gait 1; 3 MoveCycle 0.2; 4/5 MoveCycle running 0.6; 6 MoveCycle running 1.0 (data+0x228 1->5); 7 CrouchWait; 10 Landing; 11 LandingHard; 12 LandingBalanceFall running; 13 HandPassOverReception running 0.6; 14 Wait. Then HP := running, division := gait. RE/11_ground.md 11
@@ -17872,9 +17902,13 @@ FFF84	c	char *
 625779	c	float
 6257E5	c	float
 625849	c	float
+627490	F	Mac 0xFC061C: root child from HumanGroundData +0x250 (entry state)
+627490	c	Mac 0xFC061C: root child from HumanGroundData +0x250 (entry state)
 62784B	c	float
 627911	c	float
 627B5D	c	float
+628710	F	Mac 0xFEC5B4
+628710	c	Mac 0xFEC5B4
 62A7F1	c	void (__thiscall *)(void *)
 62A7F6	c	int
 62A7F8	c	unsigned int
@@ -18505,6 +18539,8 @@ FFF84	c	char *
 633821	c	void *
 633E90	F	Mac HumanGround::InitializeGlobalActions 0xFA755A: fills the g_*ActionMap tables with constant action ids (aliases or hashes). RE/11_ground.md 10
 633E90	c	Mac HumanGround::InitializeGlobalActions 0xFA755A: fills the g_*ActionMap tables with constant action ids (aliases or hashes). RE/11_ground.md 10
+634C00	F	Mac 0xFC57B6
+634C00	c	Mac 0xFC57B6
 634D20	F	Mac HumanGround::_UpdateMove 0xFE069C. data+0x80 == 3 -> OrientedMove; Poisoned; walking-on-horse flag this+0x6F9 (Mac +0x6E9) -> InAir.
 634D20	c	Mac HumanGround::_UpdateMove 0xFE069C. data+0x80 == 3 -> OrientedMove; Poisoned; walking-on-horse flag this+0x6F9 (Mac +0x6E9) -> InAir.
 6367D1	c	Block
@@ -19717,6 +19753,8 @@ FFF84	c	char *
 69DAAD	c	lpvReserved
 69DAAE	c	fdwReason
 69DAAF	c	hinstDLL
+69DB60	F	Mac 0x122AA54
+69DB60	c	Mac 0x122AA54
 69E2DD	c	int
 69E2E1	c	float
 69E31B	c	char
@@ -26620,6 +26658,8 @@ FFF84	c	char *
 914C00	F	Microsoft VisualC 2-14/net runtime
 914D80	F	Microsoft VisualC 2-14/net runtime
 914DF3	c	float
+914F20	F	Mac 0x12C3820: track-1 init functor, default TransitionSetupDataToMovement
+914F20	c	Mac 0x12C3820: track-1 init functor, default TransitionSetupDataToMovement
 915314	c	void *
 91559D	c	void *
 9155CB	c	void *
@@ -26727,6 +26767,8 @@ FFF84	c	char *
 91B465	c	void *
 91B6F0	c	float
 91B6F3	c	int
+91CB10	F	Mac 0x12CD0AC
+91CB10	c	Mac 0x12CD0AC
 91CB17	c	switch 24 cases
 91CB28	c	switch jump
 91CB2F	r	jumptable 0091CB28 case 3
@@ -26750,6 +26792,10 @@ FFF84	c	char *
 91CCE2	r	jumptable 0091CB28 case 15
 91CCF8	r	jumptable 0091CB28 default case, cases 4,18,20,21,23
 91CD14	c	jump table for switch statement
+91CD80	F	Mac 0x12CD3AE (Human vftable slot 8)
+91CD80	c	Mac 0x12CD3AE (Human vftable slot 8)
+91CE20	F	Mac 0x12CD874
+91CE20	c	Mac 0x12CD874
 91DEC4	c	void *
 91E176	c	void *
 91E305	c	void *
@@ -26759,6 +26805,8 @@ FFF84	c	char *
 91F1F0	F	Mac 0x12CE79C Human::GetBestGapInDirectionInList (IHuman +0x9C)
 91F1F0	c	Mac 0x12CE79C Human::GetBestGapInDirectionInList (IHuman +0x9C)
 91FA07	c	void *
+922390	F	Mac 0x12EDFBC (Human vftable slot 17)
+922390	c	Mac 0x12EDFBC (Human vftable slot 17)
 922AFE	c	void *
 922B20	c	void *
 923756	c	float
@@ -26886,6 +26934,8 @@ FFF84	c	char *
 932E40	c	Val
 932E42	c	void *
 9332C1	c	Block
+9333A0	F	Mac 0x12CD932 (Human vftable slot 9): tracks 1 Ground, 2 Vocalization, 3 LookAt, 4 UpperBody
+9333A0	c	Mac 0x12CD932 (Human vftable slot 9): tracks 1 Ground, 2 Vocalization, 3 LookAt, 4 UpperBody
 933961	c	int
 933963	c	int
 933965	c	int
