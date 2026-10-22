@@ -125,6 +125,7 @@
 3DFE0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_3
 41AC0	scimitar::World::GetWorldComponentByType
 41BA0	scimitar::World::GetConflictLoopManagerComponent
+4C1C0	scimitar::WorldTasks::SetupUpdateAI
 52610	?GetExecutionResourceId@VirtualProcessor@details@Concurrency@@QBEIXZ_0
 526E0	scimitar::CameraProxy::AddViewSurface
 52740	scimitar::CameraProxy::RemapPadInput

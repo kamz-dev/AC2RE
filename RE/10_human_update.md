@@ -81,6 +81,25 @@ So phase 1 ("after physics", `_UpdateX(long)`, `11_ground.md` 3) is the main tra
 phase 0. AIActor has a separate base `UpdateAfterPhysics` context slot (PC slot 6, `ActorContext::UpdateAfterPhysics`
 [0x509930], an empty body). The track code never calls it. The after-physics work goes through `Update(1)`.
 
+### The engine's AI frame: the controller before the Human (2026-10-22)
+`WorldTasks::SetupUpdateAI` PC 0x4C1C0 [0xAA2410] links the AI's per-frame tasks in this order: `UpdateAISetup` →
+**`UpdateAISingleThreaded`** → `UpdateAIGatherForMultiThread` → **`UpdateAIMultiThreaded`** and `UpdateAIInteractionMT`
+→ `UpdateAIWrapup` (`ThreadMacroTask::LinkTask`; the same task offsets and names on both builds). Each runs one
+`AIComponent` vtable slot on every AI component (PC jobs 0x3CE90 → +0xC4, 0x3CE10 → +0xC8; Mac +0xC8 / +0xCC, one
+slot later as for the contexts):
+1. **`UpdateSingleThreaded`**. The player's component is `BhvAssassin` [0x10136D8]: `UpdatePadInput` [0x1012A5A] (the
+   pad, the `InputReferenceEvent`, the navigation service), then `AIComponent::UpdateSingleThreaded` [0x5C7FB0]. That
+   fires the services' `IAIUpdatable::UpdateSingleThreaded` trigger: the navigation service's reaction (e.g.
+   `CSrvGroundNavigation…Reaction_On_IAIUpdatable_UpdateSingleThreaded_Action` [0x1157DE2]) calls its task's vtable
+   +0x4C, which for the player is `AssassinTask::UpdateSingleThreaded` [0x10833E0] (AssassinTask vtable [0x2822088]
+   +0x4C) → `PreUpdate` [0x106C922] → `UpdateGlobal`, `UpdateGround` / `UpdateInAir`. Then `UpdateProcesses`.
+2. **`UpdateMultiThreaded`**, after it: `AIComponent::UpdateMultiThreaded` [0x5C7D50] fires the multithreaded trigger,
+   then (while the component's +0x54 is 1) calls `UpdateActor` [0x5C7020] through the vtable, and that calls the
+   actor's Update: **`Human::Update`** (Mac Human vftable slot 15).
+
+So **the controller runs before `Human::Update` every frame**, as the live data showed (row 10) and as the port does
+(`port::Sim::step`: `AssassinTask::Update`, then `Human::Update`).
+
 ## 3. The switch: `AIActor::TransitToContext`
 Every hand-over between movement contexts goes through one of three `AIActor` methods. They all work on **track
 1** (fixed offsets +0x34 … +0x60):
@@ -136,8 +155,7 @@ exists.
     `Can` that passed **since the context's last update**: in practice, the same controller frame.
 
 ### Ordering within the frame
-- A switch made by the **controller** (before `Human::Update`, hypothesis on the exact call order; see the live
-  note) sets the flag. In `UpdateTracks(0)` track 1 then skips: **neither context gets a main update that frame**.
+- A switch made by the **controller** (before `Human::Update`, section 2) sets the flag. In `UpdateTracks(0)` track 1 then skips: **neither context gets a main update that frame**.
   In `UpdateAfterPhysics` the flag is clear, so **the new context's `Update(1)` runs the same frame**.
 - A switch made by the **old context's own `Update(0)`** sets the flag, which is cleared right after that update.
   `UpdateAfterPhysics` then runs the new context's `Update(1)` the same frame.
@@ -211,8 +229,9 @@ MovementState 0 (WaitLow), `TransitionToMotionType` 1, and a 0.5 float (rotation
 | 16 (+0x40) | `GetCurrentStateName` | debug |
 
 ## Open
-1. The call order of the player's controller (`AssassinTask`, an AI component) and `Human::Update` within the
-   frame. The live data puts the controller first. The engine's component update loop isn't read.
+1. ~~The call order of the controller and `Human::Update`~~: the controller first (section 2, 2026-10-22). (The
+   PC addresses of `AIComponent::UpdateSingleThreaded` / `UpdateMultiThreaded` / `UpdateActor` and `BhvAssassin` aren't
+   located; the jobs above call them through the vtable.)
 2. Who calls `ActorContext::TriggerEnter` (slot 4) at all, and whether track 0 is ever used.
 3. The PC addresses of the LedgePullDown wrappers and Exec (Mac 0xF99D34, 0xF9A45A, 0xF98DA6), and of the
    `HumanGround::Exec…` for each InAir Main transition.

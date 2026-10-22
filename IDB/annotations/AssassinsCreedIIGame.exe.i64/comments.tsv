@@ -2566,6 +2566,10 @@ FFD1	c	Size
 3C9D0	F	Microsoft VisualC 2-14/net runtime
 3C9E0	F	Microsoft VisualC 2-14/net runtime
 3CD50	F	Microsoft VisualC 2-14/net runtime
+3CE10	F	per-component job of UpdateAIMultiThreaded: AIComponent vtable +0xC8 UpdateMultiThreaded (Mac 0x5C7D50) -> UpdateActor (+0xC0) -> Human::Update
+3CE10	c	per-component job of UpdateAIMultiThreaded: AIComponent vtable +0xC8 UpdateMultiThreaded (Mac 0x5C7D50) -> UpdateActor (+0xC0) -> Human::Update
+3CE90	F	per-component job of UpdateAISingleThreaded: AIComponent vtable +0xC4 UpdateSingleThreaded (Mac 0x5C7FB0; the player's BhvAssassin: pad, then services -> AssassinTask)
+3CE90	c	per-component job of UpdateAISingleThreaded: AIComponent vtable +0xC4 UpdateSingleThreaded (Mac 0x5C7FB0; the player's BhvAssassin: pad, then services -> AssassinTask)
 3D3F7	c	MaxCount
 3D3F9	c	Source
 3D3FD	c	SizeInBytes
@@ -2669,6 +2673,8 @@ FFD1	c	Size
 4A3A2	c	Numerator
 4AB69	c	pThrowInfo
 4AB6A	c	pExceptionObject
+4C1C0	F	Mac 0xAA2410. Task chain: UpdateAISetup -> UpdateAISingleThreaded (+1984) -> UpdateAIGatherForMultiThread -> UpdateAIMultiThreaded (+2168) / UpdateAIInteractionMT (+2352) -> Wrapup. RE/10_human_update.md 2
+4C1C0	c	Mac 0xAA2410. Task chain: UpdateAISetup -> UpdateAISingleThreaded (+1984) -> UpdateAIGatherForMultiThread -> UpdateAIMultiThreaded (+2168) / UpdateAIInteractionMT (+2352) -> Wrapup. RE/10_human_update.md 2
 4C831	c	dwTlsIndex
 4C84D	c	lpTlsValue
 4C92D	c	lpTlsValue
