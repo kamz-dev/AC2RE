@@ -14,7 +14,7 @@ namespace port {
 enum Button : std::uint32_t {
     kHighProfile = 1u << 0,  // RT / right mouse: the run; with legs, the sprint
     kLegs = 1u << 1,         // A / space: the fast walk; jump, free-run
-    kHand = 1u << 2,         // B / grab, drop
+    kHand = 1u << 2,         // B / Shift (empty hand): Pad::PadButton 3, the grasp (live RE/20 row 13)
     kHead = 1u << 3,         // Y / eagle vision
 };
 

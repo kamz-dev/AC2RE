@@ -211,7 +211,7 @@ if (!+0x951 && !IsInGroundTackle && found B && CanFallOffEdge(B, false, false))
 // PC 0xDFA6CA: PullDown
 if (found B && Climb ability && CanPullDownOnEdge(B)) {             // (shows a prompt: ControlTypes +4 = 0x38, hypothesis)
     if (IsInEdgeStop) { if (len > 0.35 && angle(B.normal, stick) < 70deg) -> DoPullDownOnEdge(B) }
-    else if (!+0x95D && ButtonJustPressedWithDelay(3, 0.2)) -> DoPullDownOnEdge(B)    // button 3: grasp
+    else if (!+0x95D && ButtonJustPressedWithDelay(3, 0.2)) -> DoPullDownOnEdge(B)    // button 3: the empty hand (Shift, live row 13)
 }
 ```
 Not decoded: the flags +0x946 (a buffered legs press), +0x951, +0x95D, +0xEE0 in this use, the jump detection types.

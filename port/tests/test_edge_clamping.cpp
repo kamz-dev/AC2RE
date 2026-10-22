@@ -215,3 +215,20 @@ TEST(released_stick_in_edge_stop_goes_back_to_move) {
     CHECK(sim.human().m_Position.y < 5.0f - 0.55f);
     CHECK(!sim.human().GetContextBundle().GetGround().IsInEdgeStop());
 }
+
+TEST(grasp_at_the_look_down_pulls_down_to_ledge) {
+    // Live (RE/20 row 13, session 6): Shift (the empty hand, pad button 3) at the look-down goes Ground -> Ledge
+    // directly (ButtonJustPressedWithDelay(3) -> DoPullDownOnEdge, PC 0xDFA6CA). PORT: no Ledge context, so the
+    // switch is refused and Ezio stays.
+    BoxWorld world = Roof(8);
+    Sim sim(world, {.position = {0, 2, 8}}, kFineDt);
+    sim.run(6.0f, [](float) { return Toward({0, 1, 0}); });
+    const auto& ground = sim.human().GetContextBundle().GetGround();
+    CHECK(ground.GetWaitState() == GroundState::LookDown);
+    CHECK(sim.human().GetPortRefusedContextID() == HumanContextId::None);
+    MoveInput press = Toward({0, 1, 0});
+    press.buttons = kHand;
+    sim.step(press);
+    CHECK(sim.human().GetPortRefusedContextID() == HumanContextId::Ledge);
+    CHECK(!ground.IsInEdgeStop());  // the direct path, not the wobble
+}

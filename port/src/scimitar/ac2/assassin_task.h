@@ -99,6 +99,11 @@ private:
     int m_PortStickBand = 0;
     int m_PortPreviousStickBand = 0;
     bool m_PortButton0 = false;  // Pad button 0
+    bool m_PortButton3 = false;  // Pad button 3 (the empty hand, Shift)
+    bool m_PortButton3Before = false;
+    // ControlScheme::ButtonJustPressedWithDelay(button, delay). PORT: the delay's meaning isn't decoded; a plain
+    // just-pressed test.
+    bool PortButtonJustPressedWithDelay(int button, float delay) const;
     // +0x968 (Mac +0x964) a scimitar::Timer: the forced turn-around lasts at most 0.3 s. PORT: the task's own clock.
     float m_ForceTurnAroundTimerEnd = 0;
     float m_PortClock = 0;

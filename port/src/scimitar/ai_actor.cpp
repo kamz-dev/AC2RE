@@ -47,7 +47,10 @@ void AIActor::UpdateAfterPhysics(const PortUpdateArgs& args) {
 bool AIActor::TransitToContext(ac2::HumanContextId id, const std::function<void()>& exec) {
     ActorTrack& t = m_Tracks[kMainTrack];
     ActorContext* next = GetContextByID(kMainTrack, id);
-    if (!next) return false;
+    if (!next) {
+        m_PortRefusedContextID = id;
+        return false;
+    }
     ActorContext* old = t.m_CurrentContext;
     if (old) old->Exit();
     t.m_PreviousContextID = old ? old->GetID() : ac2::HumanContextId::None;

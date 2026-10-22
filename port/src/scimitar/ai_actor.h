@@ -58,12 +58,15 @@ public:
         return m_Tracks[track].m_PreviousContextID;
     }
     bool HasContextChanged(long track = kMainTrack) const { return m_Tracks[track].m_ContextHasChanged; }
+    // PORT: the last context a TransitToContext asked for that the port doesn't have (None if none yet).
+    ac2::HumanContextId GetPortRefusedContextID() const { return m_PortRefusedContextID; }
 
 protected:
     // PORT: puts a track in a context without Exit / Enter (tests, spawning straight into a context).
     void PortForceContext(long track, ActorContext* context);
 
     ActorTrack m_Tracks[kTrackCount];
+    ac2::HumanContextId m_PortRefusedContextID = ac2::HumanContextId::None;
 };
 
 }  // namespace scimitar
