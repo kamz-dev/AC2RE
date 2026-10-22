@@ -2713,6 +2713,8 @@ FFD1	c	Size
 5106D	c	char *
 511E1	c	Block
 512A3	c	Block
+52740	F	Mac 0x860EF0 CameraProxy::RemapPadInput (stick space -> camera-relative world)
+52740	c	Mac 0x860EF0 CameraProxy::RemapPadInput (stick space -> camera-relative world)
 527D0	F	Microsoft VisualC 2-14/net runtime
 527E0	F	Microsoft VisualC 2-14/net runtime
 527F0	F	Microsoft VisualC 2-14/net runtime
@@ -2887,6 +2889,8 @@ FFD1	c	Size
 6B290	c	int
 6B2D9	c	dwTlsIndex
 6B930	F	Microsoft VisualC 2-14/net runtime
+6BCC0	F	An elapsed test like Timer::IsElapsed (0x34B80): now (frozen value at +0x10, else the clock at *(+0x1C), ~30000 ticks/s live) >= end (+8). The elapsed test of AssassinTask's forced turn-around timer; live 2026-10-21 the flag lasts 0.30 s.
+6BCC0	c	An elapsed test like Timer::IsElapsed (0x34B80): now (frozen value at +0x10, else the clock at *(+0x1C), ~30000 ticks/s live) >= end (+8). The elapsed test of AssassinTask's forced turn-around timer; live 2026-10-21 the flag lasts 0.30 s.
 6BD12	c	Block
 6BE3C	c	Size
 6BE47	c	Val
@@ -4222,6 +4226,12 @@ D0812	c	Size
 D0814	c	int
 D099C	c	Size
 D09A4	c	int
+D0EA0	F	Baseline name doubtful: returns the control scheme that holds a button (a hijack lookup on PadManager), not a press state. See 0xD1170.
+D0EA0	c	Baseline name doubtful: returns the control scheme that holds a button (a hijack lookup on PadManager), not a press state. See 0xD1170.
+D1170	F	Was named ControlScheme::ButtonPressed in the baseline, but it returns true when ANOTHER control scheme holds the button (PadManager lookup at 0xD0EA0 != this). The real press test is !this && Pad::ButtonPressed_0 (0x10B1710) on the scheme's pad (+0x10); inlined that way in UpdateGroundMovement.
+D1170	c	Was named ControlScheme::ButtonPressed in the baseline, but it returns true when ANOTHER control scheme holds the button (PadManager lookup at 0xD0EA0 != this). The real press test is !this && Pad::ButtonPressed_0 (0x10B1710) on the scheme's pad (+0x10); inlined that way in UpdateGroundMovement.
+D11B0	F	The stick version of 0xD1170: true when another control scheme holds the stick. JoyThresholdPressed is inlined after it (ControlScheme +0x5C0 stick length vs the thresholds at *(+0x738)).
+D11B0	c	The stick version of 0xD1170: true when another control scheme holds the stick. JoyThresholdPressed is inlined after it (ControlScheme +0x5C0 stick length vs the thresholds at *(+0x738)).
 D1A00	F	Microsoft VisualC 2-14/net runtime
 D1E11	c	Block
 D2270	F	Microsoft VisualC 2-14/net runtime
@@ -7382,6 +7392,12 @@ FFF84	c	char *
 1E6F60	c	Source
 1E72BE	c	int
 1E7ED1	c	Block
+1E84A0	F	Mac 0x81F570 PadInput::ComputeRelativeInput. raw: normalised stick, remapped. relative: snapped to forward (0,1) when dot > +0xA8[stick] (PC: no flag; Mac gates it on a flag), remapped. damped: forward rotated by curve(|angle|/pi) on the stick's side, remapped. RE/21_input.md.
+1E84A0	c	Mac 0x81F570 PadInput::ComputeRelativeInput. raw: normalised stick, remapped. relative: snapped to forward (0,1) when dot > +0xA8[stick] (PC: no flag; Mac gates it on a flag), remapped. damped: forward rotated by curve(|angle|/pi) on the stick's side, remapped. RE/21_input.md.
+1E8740	F	Mac 0x81FC30 PadInput::Update: per stick ComputeRelativeInput, the length (capped at 1), the band = number of thresholds below the length, a quadrant vs the sight (+-45/135 deg).
+1E8740	c	Mac 0x81FC30 PadInput::Update: per stick ComputeRelativeInput, the length (capped at 1), the band = number of thresholds below the length, a quadrant vs the sight (+-45/135 deg).
+1E8B00	F	Mac 0x820150 PadInput::PadInput. +0xA8[stick] snap-to-forward cos (0.9961947 = cos 5 deg, 1.0); +0x600 + 0x8C*stick ResponseCurve: stick 0 keys (0,0) (1/36,1deg) (1/18,5deg) (1/9,10deg) (1/6,20deg) (2/9,40deg) (1,pi), stick 1 identity. Live 2026-10-21: the player's PadInput is AssassinTask +0x80 (ControlScheme +0x10).
+1E8B00	c	Mac 0x820150 PadInput::PadInput. +0xA8[stick] snap-to-forward cos (0.9961947 = cos 5 deg, 1.0); +0x600 + 0x8C*stick ResponseCurve: stick 0 keys (0,0) (1/36,1deg) (1/18,5deg) (1/9,10deg) (1/6,20deg) (2/9,40deg) (1,pi), stick 1 identity. Live 2026-10-21: the player's PadInput is AssassinTask +0x80 (ControlScheme +0x10).
 1E8B31	c	void (__thiscall *)(void *)
 1E8B36	c	void (__thiscall *)(void *)
 1E8B3D	c	int
@@ -12495,6 +12511,8 @@ FFF84	c	char *
 4136A0	F	Microsoft VisualC 2-14/net runtime
 4136B0	F	Microsoft VisualC 2-14/net runtime
 413920	F	Microsoft VisualC 2-14/net runtime
+414140	F	Mac 0x144A2D4 GuidanceContactObject::GetLineGlobalFlatNormal
+414140	c	Mac 0x144A2D4 GuidanceContactObject::GetLineGlobalFlatNormal
 415BE0	c	float
 415BE3	c	int
 415BE7	c	int
@@ -14026,6 +14044,8 @@ FFF84	c	char *
 4C9DB1	c	Block
 4CA187	c	Block
 4CA277	c	Block
+4CA290	F	Mac 0x14641BC ControlScheme::ButtonPressed: not held by another scheme (0xD1170), then Pad::ButtonPressed_0 on the scheme's pad (+0x10).
+4CA290	c	Mac 0x14641BC ControlScheme::ButtonPressed: not held by another scheme (0xD1170), then Pad::ButtonPressed_0 on the scheme's pad (+0x10).
 4CA3B0	F	Microsoft VisualC 2-14/net runtime
 4CA407	c	Block
 4CA779	c	int
@@ -17444,11 +17464,17 @@ FFF84	c	char *
 5DF6C9	r	jumptable 005DF675 default case, cases 16-41,45-47
 5DF6D0	c	jump table for switch statement
 5DF6F0	c	indirect table for switch statement
+5E03E0	F	Mac HumanGround::UpdateMovementIntention 0xF98C54. Movement division +0x7AC: AI override (+0x8A8) -> 2 if AI ratio +0x7C0 > 0 else 0; else GetMovementDivisionFromSpeedRatio(data+0x181 HP, data+0x88 stick): 0 -> 0, 1/2 -> 2 (others leave it). HP intention +0x7B4 = data+0x181 != 0.
+5E03E0	c	Mac HumanGround::UpdateMovementIntention 0xF98C54. Movement division +0x7AC: AI override (+0x8A8) -> 2 if AI ratio +0x7C0 > 0 else 0; else GetMovementDivisionFromSpeedRatio(data+0x181 HP, data+0x88 stick): 0 -> 0, 1/2 -> 2 (others leave it). HP intention +0x7B4 = data+0x181 != 0.
 5E092D	c	float
+5E0B20	F	IHumanGround +0x418 (Mac thunk), RE/21_input.md edge reactions
+5E0B20	c	IHumanGround +0x418 (Mac thunk), RE/21_input.md edge reactions
 5E0C48	c	void *
 5E0C57	c	void *
 5E1789	c	float
 5E179E	c	float
+5E1920	F	Mac GetTurnOnSpotAnimation 0xF97B1C: TurnAnimation 0..7 -> action id (788325963 ... 660761271), else -1.
+5E1920	c	Mac GetTurnOnSpotAnimation 0xF97B1C: TurnAnimation 0..7 -> action id (788325963 ... 660761271), else -1.
 5E1926	c	switch 8 cases
 5E192B	c	switch jump
 5E1932	r	jumptable 005E192B case 0
@@ -17483,12 +17509,20 @@ FFF84	c	char *
 5EA02D	c	int
 5EA03D	c	float
 5EA8D6	c	float
+5EA930	F	Mac ExecTurnOnSpotStepToWaitMain 0xF98EFE: DestHeading / +0x7E0 := sight; +0x7A8 := 0, ratio +0x7BC := 0, +0x7B4 := +0x7B0, +0x7AC := 0.
+5EA930	c	Mac ExecTurnOnSpotStepToWaitMain 0xF98EFE: DestHeading / +0x7E0 := sight; +0x7A8 := 0, ratio +0x7BC := 0, +0x7B4 := +0x7B0, +0x7AC := 0.
+5EAAF0	F	Mac 0xFB5CAE: running +0x7B0 == 1, gait +0x7A8 != 0, item flag 0x20 clear, data+0xED, and action in {93469659, 96, 97} or action ratio > 0.33.
+5EAAF0	c	Mac 0xFB5CAE: running +0x7B0 == 1, gait +0x7A8 != 0, item flag 0x20 clear, data+0xED, and action in {93469659, 96, 97} or action ratio > 0.33.
+5EAB90	F	Mac 0xFB5D7A: division +0x7AC == 0 and (running +0x7B0 == 0 or current action != 93469659 MoveCycle).
+5EAB90	c	Mac 0xFB5D7A: division +0x7AC == 0 and (running +0x7B0 == 0 or current action != 93469659 MoveCycle).
 5EAE01	c	float
 5EAEC9	c	float
 5EB0EE	c	float
 5EB74B	c	int
 5EB74E	c	float
 5EB843	c	float
+5EB850	F	Mac TestJumpImpulsionToMoveMain 0xF989A8: crouch (data+0xF3) without HP, or the 0.2 s timer at +0x2C0 expired with division 2.
+5EB850	c	Mac TestJumpImpulsionToMoveMain 0xF989A8: crouch (data+0xF3) without HP, or the 0.2 s timer at +0x2C0 expired with division 2.
 5EBC12	c	float
 5EBC7E	c	float
 5EBD3D	c	float
@@ -17504,6 +17538,8 @@ FFF84	c	char *
 5EC80B	c	float
 5EC956	c	int
 5EC96B	c	float
+5ECD30	F	Mac HumanGround::IsActionInterruptibleByMovement 0xF9E7B0. Current action item flags (+0xC): 0x20 blocks; else bit by (division +0x7AC, HP +0x7B4): (0,0) 6, (0,1) 7, (1,0) 8, (1,1) 10, (2,0) 9, (2,1) 11.
+5ECD30	c	Mac HumanGround::IsActionInterruptibleByMovement 0xF9E7B0. Current action item flags (+0xC): 0x20 blocks; else bit by (division +0x7AC, HP +0x7B4): (0,0) 6, (0,1) 7, (1,0) 8, (1,1) 10, (2,0) 9, (2,1) 11.
 5ED9E4	c	float
 5EDA34	c	float
 5EDA83	c	float
@@ -17531,6 +17567,8 @@ FFF84	c	char *
 5F1330	c	float
 5F1B5E	c	int
 5F1B61	c	float
+5F2320	F	Mac GetCurrentCustomActionOrientation 0xF9BDE0: 2 (CustomActionOrientation_None) unless the upper body (+0x790) plays a custom action (+0x24 == 11), then its orientation (0 Aggressive, 1 Progressive).
+5F2320	c	Mac GetCurrentCustomActionOrientation 0xF9BDE0: 2 (CustomActionOrientation_None) unless the upper body (+0x790) plays a custom action (+0x24 == 11), then its orientation (0 Aggressive, 1 Progressive).
 5F2756	c	int
 5F2758	c	int
 5F275D	c	float
@@ -17540,9 +17578,19 @@ FFF84	c	char *
 5F3135	c	void *
 5F31F8	c	int
 5F390E	c	float
+5F4190	F	Mac 0xF9BC98 (IHumanGround +0x44C)
+5F4190	c	Mac 0xF9BC98 (IHumanGround +0x44C)
 5F43E2	c	int
 5F441E	c	void *
 5F4AD3	c	int
+5F4E70	F	Mac 0xF9EAE6: division +0x7AC in {1,2} and (WillActionFinish or IsActionInterruptibleByMovement).
+5F4E70	c	Mac 0xF9EAE6: division +0x7AC in {1,2} and (WillActionFinish or IsActionInterruptibleByMovement).
+5F4EC0	F	Mac 0xF9EA82: (WillActionFinish or interruptible) and |turn angle +0x7D8| > TurnOnMovementMinAngle +0x990 and not byte +0x7A0 [Mac +0x780].
+5F4EC0	c	Mac 0xF9EA82: (WillActionFinish or interruptible) and |turn angle +0x7D8| > TurnOnMovementMinAngle +0x990 and not byte +0x7A0 [Mac +0x780].
+5F4F30	F	Mac 0xF9E9F8: m_TurnMode (+0x464) == 1 (NPC); !IsInCustomAction (IHumanGround vfunc +1236) or GetCurrentCustomActionOrientation == 2 (None); WillActionFinish or interruptible; m_IntentionMvtState == 0; |m_TurnAngle| >= 1 deg.
+5F4F30	c	Mac 0xF9E9F8: m_TurnMode (+0x464) == 1 (NPC); !IsInCustomAction (IHumanGround vfunc +1236) or GetCurrentCustomActionOrientation == 2 (None); WillActionFinish or interruptible; m_IntentionMvtState == 0; |m_TurnAngle| >= 1 deg.
+5F5B00	F	Mac 0xF9E8DA: running == 0 and |turn angle +0x7D8| > TurnOnMovementMinAngle +0x990 and (WillActionFinish or interruptible).
+5F5B00	c	Mac 0xF9E8DA: running == 0 and |turn angle +0x7D8| > TurnOnMovementMinAngle +0x990 and (WillActionFinish or interruptible).
 5F5C96	c	float
 5F5D3E	c	float
 5F5EC6	c	int
@@ -17559,18 +17607,26 @@ FFF84	c	char *
 5F70C7	c	int
 5F7167	c	int
 5F721E	c	int
+5F72C0	F	Mac ActorCanPhysicallyStandUp 0xFDEA42: Human::CheckClearanceCapsuleGlobal radius 0.38 from feet +0.42 to +1.42.
+5F72C0	c	Mac ActorCanPhysicallyStandUp 0xFDEA42: Human::CheckClearanceCapsuleGlobal radius 0.38 from feet +0.42 to +1.42.
 5F8180	c	int
 5F85B3	c	int
 5F8810	F	Microsoft VisualC 2-14/net runtime
 5F8832	c	Block
 5F8850	F	Microsoft VisualC 2-14/net runtime
 5F97E2	c	void *
+5F9EE0	F	Mac 0x144CD7A scimitar::ac2::IsEdgeLeveled
+5F9EE0	c	Mac 0x144CD7A scimitar::ac2::IsEdgeLeveled
 5FAF52	c	float
 5FB138	c	Source
 5FC062	c	float
 5FC10C	c	float
 5FCB5A	c	float
 5FD67B	c	float
+5FDF00	F	Mac GetTurnAnimation 0xFB3550: signed angle sight -> target about +Z; |a| < 25 deg 0/1, < 70 deg 2/3, < 135 deg 4/5, else 6/7 (even = positive). 8 only for NaN.
+5FDF00	c	Mac GetTurnAnimation 0xFB3550: signed angle sight -> target about +Z; |a| < 25 deg 0/1, < 70 deg 2/3, < 135 deg 4/5, else 6/7 (even = positive). 8 only for NaN.
+5FE6A0	F	Mac HumanGround::UpdateTurnAngle 0xFB34C4: +0x7D8 = signed angle about +Z between data+0x20 (move dir) and the entity's sight.
+5FE6A0	c	Mac HumanGround::UpdateTurnAngle 0xFB34C4: +0x7D8 = signed angle about +Z between data+0x20 (move dir) and the entity's sight.
 5FE823	c	float
 5FEAB7	c	float
 5FEABA	c	int
@@ -17579,6 +17635,10 @@ FFF84	c	char *
 5FF1C2	c	int
 5FF4C3	c	int
 5FF4C8	c	float
+5FF930	F	Mac scimitar::ac2::RotateVectorToVectorWithAngularSpeed 0xFB4A3C (out, from, to, minSpeed, maxSpeed, minAngle, maxAngle, direction, dt). speed = angle < maxAngle ? (angle >= minAngle ? lerp(minSpeed..maxSpeed) : minSpeed) : maxSpeed; rotates by speed*dt, snaps when that reaches the angle. direction != 0 forces the turn side.
+5FF930	c	Mac scimitar::ac2::RotateVectorToVectorWithAngularSpeed 0xFB4A3C (out, from, to, minSpeed, maxSpeed, minAngle, maxAngle, direction, dt). speed = angle < maxAngle ? (angle >= minAngle ? lerp(minSpeed..maxSpeed) : minSpeed) : maxSpeed; rotates by speed*dt, snaps when that reaches the angle. direction != 0 forces the turn side.
+5FFC40	F	Mac HumanGround::UpdateOrientation 0xFB4E32. RotationRatio r = min(1, data+0x21C + dt*data+0x220) -> SetRotationRatio. Unless item flag 0x10: sight = RotateVectorToVectorWithAngularSpeed(sight, data+0x20 move dir, HeadingMinRotationSpeed +0x8B8, Max +0x8BC, MinAngle +0x8C0 * r, MaxAngle +0x8C4 * r, HeadingRotationDirection +0x8D0, dt); written back if changed > 0.001. RE/11_ground.md 7
+5FFC40	c	Mac HumanGround::UpdateOrientation 0xFB4E32. RotationRatio r = min(1, data+0x21C + dt*data+0x220) -> SetRotationRatio. Unless item flag 0x10: sight = RotateVectorToVectorWithAngularSpeed(sight, data+0x20 move dir, HeadingMinRotationSpeed +0x8B8, Max +0x8BC, MinAngle +0x8C0 * r, MaxAngle +0x8C4 * r, HeadingRotationDirection +0x8D0, dt); written back if changed > 0.001. RE/11_ground.md 7
 600C15	c	float
 600C18	c	int
 600CAB	c	float
@@ -17589,6 +17649,8 @@ FFF84	c	char *
 60116A	c	int
 60116C	c	int
 60117C	c	float
+602270	F	Mac HumanGround::LinkFSM 0xFA4130 (identical byte stores). Simple FSM state records are 3 bytes {id, initialChild, currentChild} from this+0x8C (id 1 Vulnerable); FSMClassStateWrapper sub-machines are 8 bytes (id at +5). Root: this+0x41 initial, this+0x42 current. 147 ids. RE/11_ground.md
+602270	c	Mac HumanGround::LinkFSM 0xFA4130 (identical byte stores). Simple FSM state records are 3 bytes {id, initialChild, currentChild} from this+0x8C (id 1 Vulnerable); FSMClassStateWrapper sub-machines are 8 bytes (id at +5). Root: this+0x41 initial, this+0x42 current. 147 ids. RE/11_ground.md
 60380E	c	int
 603811	c	float
 603A42	c	float
@@ -17628,6 +17690,8 @@ FFF84	c	char *
 60B00C	c	lpvReserved
 60B00D	c	fdwReason
 60B00E	c	hinstDLL
+60B960	F	Mac _TransitFromTurnOnSpotStepToTurnOnSpotStepMain 0xFB39D4: target +0x8E0 := HumanUpperBody::GetCustomActionTargetDirection (Mac ExecTurnOnSpotStepToTurnOnSpotStepMain 0xF98E10), StartTurnOnSpotAnim.
+60B960	c	Mac _TransitFromTurnOnSpotStepToTurnOnSpotStepMain 0xFB39D4: target +0x8E0 := HumanUpperBody::GetCustomActionTargetDirection (Mac ExecTurnOnSpotStepToTurnOnSpotStepMain 0xF98E10), StartTurnOnSpotAnim.
 60BCDD	c	int
 60BCDF	c	int
 60BCE1	c	int
@@ -17635,6 +17699,8 @@ FFF84	c	char *
 60BCE7	c	int
 60BCEC	c	int
 60C4B5	c	float
+60C610	F	Mac HumanGround::EnterMove 0xFA3D06. Switch on HumanGroundData+0x1A0 (HumanGroundData::MovementState, from TransitionSetupDataToMovement) picks Move's first child and seeds running +0x7B0 / gait +0x7A8 / speed ratio +0x7BC: 0 Wait; 1 Wait running; 2 MoveCycle gait 1; 3 MoveCycle 0.2; 4/5 MoveCycle running 0.6; 6 MoveCycle running 1.0 (data+0x228 1->5); 7 CrouchWait; 10 Landing; 11 LandingHard; 12 LandingBalanceFall running; 13 HandPassOverReception running 0.6; 14 Wait. Then HP := running, division := gait. RE/11_ground.md 11
+60C610	c	Mac HumanGround::EnterMove 0xFA3D06. Switch on HumanGroundData+0x1A0 (HumanGroundData::MovementState, from TransitionSetupDataToMovement) picks Move's first child and seeds running +0x7B0 / gait +0x7A8 / speed ratio +0x7BC: 0 Wait; 1 Wait running; 2 MoveCycle gait 1; 3 MoveCycle 0.2; 4/5 MoveCycle running 0.6; 6 MoveCycle running 1.0 (data+0x228 1->5); 7 CrouchWait; 10 Landing; 11 LandingHard; 12 LandingBalanceFall running; 13 HandPassOverReception running 0.6; 14 Wait. Then HP := running, division := gait. RE/11_ground.md 11
 60CE48	c	switch 4 cases
 60CE4D	c	switch jump
 60CE54	r	jumptable 0060CE4D case 0
@@ -17645,9 +17711,13 @@ FFF84	c	char *
 60D5A9	c	float
 60D659	c	float
 60D768	c	float
+60D7A0	F	Mac ExitTurnOnSpot 0xFA0944: data DestHeading := sight, cycle flag +0x8DD := 0, presentation event 122, PopState(28).
+60D7A0	c	Mac ExitTurnOnSpot 0xFA0944: data DestHeading := sight, cycle flag +0x8DD := 0, presentation event 122, PopState(28).
 60DB29	c	float
 60DB30	c	float
 60DB41	c	float
+60DB70	F	Mac ExitMoveCycle 0xF9FD94 (same writes; PC +0x998 = Mac this[606]). Clears data CurrentBodyAngle/BankingAngle, +0x8B4, +0x998 bit 0 (the move-cycle entry's time-scale flag), +0x790->+0x4C; +0x794 |= 4.
+60DB70	c	Mac ExitMoveCycle 0xF9FD94 (same writes; PC +0x998 = Mac this[606]). Clears data CurrentBodyAngle/BankingAngle, +0x8B4, +0x998 bit 0 (the move-cycle entry's time-scale flag), +0x790->+0x4C; +0x794 |= 4.
 60DCB1	c	float
 60DD3D	c	float
 60DE19	c	float
@@ -17668,7 +17738,13 @@ FFF84	c	char *
 612C99	c	void *
 61314A	c	void *
 613BB4	c	void *
+614BB0	F	Mac EnterTurnStart 0xFBE3D6. |turn angle| >= TurnOnMovementMinAngle: action g_TurnStartActionMap[6*side(+0x468) + 3*running + foot(player only)], 2 blend items (1-f, f), f = (|a| - pi/2)/(pi/2); else 3 items blended by |a|/(pi/2). Saves the turn angle at +0x480, clears gait level.
+614BB0	c	Mac EnterTurnStart 0xFBE3D6. |turn angle| >= TurnOnMovementMinAngle: action g_TurnStartActionMap[6*side(+0x468) + 3*running + foot(player only)], 2 blend items (1-f, f), f = (|a| - pi/2)/(pi/2); else 3 items blended by |a|/(pi/2). Saves the turn angle at +0x480, clears gait level.
 614F26	c	float
+614F40	F	Mac ExecTurnStartToWaitMain 0xFB664C. +0x7B4 := +0x7B0; wait action from g_GroundWaitActionMap[12*side+6*running+3*foot]; speed ratio +0x7BC := 0; 2-way blend by |turn angle|. Live 2026-10-21: ratio 0 after TurnStart->Wait (RE/20 row 8).
+614F40	c	Mac ExecTurnStartToWaitMain 0xFB664C. +0x7B4 := +0x7B0; wait action from g_GroundWaitActionMap[12*side+6*running+3*foot]; speed ratio +0x7BC := 0; 2-way blend by |turn angle|. Live 2026-10-21: ratio 0 after TurnStart->Wait (RE/20 row 8).
+615120	F	Mac ExecTurnStartToMoveCycleMain 0xFB7474. Speed ratio seed: running -> 0.6 and GroundData+0x228 := 2; else +0x7B4 -> 0.6 (+0x998 |= 1), player with division 1 -> 0, else 0.2; GroundData+0x228 := 3. Live 2026-10-21: 0.2 walk / 0.6 high profile.
+615120	c	Mac ExecTurnStartToMoveCycleMain 0xFB7474. Speed ratio seed: running -> 0.6 and GroundData+0x228 := 2; else +0x7B4 -> 0.6 (+0x998 |= 1), player with division 1 -> 0, else 0.2; GroundData+0x228 := 3. Live 2026-10-21: 0.2 walk / 0.6 high profile.
 6164DB	c	int
 6164E0	c	float
 616A5C	c	float
@@ -17695,7 +17771,10 @@ FFF84	c	char *
 618655	c	void *
 61A00D	c	float
 61B642	c	float
+61BB60	F	Mac HumanGround::UpdateMoveCycleMain 0xFCD20A. Speed ratio this+0x7BC (Mac +0x79C): target = data+0x88 (stick mag) * 0.2 + {0, 0.2 if data+0xEE, 0.6 if HP this+0x7B4, 0.8 if both}, clamped 1; AI override this+0x8A8/+0x7C0; restriction mode this+0x994. Bands of 0.2 pick MoveCycle blend slots 0-3,3-6,6-9,9-13,13-16 (+1/+2 = turn variants). RE/11_ground.md
+61BB60	c	Mac HumanGround::UpdateMoveCycleMain 0xFCD20A. Speed ratio this+0x7BC (Mac +0x79C): target = data+0x88 (stick mag) * 0.2 + {0, 0.2 if data+0xEE, 0.6 if HP this+0x7B4, 0.8 if both}, clamped 1; AI override this+0x8A8/+0x7C0; restriction mode this+0x994. Bands of 0.2 pick MoveCycle blend slots 0-3,3-6,6-9,9-13,13-16 (+1/+2 = turn variants). RE/11_ground.md
 61BCF6	c	float
+61BD2D	c	Gate (RE/20 row 8): current action != move cycle 93469659 (0x5923BDB) and not finishing -> restricted target (mode +0x994, then <= 0.2 without +0x7B4), plain dt step, no band update; +0x998 bit 0 -> action time scale 2 - ratio. Live 2026-10-21: the 0.5-0.68 s holds after TurnStart -> MoveCycle.
 61BF4E	c	int
 61BF68	c	float
 61CA91	c	float
@@ -17716,11 +17795,26 @@ FFF84	c	char *
 61CE49	c	float
 61CF1A	c	float
 61D519	c	float
+61DFF2	c	Human m_IsEdgeClampingActive (+0x991) := 1 (also EnterMoveCycle/MoveStop/CrouchMove/EdgeStop/ObstacleCollision/Poisoned; exits clear it)
 61E666	c	float
+61F200	F	Mac _TransitFromMoveStopToWaitMain 0xFD1C64 with ExecMoveStopToWaitMain (Mac 0xF9748A) inlined: +0x7B4 := 1, speed ratio +0x7BC := 0. Live 2026-10-21: ratio 0 after MoveStop->Wait.
+61F200	c	Mac _TransitFromMoveStopToWaitMain 0xFD1C64 with ExecMoveStopToWaitMain (Mac 0xF9748A) inlined: +0x7B4 := 1, speed ratio +0x7BC := 0. Live 2026-10-21: ratio 0 after MoveStop->Wait.
+61F3F0	F	Mac _TransitFromTurnOnSpotStepToWaitMain 0xFD1826: ExitTurnOnSpot, ExecTurnOnSpotStepToWaitMain, _EnterWait.
+61F3F0	c	Mac _TransitFromTurnOnSpotStepToWaitMain 0xFD1826: ExitTurnOnSpot, ExecTurnOnSpotStepToWaitMain, _EnterWait.
 61F802	c	float
+61F920	F	Mac HumanGround::LocalInit 0xFA71B0. Movement-division tables data+0x155/+0x156 = 3, thresholds {0, 0.9, 1} at +0x158 and +0x16C; slow-down ResponseCurve +0x81C keys (0,1) (0.333,1) (0.4,0.3) (0.666,0.2) (1,1); capsule height 1.8, radius 0.4.
+61F920	c	Mac HumanGround::LocalInit 0xFA71B0. Movement-division tables data+0x155/+0x156 = 3, thresholds {0, 0.9, 1} at +0x158 and +0x16C; slow-down ResponseCurve +0x81C keys (0,1) (0.333,1) (0.4,0.3) (0.666,0.2) (1,1); capsule height 1.8, radius 0.4.
 61FF7E	c	void *
 620C26	c	void *
 621447	c	void *
+621C80	F	Mac _UpdateMoveStop 0xFD1CA4. -> RunTurn: Has180TurnIntention inlined (force-turn byte +0x8D4 or |turn angle| > 2pi/3) and WillActionFinish; -> Wait: TestMoveStopToWaitMain; -> MoveCycle: TestMoveStopToMoveCycleMain.
+621C80	c	Mac _UpdateMoveStop 0xFD1CA4. -> RunTurn: Has180TurnIntention inlined (force-turn byte +0x8D4 or |turn angle| > 2pi/3) and WillActionFinish; -> Wait: TestMoveStopToWaitMain; -> MoveCycle: TestMoveStopToMoveCycleMain.
+621E60	F	Mac _UpdateRunTurn 0xFD197C. Division 0 and HasActionFinished -> Wait; TestRunTurnToMoveCycleMain (division != 0 and (HasActionFinished or no 180 intention)) -> MoveCycle.
+621E60	c	Mac _UpdateRunTurn 0xFD197C. Division 0 and HasActionFinished -> Wait; TestRunTurnToMoveCycleMain (division != 0 and (HasActionFinished or no 180 intention)) -> MoveCycle.
+621EE0	F	Mac _UpdateTurnStart 0xFD18F6. UpdateTurnStartMain (x2 time scale in high profile except the 4 running turn ids), then division 0 and WillActionFinish -> Wait, division != 0 and WillActionFinish -> MoveCycle.
+621EE0	c	Mac _UpdateTurnStart 0xFD18F6. UpdateTurnStartMain (x2 time scale in high profile except the 4 running turn ids), then division 0 and WillActionFinish -> Wait, division != 0 and WillActionFinish -> MoveCycle.
+621F90	F	Mac _UpdateTurnOnSpotStep 0xFD185A. Step->Step (PC 0x5FE0A0) else Step->Wait (cycle flag +0x8DD clear and HasActionFinished).
+621F90	c	Mac _UpdateTurnOnSpotStep 0xFD185A. Step->Step (PC 0x5FE0A0) else Step->Wait (cycle flag +0x8DD clear and HasActionFinished).
 6225E0	c	int
 6225E6	c	int
 6225E7	c	int
@@ -17757,6 +17851,8 @@ FFF84	c	char *
 622E9B	c	void *
 623081	c	struct Concurrency::details::QuickBitSet *
 623082	c	this
+623FA0	F	Mac _UpdateCrouchWait 0xFDEBF6: UpdateCrouchWaitMain, then -> Wait (crouch released, interruptible, can stand up), -> CrouchMove (division != 0), -> JumpImpulsion (high profile), -> CrouchTurn (180 intention). RE/11_ground.md 13
+623FA0	c	Mac _UpdateCrouchWait 0xFDEBF6: UpdateCrouchWaitMain, then -> Wait (crouch released, interruptible, can stand up), -> CrouchMove (division != 0), -> JumpImpulsion (high profile), -> CrouchTurn (180 intention). RE/11_ground.md 13
 624060	c	int
 624067	c	int
 6240F0	c	int
@@ -17793,6 +17889,8 @@ FFF84	c	char *
 62B124	c	lpvReserved
 62B125	c	fdwReason
 62B126	c	hinstDLL
+62B9B0	F	Mac 0xFD773A
+62B9B0	c	Mac 0xFD773A
 62B9D1	c	lpvReserved
 62B9D2	c	fdwReason
 62B9D3	c	hinstDLL
@@ -18152,12 +18250,18 @@ FFF84	c	char *
 62F0B0	c	lpvReserved
 62F0B2	c	fdwReason
 62F0B4	c	hinstDLL
+62F0D0	F	Mac 0xFDA29A (IHumanGround +0x43C), command 86 FallOffEdge -> InAir
+62F0D0	c	Mac 0xFDA29A (IHumanGround +0x43C), command 86 FallOffEdge -> InAir
 62F10B	c	lpvReserved
 62F110	c	fdwReason
 62F111	c	hinstDLL
+62F140	F	Mac 0xFDA2FA (IHumanGround +0x444), command 87 UnbalanceOnEdge -> EdgeStop / NarrowObject
+62F140	c	Mac 0xFDA2FA (IHumanGround +0x444), command 87 UnbalanceOnEdge -> EdgeStop / NarrowObject
 62F178	c	lpvReserved
 62F17C	c	fdwReason
 62F17D	c	hinstDLL
+62F1B0	F	Mac 0xFDA358 (IHumanGround +0x46C), command 88 LedgePullDown -> Ledge
+62F1B0	c	Mac 0xFDA358 (IHumanGround +0x46C), command 88 LedgePullDown -> Ledge
 62F1BC	c	lpvReserved
 62F1CD	c	fdwReason
 62F1CE	c	hinstDLL
@@ -18251,7 +18355,8 @@ FFF84	c	char *
 62F900	c	lpvReserved
 62F902	c	fdwReason
 62F904	c	hinstDLL
-62F920	c	lpvReserved
+62F920	F	Mac 0xFDAE98 (IHumanGround +0x7F4), command 136 EnterLookDown (Idle -> LookDown)
+62F920	c	Mac 0xFDAE98 (IHumanGround +0x7F4), command 136 EnterLookDown (Idle -> LookDown)
 62F922	c	fdwReason
 62F924	c	hinstDLL
 62F940	c	lpvReserved
@@ -18389,9 +18494,26 @@ FFF84	c	char *
 630520	c	lpvReserved
 630522	c	fdwReason
 630524	c	hinstDLL
+630800	F	Mac _UpdateLanding 0xFD1B0E. Poisoned check, then TestLandingToWaitMain (action finished and it is one of the standing landings 1855747402/1855747404/1855747415) or TestLandingToMoveCycleMain (finished, any other).
+630800	c	Mac _UpdateLanding 0xFD1B0E. Poisoned check, then TestLandingToWaitMain (action finished and it is one of the standing landings 1855747402/1855747404/1855747415) or TestLandingToMoveCycleMain (finished, any other).
 6327B6	c	void *
+6327C5	c	Defaults: +0x8B8..+0x8C4 heading rotation speeds/angles 0, +0x8D0 direction 0, +0x8C8 15.0, +0x8CC 12.5, +0x990 TurnOnMovementMinAngle pi/2, +0x994 speed restriction 1.
+632E20	F	IHumanGround slot 30 (vftable 0x19BF390), this = HumanGround+0x14: HumanGroundData+0xED = BreakHard. Mac SetBreakHard 0x153B958. BreakHard while running -> MoveStop.
+632E20	c	IHumanGround slot 30 (vftable 0x19BF390), this = HumanGround+0x14: HumanGroundData+0xED = BreakHard. Mac SetBreakHard 0x153B958. BreakHard while running -> MoveStop.
+632E80	F	IHumanGround: HumanGroundData+0xEE = Sprint. Mac SetSprint 0x153B9D0. Sprint adds 0.2 to the target speed ratio (UpdateMoveCycleMain).
+632E80	c	IHumanGround: HumanGroundData+0xEE = Sprint. Mac SetSprint 0x153B9D0. Sprint adds 0.2 to the target speed ratio (UpdateMoveCycleMain).
 633821	c	void *
+633E90	F	Mac HumanGround::InitializeGlobalActions 0xFA755A: fills the g_*ActionMap tables with constant action ids (aliases or hashes). RE/11_ground.md 10
+633E90	c	Mac HumanGround::InitializeGlobalActions 0xFA755A: fills the g_*ActionMap tables with constant action ids (aliases or hashes). RE/11_ground.md 10
+634D20	F	Mac HumanGround::_UpdateMove 0xFE069C. data+0x80 == 3 -> OrientedMove; Poisoned; walking-on-horse flag this+0x6F9 (Mac +0x6E9) -> InAir.
+634D20	c	Mac HumanGround::_UpdateMove 0xFE069C. data+0x80 == 3 -> OrientedMove; Poisoned; walking-on-horse flag this+0x6F9 (Mac +0x6E9) -> InAir.
 6367D1	c	Block
+6371E0	F	Mac HumanGround::_UpdateNavigation 0xFE35FA. TestNavigationToInAirMain inlined: entity type (entity+0xA8 &7)==2 and CheckForBoatCollision (Mac 0xFA05DC).
+6371E0	c	Mac HumanGround::_UpdateNavigation 0xFE35FA. TestNavigationToInAirMain inlined: entity type (entity+0xA8 &7)==2 and CheckForBoatCollision (Mac 0xFA05DC).
+637FA0	F	Mac 0xFE7A20
+637FA0	c	Mac 0xFE7A20
+6381D0	F	Mac HumanGround::_UpdateHumanGround 0xFED468. a2: 0 = main update, 1 = after physics. Dispatches on root current state this+0x42.
+6381D0	c	Mac HumanGround::_UpdateHumanGround 0xFED468. a2: 0 = main update, 1 = after physics. Dispatches on root current state this+0x42.
 6388D1	c	lpvReserved
 6388D6	c	fdwReason
 6388D8	c	hinstDLL
@@ -18404,9 +18526,19 @@ FFF84	c	char *
 639431	c	lpvReserved
 639436	c	fdwReason
 639438	c	hinstDLL
+639E20	F	Mac IHumanGround +0x440 DoFallOffEdge(Gap, float)
+639E20	c	Mac IHumanGround +0x440 DoFallOffEdge(Gap, float)
+639E80	F	Mac 0xFEA806 (IHumanGround +0x448)
+639E80	c	Mac 0xFEA806 (IHumanGround +0x448)
+639ED0	F	Mac 0xFEA84C (IHumanGround +0x470)
+639ED0	c	Mac 0xFEA84C (IHumanGround +0x470)
 63A8A1	c	lpvReserved
 63A8A6	c	fdwReason
 63A8A8	c	hinstDLL
+63A970	F	Mac 0xFEB656 (IHumanGround +0x7F8)
+63A970	c	Mac 0xFEB656 (IHumanGround +0x7F8)
+63B6B0	F	Mac HumanUpperBody::LocalInit 0x1374282.
+63B6B0	c	Mac HumanUpperBody::LocalInit 0x1374282.
 63CEE0	c	int
 63CEE2	c	int
 63CEE4	c	int
@@ -18420,6 +18552,8 @@ FFF84	c	char *
 63E106	c	int
 63E120	c	float
 63FF68	c	Source
+6408E0	F	Mac HumanUpperBody::GetCustomActionTargetDirection 0x13813F6 (called at the same place in TurnOnSpotStep->Step).
+6408E0	c	Mac HumanUpperBody::GetCustomActionTargetDirection 0x13813F6 (called at the same place in TurnOnSpotStep->Step).
 640961	c	float
 64096B	c	float
 6409C5	c	float
@@ -19451,6 +19585,8 @@ FFF84	c	char *
 68F1BB	c	void *
 68F24C	c	void *
 690D61	c	Block
+6911A0	F	Mac HumanInAir::LocalInit 0x122B552 (same writes: layer 5, timers +0xC0.., HumanInAirData LandingTestDelay / HayStackIgnore / BoatIgnore timers).
+6911A0	c	Mac HumanInAir::LocalInit 0x122B552 (same writes: layer 5, timers +0xC0.., HumanInAirData LandingTestDelay / HayStackIgnore / BoatIgnore timers).
 691317	c	float
 691347	c	float
 691377	c	float
@@ -19458,10 +19594,14 @@ FFF84	c	char *
 691A68	c	int
 691BE0	c	void *
 691D09	c	void *
+6925D0	F	Mac HumanInAir::IsInSpringJump 0x122FDC4 (same call site).
+6925D0	c	Mac HumanInAir::IsInSpringJump 0x122FDC4 (same call site).
 6926C7	c	float
 6926CA	c	int
 692757	c	float
 69275A	c	int
+6927A0	F	Mac HumanInAir::ComputeFallDamage(float drop, long&) 0x122F4C4 (same call site).
+6927A0	c	Mac HumanInAir::ComputeFallDamage(float drop, long&) 0x122F4C4 (same call site).
 6929E8	c	float
 6929EB	c	int
 693A32	c	void *
@@ -19549,12 +19689,16 @@ FFF84	c	char *
 69A5B0	c	float
 69AA6B	c	float
 69AED4	c	void *
+69AF20	F	Mac HumanInAir::ConvertLandingToDamageAndSendEvent(float, bool) 0x122F726 (same call site).
+69AF20	c	Mac HumanInAir::ConvertLandingToDamageAndSendEvent(float, bool) 0x122F726 (same call site).
 69AF2C	c	int
 69AF30	c	float
 69B227	c	void *
 69B239	c	void *
 69B24B	c	void *
 69B25A	c	void *
+69B730	F	Mac HumanInAir::ExecMainToGroundMain 0x1236156. InAir +0x181 bit 0x20 / 0x40 (DoAirAssassination / DoAirTackle): GroundData EntryState := 2 / 10, return. Drop = HumanInAirData JumpOrigin.z (+0x40) - pos.z. Spring jump (action 0xDA3ACAAF) or drop > 3: MovementState 11 LandingHard, action 0x10DD707 (LandingSpeedRatio +0x21C <= 0.2 or fall damage 2) else 0x10DD70B / 0x256801CC. Else MovementState 10 Landing: steep fall -> 1855747415 / 1855746090, else band(+0x21C: 0.2/0.5/0.9) ? 1830814048+foot : 1855747402/404. RE/11_ground.md 11
+69B730	c	Mac HumanInAir::ExecMainToGroundMain 0x1236156. InAir +0x181 bit 0x20 / 0x40 (DoAirAssassination / DoAirTackle): GroundData EntryState := 2 / 10, return. Drop = HumanInAirData JumpOrigin.z (+0x40) - pos.z. Spring jump (action 0xDA3ACAAF) or drop > 3: MovementState 11 LandingHard, action 0x10DD707 (LandingSpeedRatio +0x21C <= 0.2 or fall damage 2) else 0x10DD70B / 0x256801CC. Else MovementState 10 Landing: steep fall -> 1855747415 / 1855746090, else band(+0x21C: 0.2/0.5/0.9) ? 1830814048+foot : 1855747402/404. RE/11_ground.md 11
 69BD61	c	int
 69BD65	c	float
 69BF58	c	char
@@ -20266,6 +20410,8 @@ FFF84	c	char *
 6CC930	F	Microsoft VisualC 2-14/net runtime
 6CC980	F	Microsoft VisualC 2-14/net runtime
 6CCAB0	F	Microsoft VisualC 2-14/net runtime
+6CCC40	F	Mac AssassinAbilities::GetMaxSpeed; returns AssassinAbilitySet::MaxSpeed (ACR PDB: 0 NoMovementAllowed, 1 Walk, 2 Jog, 3 Run, 4 Sprint, 5 WalkSlowest, 6 WalkSlightlySlow, 7 WalkSlow)
+6CCC40	c	Mac AssassinAbilities::GetMaxSpeed; returns AssassinAbilitySet::MaxSpeed (ACR PDB: 0 NoMovementAllowed, 1 Walk, 2 Jog, 3 Run, 4 Sprint, 5 WalkSlowest, 6 WalkSlightlySlow, 7 WalkSlow)
 6CCEF2	c	Size
 6CCEF4	c	int
 6CD06C	c	Size
@@ -23936,6 +24082,8 @@ FFF84	c	char *
 8254A0	F	Microsoft VisualC 2-14/net runtime
 825577	c	Block
 8255A3	c	int
+825E20	F	Mac HumanData::GetGroundData 0xE394FA (same call sites).
+825E20	c	Mac HumanData::GetGroundData 0xE394FA (same call sites).
 825FD6	c	switch 5 cases
 825FDB	c	switch jump
 825FE2	r	jumptable 00825FDB case 0
@@ -26371,9 +26519,13 @@ FFF84	c	char *
 90D060	F	Microsoft VisualC 2-14/net runtime
 90D070	F	Microsoft VisualC 2-14/net runtime
 90D080	F	Microsoft VisualC 2-14/net runtime
+90E190	F	Mac HumanGroundData::GetMovementDivisionFromSpeedRatio 0x1119F44 (hp, value): first index i < count[data+0x155+hp] with threshold[data+0x158+20*hp+4*i] >= value, else 0. LocalInit fills {0, 0.9, 1} for both.
+90E190	c	Mac HumanGroundData::GetMovementDivisionFromSpeedRatio 0x1119F44 (hp, value): first index i < count[data+0x155+hp] with threshold[data+0x158+20*hp+4*i] >= value, else 0. LocalInit fills {0, 0.9, 1} for both.
 90E2B0	F	Microsoft VisualC 2-14/net runtime
 90E2C0	F	Microsoft VisualC 2-14/net runtime
 90EB01	c	Block
+90EFA0	F	Mac TransitionSetupDataToMovement::SetupTransitionData 0x111AAC6 (vftable 0x19BE554 slot 0). Copies MvtState -> data+0x1A0, transition -> +0x1A8/+0x204, flags +0x20C, feet +0x210, blends +0x214, ratio +0x21C, step +0x220, skip +0x224, motion type +0x228, teleport +0x22C; EntryState +0x250 := 0.
+90EFA0	c	Mac TransitionSetupDataToMovement::SetupTransitionData 0x111AAC6 (vftable 0x19BE554 slot 0). Copies MvtState -> data+0x1A0, transition -> +0x1A8/+0x204, flags +0x20C, feet +0x210, blends +0x214, ratio +0x21C, step +0x220, skip +0x224, motion type +0x228, teleport +0x22C; EntryState +0x250 := 0.
 90F0C0	F	Microsoft VisualC 2-14/net runtime
 90F1E1	c	Block
 90F4A0	F	Microsoft VisualC 2-14/net runtime
@@ -26456,6 +26608,10 @@ FFF84	c	char *
 9137E0	c	void *
 9137EC	c	void *
 9137F8	c	void *
+913A70	F	Mac 0x12C4EBE Human::SetGap (IHuman +0x80)
+913A70	c	Mac 0x12C4EBE Human::SetGap (IHuman +0x80)
+913AF0	F	Mac 0x12C40CC Human::SetIsGapValid (IHuman +0x88)
+913AF0	c	Mac 0x12C40CC Human::SetIsGapValid (IHuman +0x88)
 913BFE	c	float
 913DD0	F	Microsoft VisualC 2-14/net runtime
 914210	F	Microsoft VisualC 2-14/net runtime
@@ -26486,6 +26642,8 @@ FFF84	c	char *
 915DDC	c	void *
 917350	F	Microsoft VisualC 2-14/net runtime
 91829F	c	void *
+9183D0	F	Mac Human::GetFrontFoot 0x12C6468 (same call site in ExecMainToGroundMain).
+9183D0	c	Mac Human::GetFrontFoot 0x12C6468 (same call site in ExecMainToGroundMain).
 918697	c	void *
 9189D8	c	void *
 918A0C	c	void *
@@ -26598,6 +26756,8 @@ FFF84	c	char *
 91E864	c	int
 91F180	c	float
 91F183	c	int
+91F1F0	F	Mac 0x12CE79C Human::GetBestGapInDirectionInList (IHuman +0x9C)
+91F1F0	c	Mac 0x12CE79C Human::GetBestGapInDirectionInList (IHuman +0x9C)
 91FA07	c	void *
 922AFE	c	void *
 922B20	c	void *
@@ -26612,8 +26772,12 @@ FFF84	c	char *
 924FBA	c	int
 924FBB	c	int
 924FBC	c	int
+9251D0	F	Mac 0x12D0AD2 Human::GetDepthInFrontOfEdge (outlined only)
+9251D0	c	Mac 0x12D0AD2 Human::GetDepthInFrontOfEdge (outlined only)
 9271D0	c	void *
 927D39	c	void *
+9282B0	F	Mac 0x12D4BD6 Human::GetGapList (IHuman vtable 0x19E69B0 +0x98)
+9282B0	c	Mac 0x12D4BD6 Human::GetGapList (IHuman vtable 0x19E69B0 +0x98)
 928BF1	c	char
 928BF3	c	int
 928BF8	c	int
@@ -26642,6 +26806,8 @@ FFF84	c	char *
 92E232	c	float
 92E23E	c	float
 92E241	c	int
+92E420	F	Mac 0x12C795C Human::UpdateUnbalanceIgnoreList (last call of Human::Update on both)
+92E420	c	Mac 0x12C795C Human::UpdateUnbalanceIgnoreList (last call of Human::Update on both)
 92F2D6	c	void *
 92FA80	c	void (__thiscall *)(void *)
 92FA85	c	int
@@ -26661,11 +26827,15 @@ FFF84	c	char *
 92FFC9	c	int
 92FFCE	c	float
 92FFD1	c	int
+930540	F	Mac 0x12ED290 Human::GetModifiedSpeed. EdgeClampingSettings at Human+0x9F0 (+0 edge distance 0.2, +0x10 reject direction, +0x20 reject angle)
+930540	c	Mac 0x12ED290 Human::GetModifiedSpeed. EdgeClampingSettings at Human+0x9F0 (+0 edge distance 0.2, +0x10 reject direction, +0x20 reject angle)
 930D51	c	Block
 930EFD	c	void (__thiscall *)(void *)
 930F02	c	int
 930F0A	c	unsigned int
 930F0C	c	void *
+931330	F	Mac 0x12ED4B6 __ZN8scimitar3ac25Human23EdgeClampingComputationEv. Flags: +0x991 m_IsEdgeClampingActive, +0x992 m_IsFightEdgeClampingActive, +0x993 m_IsEdgeClampingEnable, +0x994 m_IsEdgeClampingZeroSpeed, +0x995 m_EdgeClampUsedLastFrame, +0x996 m_ForcedGapUpdate (Revelations PDB names). RE/11_ground.md 16
+931330	c	Mac 0x12ED4B6 __ZN8scimitar3ac25Human23EdgeClampingComputationEv. Flags: +0x991 m_IsEdgeClampingActive, +0x992 m_IsFightEdgeClampingActive, +0x993 m_IsEdgeClampingEnable, +0x994 m_IsEdgeClampingZeroSpeed, +0x995 m_EdgeClampUsedLastFrame, +0x996 m_ForcedGapUpdate (Revelations PDB names). RE/11_ground.md 16
 9318F6	c	void *
 931AE0	c	void *
 93217F	c	int
@@ -26768,6 +26938,8 @@ FFF84	c	char *
 933B35	c	int
 9347A1	c	void *
 9347D2	c	void *
+934800	F	Mac Human::CheckClearanceCapsuleGlobal(CollisionReport*, top, bottom, radius, IColor) 0x12CA306 (same call shape from ActorCanPhysicallyStandUp).
+934800	c	Mac Human::CheckClearanceCapsuleGlobal(CollisionReport*, top, bottom, radius, IColor) 0x12CA306 (same call shape from ActorCanPhysicallyStandUp).
 9348E7	c	void *
 9349A2	c	struct Concurrency::details::QuickBitSet *
 9349A3	c	this
@@ -36143,6 +36315,8 @@ DD932B	r	jumptable 00DD9301 case 1
 DD9337	r	jumptable 00DD9301 case 5
 DD9357	r	jumptable 00DD9301 default case
 DD9360	c	jump table for switch statement
+DD9520	F	Mac AssassinTask::IsPlayerNavigatingInAGroupFormation (break hard in UpdateGroundMovement)
+DD9520	c	Mac AssassinTask::IsPlayerNavigatingInAGroupFormation (break hard in UpdateGroundMovement)
 DD996A	c	int
 DD9973	c	float
 DD9976	c	int
@@ -36155,6 +36329,8 @@ DDB8A0	c	int
 DDB904	c	int
 DDBE9E	c	int
 DDC423	c	float
+DDD960	F	Mac AssassinTask::ReorientCaracterInFirstPerson (the first call in UpdateGroundMovement on both builds)
+DDD960	c	Mac AssassinTask::ReorientCaracterInFirstPerson (the first call in UpdateGroundMovement on both builds)
 DDDB19	c	int
 DDDB8B	c	int
 DDDB8D	c	int
@@ -36187,6 +36363,8 @@ DDF903	c	float
 DDF995	c	float
 DDF9C1	c	float
 DDFB62	c	float
+DE1720	F	Mac AssassinTask::GetCrowdObstructionFactor
+DE1720	c	Mac AssassinTask::GetCrowdObstructionFactor
 DE1824	c	char
 DE1826	c	int
 DE182B	c	int
@@ -36340,6 +36518,8 @@ DEABAD	c	float
 DEABB0	c	int
 DEACF7	c	float
 DEACFA	c	int
+DEB5E0	F	Mac 0x104EA26 AssassinTask::OnSprintBegin
+DEB5E0	c	Mac 0x104EA26 AssassinTask::OnSprintBegin
 DEC0A1	c	void *
 DEC330	c	switch 5 cases
 DEC338	c	switch jump
@@ -36352,6 +36532,8 @@ DEC380	r	jumptable 00DEC338 default case
 DEC530	c	jump table for switch statement
 DEC5C5	c	float
 DEC5C8	c	int
+DEC620	F	Mac 0x105C244 AssassinTask::UpdateInAir. IHumanInAir slots (Mac vftable 0x283D698): +0x24 SetGrasp(ability && button 3), +0x28 SetGraspDirection(stick), +0x3C SetSideStepLandingDirection(len > 0.35 && dot(sight, stick) < 0.7071), +0x40 SetLandingSpeedRatio, +0x44 SetDivingIntention(!high profile && button 0), +0x8/+0xC Can/DoWallReception, +0x34/+0x38 CanDive/DoDive. Landing ratio: |angle(sight, stick)| > 60 deg -> 0; high profile: len > 0.5 ? (button 0 ? 1.0 : 0.89) : 0.19; else len > 0.5 ? 0.49 : 0.09. RE/21_input.md.
+DEC620	c	Mac 0x105C244 AssassinTask::UpdateInAir. IHumanInAir slots (Mac vftable 0x283D698): +0x24 SetGrasp(ability && button 3), +0x28 SetGraspDirection(stick), +0x3C SetSideStepLandingDirection(len > 0.35 && dot(sight, stick) < 0.7071), +0x40 SetLandingSpeedRatio, +0x44 SetDivingIntention(!high profile && button 0), +0x8/+0xC Can/DoWallReception, +0x34/+0x38 CanDive/DoDive. Landing ratio: |angle(sight, stick)| > 60 deg -> 0; high profile: len > 0.5 ? (button 0 ? 1.0 : 0.89) : 0.19; else len > 0.5 ? 0.49 : 0.09. RE/21_input.md.
 DECF40	c	void *
 DECF4C	c	void *
 DED1CB	c	void *
@@ -36423,6 +36605,8 @@ DF3067	c	int
 DF306B	c	int
 DF30B3	c	void *
 DF3340	c	void *
+DF3590	F	Mac AssassinTask::ReorientDirectionFromWallCollision(dir, 0, pi/4, target, out)
+DF3590	c	Mac AssassinTask::ReorientDirectionFromWallCollision(dir, 0, pi/4, target, out)
 DF3E30	c	int
 DF3E36	c	float
 DF3E39	c	int
@@ -36486,8 +36670,12 @@ DF7D7C	c	int
 DF7D80	c	int
 DF7D84	c	int
 DF7F4B	c	int
+DF7FE0	F	Mac 0x107F0EC __ZN8scimitar3ac212AssassinTask20UpdateGroundMovement... The player's stick/buttons -> IHumanGround (RE/21_input.md).
+DF7FE0	c	Mac 0x107F0EC __ZN8scimitar3ac212AssassinTask20UpdateGroundMovement... The player's stick/buttons -> IHumanGround (RE/21_input.md).
 DF82FA	c	float
 DF8D20	c	int
+DF941E	c	AssassinTask::UpdateGroundMovement: the gap searches and edge clamping block (Mac 0x1080A91..0x10810F2), RE/21_input.md
+DF9997	c	AssassinTask::UpdateGroundMovement edge reactions: SetGap(B), edge jump, run-off jump 0xDFA3DF, LookDown 0xDFA58B, Unbalance 0xDFA5F7, FallOffEdge 0xDFA657, PullDown 0xDFA6CA (RE/21_input.md)
 DF9D8A	c	float
 DF9D8D	c	int
 DFA002	c	void *
@@ -36570,6 +36758,8 @@ E03CFC	c	int
 E03E78	c	float
 E03E7B	c	int
 E03EAF	c	float
+E049A0	F	Mac 0x1082F62 AssassinTask::UpdateGround. Handler chain named from the Mac function (same call order): each handler that returns true takes the frame and UpdateGroundMovement doesn't run.
+E049A0	c	Mac 0x1082F62 AssassinTask::UpdateGround. Handler chain named from the Mac function (same call order): each handler that returns true takes the frame and UpdateGroundMovement doesn't run.
 E05000	F	Microsoft VisualC 2-14/net runtime
 E05010	F	Microsoft VisualC 2-14/net runtime
 E05831	c	Block
@@ -39677,6 +39867,8 @@ FA168F	c	void *
 FA16FD	c	void *
 FA1C3C	c	float
 FA1C3F	c	int
+FA4760	F	Mac HumanWalling::LocalInit 0x1178ED8 (data +0x18 = -3.75, +0x1C = 5.85).
+FA4760	c	Mac HumanWalling::LocalInit 0x1178ED8 (data +0x18 = -3.75, +0x1C = 5.85).
 FA49A1	c	Block
 FA4A90	F	Microsoft VisualC 2-14/net runtime
 FA4AE0	F	Microsoft VisualC 2-14/net runtime
@@ -40057,6 +40249,8 @@ FDFFFB	c	int
 FDFFFD	c	float
 FE0000	c	int
 FE00B7	c	int
+FE0E00	F	Mac HumanLookAt::LocalInit 0xEB7B58.
+FE0E00	c	Mac HumanLookAt::LocalInit 0xEB7B58.
 FE1111	c	Block
 FE1C3F	c	float
 FE1DE4	c	void *
@@ -40134,6 +40328,8 @@ FF0566	c	int
 FF05E3	c	float
 FF05E6	c	int
 FF070C	c	float
+FF1110	F	Mac HumanNarrowObject::LocalInit 0x1131AAE (this[67] = 1.0).
+FF1110	c	Mac HumanNarrowObject::LocalInit 0x1131AAE (this[67] = 1.0).
 FF1343	c	float
 FF1346	c	int
 FF15BE	c	float
@@ -40268,6 +40464,13 @@ FFFF48	c	Source
 10072F0	F	Microsoft VisualC 2-14/net runtime
 1007300	F	Microsoft VisualC 2-14/net runtime
 1007320	F	Microsoft VisualC 2-14/net runtime
+10074B0	F	Mac 0xD36E56 scimitar::ac2::FilterSegmentListWithNormalAngle
+10074B0	c	Mac 0xD36E56 scimitar::ac2::FilterSegmentListWithNormalAngle
+1007780	F	Mac 0xD3616E scimitar::ac2::DisplacementCollideWithPlane
+1007780	c	Mac 0xD3616E scimitar::ac2::DisplacementCollideWithPlane
+1007D20	c	Mac 0xD37540 scimitar::ac2::GetEdgeSegmentNearCharacterPos
+1009420	F	Mac 0xD3675C scimitar::ac2::DisplacementCullingBySegment
+1009420	c	Mac 0xD3675C scimitar::ac2::DisplacementCullingBySegment
 1009862	c	Block
 1009972	c	Block
 1009990	F	Microsoft VisualC 2-14/net runtime
@@ -44143,6 +44346,8 @@ FFFF48	c	Source
 10E86B1	c	Block
 10E8C6F	c	Y
 10E8C85	c	X
+10E8F90	F	Mac 0x213630 scimitar::PointSegmentProjection
+10E8F90	c	Mac 0x213630 scimitar::PointSegmentProjection
 10E92C5	c	X
 10E94D8	c	int
 10E94DB	c	float
@@ -44184,6 +44389,8 @@ FFFF48	c	Source
 10E98C7	c	float
 10E98F4	c	int
 10E98F7	c	float
+10EA7E0	F	Mac 0x212850 scimitar::ProjectPointOnPlane
+10EA7E0	c	Mac 0x212850 scimitar::ProjectPointOnPlane
 10ECF50	F	Microsoft VisualC 2-14/net runtime
 10ED110	F	Microsoft VisualC 2-14/net runtime
 10ED120	F	Microsoft VisualC 2-14/net runtime
@@ -79591,6 +79798,8 @@ FFFF48	c	Source
 16ED8A1	c	Src
 16ED8A5	c	void *
 16EE242	c	void *
+16EEF30	F	Mac scimitar::ActorContext::LocalInit 0x509920 (the base every context LocalInit ends with).
+16EEF30	c	Mac scimitar::ActorContext::LocalInit 0x509920 (the base every context LocalInit ends with).
 16EEFB2	c	Block
 16EF4A0	c	dwTlsIndex
 16EF96A	c	dwTlsIndex
@@ -90276,6 +90485,17 @@ FFFF48	c	Source
 18A6290	c	SizeOfData
 18A6294	c	AddressOfRawData
 18A6298	c	PointerToRawData
+18BA584	c	scimitar::ResponseCurve vftable (ctor 0x1E7EA0); GetOutput is slot 1 (+4)
+19BFCD8	c	vftable scimitar::ac2::HumanGround (primary, ActorContext). 24 slots; PC slot k = Mac __ZTVN8scimitar3ac211HumanGroundE slot k+1 (Itanium has D1+D0). RE/11_ground.md
+19C0010	c	vftable scimitar::ac2::HumanLedge (primary, ActorContext) by its bundle slot (Human +0x44C = slot 3, Mac GetLedge +0xC); live: current while hanging after a vault. RE/20 row 9
+19C05B0	c	vftable scimitar::ac2::HumanInAir (primary, ActorContext); slot 2 LocalInit 0x6911A0. Human +0x440 bundle slot 2. RE/20 row 9
+19E6968	c	vftable scimitar::ac2::HumanUpperBody (ActorContext); slot 2 LocalInit 0x63B6B0. Bundle slot 20 (Human +0x490). RE/20 row 9
+1A23360	c	scimitar::ac2::AssassinTask vftable (live 2026-10-21: the player's task, entity at +0x0C, stick thresholds via +0x7A8 = 0.35 / 0.9 / 1.0)
+1A2EC08	c	vftable scimitar::ac2::HumanWalling (primary, ActorContext); slot 2 LocalInit 0xFA4760. Bundle slot 5 (Human +0x454). RE/20 row 9
+1A2FB98	c	vftable scimitar::ac2::HumanLookAt (ActorContext); slot 2 LocalInit 0xFE0E00. Bundle slot 17 (Human +0x484). RE/20 row 9
+1A2FC70	c	vftable scimitar::ac2::DebugContext (ActorContext) by its bundle slot 15 (Human +0x47C); live context id 3 = Mac AddContextToMainAITrack case 3. RE/20 row 9
+1A30160	c	vftable scimitar::ac2::Vocalization (ActorContext) by its bundle slot 16 (Human +0x480); slot 2 = ActorContext::LocalInit (no override, as on Mac). RE/20 row 9
+1A30588	c	vftable scimitar::ac2::HumanNarrowObject (primary, ActorContext); slot 2 LocalInit 0xFF1110. Bundle slot 18 (Human +0x488). RE/20 row 9
 1ABB720	c	jump table for switch statement
 1ABB800	c	jump table for switch statement
 1ABB840	c	jump table for switch statement
@@ -104850,6 +105070,7 @@ FFFF48	c	Source
 1C6B4CC	c	reference to RTTI's vftable
 1C6B4D0	c	internal runtime reference
 1C6B4D4	r	type descriptor name
+1D1C528	c	Reflection class descriptor HumanGroundData (hash E00AE315, parent HumanGroundDatav2, size 0x3A0): +0 props 0x1D1BED8 x36, +8 enums x4, +0x20 name. RE/22_reflection.md
 1DEAE04	c	reference to RTTI's vftable
 1DEAE08	c	internal runtime reference
 1DEAE0C	r	type descriptor name

@@ -9,10 +9,11 @@
 
 namespace port {
 
-// AC-style "puppeteer" buttons. LIVE: map them to AC2's pad proxy fields once decoded.
+// AC-style "puppeteer" buttons. AssassinTask reads Pad::PadButton 0 (legs) and 13 (high profile; RE/21_input.md);
+// LIVE row 3: the pad proxy fields.
 enum Button : std::uint32_t {
-    kHighProfile = 1u << 0,  // RT / right mouse
-    kLegs = 1u << 1,         // A / space: jump, free-run
+    kHighProfile = 1u << 0,  // RT / right mouse: the run; with legs, the sprint
+    kLegs = 1u << 1,         // A / space: the fast walk; jump, free-run
     kHand = 1u << 2,         // B / grab, drop
     kHead = 1u << 3,         // Y / eagle vision
 };
@@ -20,6 +21,9 @@ enum Button : std::uint32_t {
 struct MoveInput {
     scimitar::Vec3 moveDir;  // world-space move direction, unit length or zero
     float moveMag = 0;       // stick magnitude 0..1
+    // The camera's heading (yaw of its forward, scimitar::forwardFromYaw). PadInput's stick-space rules (the snap to
+    // forward, the angle curve) work relative to it. PORT: stands in for CameraProxy::RemapPadInput's camera.
+    float cameraYaw = 0;
     std::uint32_t buttons = 0;
 
     bool held(Button b) const { return (buttons & b) != 0; }

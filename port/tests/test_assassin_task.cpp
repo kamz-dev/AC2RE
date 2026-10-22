@@ -1,0 +1,220 @@
+// AssassinTask::UpdateGroundMovement: the player's stick and buttons -> IHumanGround (RE/21_input.md).
+
+#include <cmath>
+
+#include "check.h"
+#include "drive.h"
+#include "scimitar/ac2/human_in_air.h"
+
+using scimitar::Vec3;
+using scimitar::ac2::AssassinAbilitySet;
+using scimitar::ac2::AssassinTask;
+using scimitar::ac2::Human;
+
+namespace {
+constexpr float kDt = 1.0f / 30.0f;
+
+port::MoveInput Stick(float yaw, float mag, std::uint32_t buttons = 0) {
+    port::MoveInput in;
+    in.moveDir = scimitar::forwardFromYaw(yaw);
+    in.moveMag = mag;
+    in.buttons = buttons;
+    return in;
+}
+}  // namespace
+
+TEST(controller_speed_ratio_from_the_stick) {
+    // 0 up to the 0.35 dead zone, then (length - 0.35) / 0.65 (PC 0xDF834B).
+    Human human;
+    AssassinTask task;
+    const auto& data = human.GetGroundData();
+    task.Update(Stick(0, 0.35f), human, kDt);
+    CHECK_NEAR(data.m_DestSpeedRatio, 0.0f, 1e-6f);
+    task.Update(Stick(0, 0.675f), human, kDt);
+    CHECK_NEAR(data.m_DestSpeedRatio, 0.5f, 1e-6f);
+    task.Update(Stick(0, 1.0f), human, kDt);
+    CHECK_NEAR(data.m_DestSpeedRatio, 1.0f, 1e-6f);
+}
+
+TEST(controller_max_speed_ability) {
+    Human human;
+    AssassinTask task;
+    const auto& data = human.GetGroundData();
+    task.m_PortMaxSpeed = AssassinAbilitySet::Jog;  // high profile capped at 0.3
+    task.Update(Stick(0, 1, port::kHighProfile), human, kDt);
+    CHECK_NEAR(data.m_DestSpeedRatio, 0.3f, 1e-6f);
+    CHECK(data.m_DestMvtType == 1);
+    CHECK(!data.m_Sprint);  // sprint needs MaxSpeed Sprint
+    task.Update(Stick(0, 1, port::kLegs), human, kDt);
+    CHECK(!data.m_Sprint);
+
+    task.m_PortMaxSpeed = AssassinAbilitySet::Walk;  // no high-profile movement type
+    task.Update(Stick(0, 1, port::kHighProfile), human, kDt);
+    CHECK(data.m_DestMvtType == 0);
+    CHECK_NEAR(data.m_DestSpeedRatio, 1.0f, 1e-6f);
+
+    task.m_PortMaxSpeed = AssassinAbilitySet::NoMovementAllowed;
+    task.Update(Stick(0, 1), human, kDt);
+    CHECK_NEAR(data.m_DestSpeedRatio, 0.0f, 1e-6f);
+}
+
+TEST(controller_buttons) {
+    Human human;
+    AssassinTask task;
+    const auto& data = human.GetGroundData();
+    task.Update(Stick(0, 1, port::kLegs), human, kDt);  // pad button 0: sprint (the fast walk in low profile)
+    CHECK(data.m_Sprint);
+    CHECK(data.m_DestMvtType == 0);
+    CHECK(task.m_InPreciseTargetingMode);
+    task.Update(Stick(0, 1, port::kLegs | port::kHighProfile), human, kDt);
+    CHECK(data.m_Sprint);
+    CHECK(data.m_DestMvtType == 1);
+    CHECK(!task.m_InPreciseTargetingMode);
+    CHECK(!data.m_Crouch);  // the player's controller never crouches
+}
+
+TEST(controller_heading_rotation_speeds) {
+    // Live-verified values (RE/20 row 6), now from the controller (PC 0xDF8818).
+    port::BoxWorld world;
+    Human human;
+    AssassinTask task;
+    auto& ground = human.GetContextBundle().GetGround();
+    PlayerStep(task, human, Stick(0, 1), world, kDt);
+    CHECK(ground.GetHeadingMinRotationSpeed() == 1.5f && ground.GetHeadingMaxRotationSpeed() == 4.0f);
+    PlayerStep(task, human, Stick(0, 1, port::kLegs), world, kDt);
+    CHECK(ground.GetHeadingMinRotationSpeed() == 0.975f && ground.GetHeadingMaxRotationSpeed() == 2.6f);
+}
+
+TEST(controller_break_hard) {
+    // At rest, and on a reversal of more than 135 degrees from the sight (PC 0xDF8139).
+    Human human;  // yaw 0: the sight is +Y
+    AssassinTask task;
+    const auto& data = human.GetGroundData();
+    task.Update({}, human, kDt);
+    CHECK(data.m_BreakHard);
+    task.Update(Stick(0, 1), human, kDt);
+    CHECK(!data.m_BreakHard);
+    task.Update(Stick(2.0f, 1), human, kDt);  // about 115 degrees: no
+    CHECK(!data.m_BreakHard);
+    task.Update(Stick(2.6f, 1), human, kDt);  // about 149 degrees: yes
+    CHECK(data.m_BreakHard);
+}
+
+TEST(controller_direction_without_stick_is_the_sight) {
+    Human human;
+    human.m_Yaw = 0.5f;
+    AssassinTask task;
+    task.Update(Stick(-1.0f, 0), human, kDt);  // a direction with no stick length is ignored
+    const Vec3 dir = human.GetGroundData().m_DestHeading;
+    const Vec3 sight = scimitar::forwardFromYaw(0.5f);
+    CHECK_NEAR(dir.x, sight.x, 1e-6f);
+    CHECK_NEAR(dir.y, sight.y, 1e-6f);
+}
+
+TEST(controller_turn_slowdown_in_high_profile) {
+    // The damped stick 90 degrees from the sight: the factor falls at 10/s to 0.1 (PC 0xDF83F3); without high profile
+    // it stays 1.
+    Human human;
+    AssassinTask task;
+    const auto& data = human.GetGroundData();
+    task.Update(Stick(1.5707964f, 1), human, kDt);
+    CHECK_NEAR(task.m_TurnSlowdownFactor, 1.0f, 1e-6f);
+    task.Update(Stick(1.5707964f, 1, port::kHighProfile), human, kDt);
+    CHECK_NEAR(task.m_TurnSlowdownFactor, 1.0f - 10.0f * kDt, 1e-5f);
+    CHECK_NEAR(data.m_DestSpeedRatio, 1.0f - 10.0f * kDt, 1e-5f);
+    for (int i = 0; i < 10; ++i) task.Update(Stick(1.5707964f, 1, port::kHighProfile), human, kDt);
+    CHECK_NEAR(task.m_TurnSlowdownFactor, 0.1f, 1e-6f);
+    // Back within 45 degrees: rises at 5/s.
+    task.Update(Stick(0, 1, port::kHighProfile), human, kDt);
+    CHECK_NEAR(task.m_TurnSlowdownFactor, 0.1f + 5.0f * kDt, 1e-5f);
+}
+
+TEST(controller_forced_turn_around_on_entering_a_band_for_0_3_s) {
+    // Live: thresholds 0.35 / 0.9 / 1.0 (RE/20 row 11); the flag lasts 0.30 s (PC 0xDF81F7).
+    Human human;  // facing +Y
+    AssassinTask task;
+    auto& ground = human.GetContextBundle().GetGround();
+    task.Update(Stick(3.0f, 0.35f), human, kDt);  // still band 0: nothing entered
+    CHECK(!task.m_ForceTurnAround);
+    task.Update(Stick(3.0f, 0.36f), human, kDt);  // band 1 entered, about 172 degrees behind
+    CHECK(task.m_ForceTurnAround);
+    CHECK(ground.GetForceTurnAround());
+    int frames = 1;
+    while (task.m_ForceTurnAround && frames < 30) {
+        task.Update(Stick(3.0f, 0.36f), human, kDt);
+        ++frames;
+    }
+    CHECK(frames == 10);  // set on frame 1, cleared on the first frame at or past 0.3 s (frame 10 at 30 Hz)
+
+    task.Update(Stick(3.0f, 0.9f), human, kDt);  // 0.9 is still band 1: not a new band
+    CHECK(!task.m_ForceTurnAround);
+    task.Update(Stick(3.0f, 0.95f), human, kDt);  // band 2 entered
+    CHECK(task.m_ForceTurnAround);
+    for (int i = 0; i < 10; ++i) task.Update({}, human, kDt);  // released; the 0.3 s run out
+    CHECK(!task.m_ForceTurnAround);
+    task.Update(Stick(1.0f, 1.0f), human, kDt);  // band 2 entered about 57 degrees off: no forced turn
+    CHECK(!task.m_ForceTurnAround);
+}
+
+TEST(pad_input_damped_stick_is_the_angle_curve) {
+    // PadInput::ComputeRelativeInput (PC 0x1E84A0) with the ctor's curve (PC 0x1E8B00); RE/21_input.md.
+    constexpr float kDeg = 0.017453292f;
+    auto yawOf = [](const Vec3& v) { return scimitar::yawFromDirection(v); };
+    Human human;
+    AssassinTask task;
+    port::MoveInput in = Stick(30 * kDeg, 1);  // 30 degrees off the camera's forward: damped at 20, same side
+    task.Update(in, human, kDt);
+    CHECK_NEAR(yawOf(task.m_LastRelativeDirection), 30 * kDeg, 1e-5f);
+    CHECK_NEAR(yawOf(task.m_LastDampedRelativeDirection), 20 * kDeg, 1e-5f);
+    task.Update(Stick(-30 * kDeg, 1), human, kDt);
+    CHECK_NEAR(yawOf(task.m_LastDampedRelativeDirection), -20 * kDeg, 1e-5f);
+    task.Update(Stick(25 * kDeg, 1), human, kDt);  // between the 20 and 30 degree keys: 15
+    CHECK_NEAR(yawOf(task.m_LastDampedRelativeDirection), 15 * kDeg, 1e-4f);
+    task.Update(Stick(90 * kDeg, 1), human, kDt);  // from 40 degrees on the curve is the identity
+    CHECK_NEAR(yawOf(task.m_LastDampedRelativeDirection), 90 * kDeg, 1e-5f);
+    task.Update(Stick(3 * kDeg, 1), human, kDt);  // within 5 degrees: both snap to forward
+    CHECK_NEAR(yawOf(task.m_LastRelativeDirection), 0.0f, 1e-6f);
+    CHECK_NEAR(yawOf(task.m_LastDampedRelativeDirection), 0.0f, 1e-6f);
+
+    in = Stick(1.0f + 30 * kDeg, 1);  // the same relative to a turned camera
+    in.cameraYaw = 1.0f;
+    task.Update(in, human, kDt);
+    CHECK_NEAR(yawOf(task.m_LastDampedRelativeDirection), 1.0f + 20 * kDeg, 1e-5f);
+}
+
+TEST(controller_in_air_sets_the_landing_speed_ratio) {
+    // AssassinTask::UpdateInAir (PC 0xDEC620): just under InAir's landing bands (RE/21_input.md, RE/20 row 10).
+    Human human;  // facing +Y
+    human.ForceContext(scimitar::ac2::HumanContextId::InAir);
+    AssassinTask task;
+    const auto& inAir = human.GetContextBundle().GetInAir();
+    const struct {
+        float yaw, mag;
+        std::uint32_t buttons;
+        float ratio;
+    } rows[] = {
+        {0, 0, 0, 0.09f},                                     // no stick: standing
+        {0, 0.5f, 0, 0.09f},                                  // half a stick or less
+        {0, 1, 0, 0.49f},                                     // walking
+        {0, 0.5f, port::kHighProfile, 0.19f},
+        {0, 1, port::kHighProfile, 0.89f},                    // running
+        {0, 1, port::kHighProfile | port::kLegs, 1.0f},       // sprinting
+        {0, 1, port::kLegs, 0.49f},                           // button 0 only counts in high profile
+        {1.0f, 1, port::kHighProfile | port::kLegs, 1.0f},    // 57 degrees off the facing
+        {1.1f, 1, port::kHighProfile | port::kLegs, 0.0f},    // more than 60 degrees: 0
+        {3.0f, 0.3f, port::kHighProfile, 0.19f},              // in the dead zone the angle doesn't count
+    };
+    for (const auto& r : rows) {
+        task.Update(Stick(r.yaw, r.mag, r.buttons), human, kDt);
+        CHECK_NEAR(inAir.GetLandingSpeedRatio(), r.ratio, 1e-6f);
+    }
+}
+
+TEST(controller_without_all_actions_stops) {
+    Human human;
+    AssassinTask task;
+    task.m_PortAllActions = false;
+    task.Update(Stick(1.0f, 1, port::kHighProfile), human, kDt);
+    CHECK_NEAR(human.GetGroundData().m_DestSpeedRatio, 0.0f, 1e-6f);
+    CHECK_NEAR(human.GetGroundData().m_DestHeading.y, 1.0f, 1e-6f);  // the sight
+}

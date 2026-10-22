@@ -28,7 +28,7 @@ IDBs in git.
 | `IDB/` | The IDA databases. **Not in git** (0.4–0.75 GB each); every contributor gets the same baseline once (`IDB/README.md`). All paths in docs and tools are relative to the repo root: `IDB/<file>.i64`. |
 | `IDB/annotations/<idb>/` | **In git.** The shared IDA work (names, comments, prototypes, local types) as text. `tools/ida/` syncs it. |
 | `RE/*.md` | Findings. `RE/README.md` is the index, `RE/00_overview.md` the architecture, `RE/ROADMAP.md` the plan. |
-| `RE/tools/` | Static Python readers for the PC exe (`paths.py` finds everything; `triage.py`, `pe.py`, `vt.py`, `calls.py`, `lzo1x.py`). |
+| `RE/tools/` | Static Python readers for the PC exe (`paths.py` finds everything; `triage.py`, `pe.py`, `vt.py`, `calls.py`, `lzo1x.py`, `refl.py` for reflected classes with their real names, `pdbtypes.py` for the Revelations PDB's classes and enums). Set `AC2_EXE` to the pinned exe and `AC2_HASHES` to the hash list (not in git; `RE/22_reflection.md`). |
 | `tools/ida/` | `annotations.py` (export / import inside IDA) and `sync.py` (the same, headless through idalib). |
 | `sdk/` | Layout-exact headers of the game's classes and the address table (`sdk/README.md`). |
 | `port/` | The C++ recreation (CMake). `port/src/scimitar/` mirrors the game's classes; `port/src/port/` is the port's own scaffolding (sim harness, test worlds, finding the install). |
@@ -50,6 +50,8 @@ Open them with the IDA MCP's `idb_open` using the absolute path of `<repo>/IDB/<
 `RE/02_symbol_sources.md` says how to carry a name from Mac / Xbox to PC.
 
 ## Conventions
+- **Reflected classes keep their reflected member names** (`py RE/tools/refl.py <Class>`), in the port and the SDK.
+  Unreflected members take the Revelations PDB's names when the match is shown (`RE/02_symbol_sources.md`).
 - **Names follow the game.** Use the symbol's own name in the PC IDB, in the PC IDB's existing style
   (`scimitar::ac2::Human::Update`). A name taken from the Mac or Xbox build gets a comment with its source
   (`Mac 0x12EDA06`). Scoped but unclear: `scimitar::ac2::HumanGround::sub_DE4F80`. Never invent a name that looks
@@ -69,6 +71,10 @@ Open them with the IDA MCP's `idb_open` using the absolute path of `<repo>/IDB/<
 - **Port code mirrors the game:**
   - classes, methods and fields keep the game's names and structure; each class and function cites its PC address
     and the symbol it was named from;
+  - member fields use the `m_` prefix (`m_SpeedRatio`). Where the game's name isn't known yet, pick a descriptive
+    one and give the field's PC offset in its comment (`// +0x7BC`), so it can be renamed once the reflection or
+    symbols give the real name. Port-only helpers that stand in for undecoded code are named `Port...` and tagged
+    `PORT:`;
   - a rule is written the way the game computes it (same order, same conditions, same constants), not an
     "equivalent" rewrite, and cites its RE section and address;
   - anything that departs from the game is a stand-in tagged `PORT:` with its reason, and is logged in

@@ -25,11 +25,14 @@ TEST(ground_idle_stays_put) {
     CHECK(sim.human().m_Position == Vec3{});
 }
 
-TEST(ground_run_speed) {
+TEST(ground_walk_moves_forward) {
     BoxWorld world;
     Sim sim(world);
     sim.run(1.0f, [](float) { return forward(); });
-    CHECK_NEAR(sim.human().m_Position.y, sim.human().GetGroundData().runSpeed, 1e-3f);
+    // PORT: the distance depends on the stand-in speeds; only the direction and an upper bound are checked.
+    CHECK(sim.human().m_Position.y > 0.0f);
+    CHECK(sim.human().m_Position.y < sim.human().GetPortGroundSpeeds().atRatio[1]);
+    CHECK_NEAR(sim.human().m_Position.x, 0.0f, 1e-6f);
     CHECK_NEAR(sim.human().m_Yaw, 0.0f, 1e-6f);
 }
 
@@ -37,7 +40,11 @@ TEST(walk_off_edge_falls_and_lands) {
     BoxWorld world;
     world.add({{-5, -5, 0}, {5, 5, 3}});
     Sim sim(world, {.position = {0, 0, 3}});
-    sim.run(4.0f, [](float) { return forward(); });
+    sim.run(4.0f, [](float) {
+        MoveInput in = forward();
+        in.buttons = kHighProfile;  // run: a stick-only walk (ratio 0.2) wouldn't reach the edge in time
+        return in;
+    });
 
     bool sawAir = false;
     for (const Frame& f : sim.timeline()) sawAir |= f.context == HumanContextId::InAir;
@@ -65,6 +72,10 @@ TEST(context_bundle_creates_on_demand) {
 }
 
 TEST(context_names_cover_every_id) {
-    for (int i = 0; i < static_cast<int>(HumanContextId::Count); ++i)
-        CHECK(scimitar::ac2::HumanContextName(static_cast<HumanContextId>(i)) != "?");
+    for (HumanContextId id : scimitar::ac2::kHumanContextBundleSlots) CHECK(scimitar::ac2::HumanContextName(id) != "?");
+    // The game's ids and bundle slots (RE/20 row 9).
+    static_assert(static_cast<int>(HumanContextId::Ground) == 4 && static_cast<int>(HumanContextId::InAir) == 6);
+    static_assert(scimitar::ac2::HumanContextBundleSlot(HumanContextId::InAir) == 2);
+    static_assert(scimitar::ac2::HumanContextBundleSlot(HumanContextId::NarrowObject) == 18);
+    static_assert(scimitar::ac2::kHumanContextBundleSlotCount == 23);
 }
