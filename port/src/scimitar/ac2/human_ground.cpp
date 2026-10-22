@@ -141,6 +141,8 @@ Vec3 RotateVectorToVectorWithAngularSpeed(const Vec3& from, const Vec3& to, floa
 HumanGround::HumanGround(Human& human) : ActorContext(human) {
     // PORT: the game calls LocalInit through the vftable when the actor is initialised; the port does it here.
     LocalInit();
+    // PORT: the port starts in Wait without running its Enter; this is the part of EnterWait the port needs.
+    m_Human.m_IsEdgeClampingActive = true;
 }
 
 void HumanGround::LocalInit() {
@@ -234,14 +236,14 @@ void HumanGround::UpdateMovementIntention() {
 }
 
 void HumanGround::UpdateTurnAngle() {
-    // The signed angle about +Z between the desired move direction and the sight. PORT: the sign convention of
-    // Gear::GetAngle isn't checked (taken as sight to move direction, counter-clockwise positive).
+    // PC 0x5FE6A0: Gear::GetAngle(DestHeading, sight, BaseK), positive when the sight is counter-clockwise from the
+    // move direction, i.e. when the move direction is to the right.
     const Vec3& move = m_Human.GetGroundData().m_DestHeading;
     if (NullWithEpsilon(Vec3{move.x, move.y, 0}, 0.0005f)) {
         m_TurnAngle = 0;
         return;
     }
-    m_TurnAngle = WrapAngle(yawFromDirection(move) - m_Human.m_Yaw);
+    m_TurnAngle = Gear::GetAngle(move, forwardFromYaw(m_Human.m_Yaw), Gear::kBaseK);
 }
 
 void HumanGround::UpdateOrientation(float dt) {
@@ -625,7 +627,7 @@ void HumanGround::EnterTurnStart() {
     m_CurrentMvtType = m_IntentionMvtType;
     // PORT: the turn animation's length and rotation.
     m_PortAction.Start(m_Human.GetPortActionLengths().turnStart);
-    m_PortTurnToApply = a;
+    m_PortTurnToApply = -a;  // the turn angle is positive to the right; the port's yaw counter-clockwise
 }
 
 void HumanGround::EnterMoveStop() {
@@ -638,7 +640,7 @@ void HumanGround::EnterRunTurn() {
     // Mac 0xFB76DE. The action is g_RunTurnActionMap[foot]; the entity's banking is set.
     m_PortAction.Start(m_Human.GetPortActionLengths().runTurn);
     m_PortEntrySpeed = m_PortSpeed;
-    m_PortTurnToApply = m_TurnAngle;
+    m_PortTurnToApply = -m_TurnAngle;
 }
 
 // --- Landings and Roll (RE/11_ground.md 11). InAir picks the landing action (HumanInAir::ExecMainToGroundMain);
@@ -697,7 +699,24 @@ bool HumanGround::TestRollToMoveCycleMain(float dt) const {
     return m_PortAction.WillFinish(dt) && m_IntentionMvtState != 0;
 }
 
+namespace {
+// The states whose Enter sets Human::m_IsEdgeClampingActive (+0x991) and whose Exit clears it (Mac EnterWait 0xFBEA66,
+// EnterMoveCycle 0xFBE706, EnterMoveStop 0xFB7804, EnterCrouchMove 0xFC3338 and their Exits; PC _EnterWait 0x61DFF2,
+// EnterMoveStop 0x614577). EdgeStop, ObstacleCollision, Poisoned, CarryObject and Dodge do it too; the port doesn't
+// have them.
+bool ClampsAtEdges(HumanGround::State state) {
+    return state == HumanGround::State::Wait || state == HumanGround::State::MoveCycle ||
+           state == HumanGround::State::MoveStop || state == HumanGround::State::CrouchMove;
+}
+}  // namespace
+
+void HumanGround::Exit() {
+    // The current state's Exit runs as the context is left.
+    if (ClampsAtEdges(m_MoveState)) m_Human.m_IsEdgeClampingActive = false;
+}
+
 void HumanGround::SwitchMoveState(State next) {
+    if (ClampsAtEdges(m_MoveState)) m_Human.m_IsEdgeClampingActive = false;
     if (m_MoveState == State::TurnOnSpot && next != State::TurnOnSpot) ExitTurnOnSpot();
     // ExitCrouchWait / ExitCrouchMove (Mac 0xFC19D0 / 0xFC1A62): capsule height back to 1.8 (PORT: no capsule), not
     // crouched.
@@ -734,13 +753,14 @@ void HumanGround::SwitchMoveState(State next) {
             break;
         case State::CrouchTurn:  // the game turns by the character controller's displacement (progression ratio)
             m_PortAction.Start(m_Human.GetPortActionLengths().crouchTurn);
-            m_PortTurnToApply = m_TurnAngle;
+            m_PortTurnToApply = -m_TurnAngle;
             break;
         case State::TurnOnSpot:  // _EnterTurnOnSpot: TurnOnSpotStep's StartTurnOnSpotAnim towards the target
             StartTurnOnSpotAnim(m_TurnOnSpotDir);
             break;
         default: break;
     }
+    if (ClampsAtEdges(next)) m_Human.m_IsEdgeClampingActive = true;
 }
 
 void HumanGround::UpdateTurnStartMain() {
@@ -920,8 +940,15 @@ void HumanGround::Update(const port::MoveInput&, const port::World& world, float
     }
     m_PortAction.elapsed += scaledDt;
 
-    h.m_Velocity = forwardFromYaw(h.m_Yaw) * m_PortSpeed;
-    Vec3 next = h.m_Position + h.m_Velocity * dt;
+    // The frame's root motion; Human::Update may clamp it at an edge (EdgeClampingComputation) before it applies.
+    h.m_PortRootMotion = forwardFromYaw(h.m_Yaw) * (m_PortSpeed * dt);
+}
+
+void HumanGround::UpdateAfterPhysics(const port::World& world, float dt) {
+    // PORT: the character component moves by the (possibly clamped) root motion; then the ground test.
+    Human& h = m_Human;
+    h.m_Velocity = dt > 0 ? h.m_PortRootMotion * (1.0f / dt) : Vec3{};
+    Vec3 next = h.m_Position + h.m_PortRootMotion;
     std::optional<float> ground = world.groundBelow(next.x, next.y, h.m_Position.z + 0.01f);
     h.m_Position = next;
     if (!ground || *ground < next.z - h.GetPortGroundSpeeds().stepDownHeight) {

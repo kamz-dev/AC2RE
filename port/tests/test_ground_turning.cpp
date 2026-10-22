@@ -99,7 +99,8 @@ TEST(ground_turns_towards_move_direction) {
 
     PlayerStep(task, human, in, world, dt);
     CHECK(ground.GetMovementDivision() == 2);
-    CHECK_NEAR(ground.GetTurnAngle(), -1.0472f, 1e-4f);
+    // Gear::GetAngle(move, sight, K) (UpdateTurnAngle PC 0x5FE6A0): positive with the move direction to the right.
+    CHECK_NEAR(ground.GetTurnAngle(), 1.0472f, 1e-4f);
     CHECK(ground.GetMoveState() == State::MoveCycle);  // under TurnOnMovementMinAngle (pi/2): no TurnStart
     CHECK_NEAR(human.m_Yaw, 0.0f, 1e-6f);               // the gait level was 0 during this frame's UpdateMoveMain
 

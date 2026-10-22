@@ -48,11 +48,32 @@ struct HumanContextBundle {
     void* carriedBody;     // 0x58
 };
 
+// scimitar::ac2::EdgeClampingSettings in AC2 (not Revelations' layout); names by use (hypothesis), RE/11_ground.md 16.
+struct EdgeClampingSettings {
+    float edgeDistance;                  // 0x00  0.2 (Human ctor PC 0x932DC0); read by GetModifiedSpeed PC 0x930695
+    AC2_PAD(0x0C);                       // 0x04
+    float directionForRejectAngle[4];    // 0x10  written by AssassinTask::UpdateGroundMovement (the stick)
+    float rejectAngle;                   // 0x20  0 or pi/3
+};
+
 struct Human {
-    AC2_PAD(0x48);                    // 0x000
+    void* vftable;                    // 0x000  0x19E6B70 (ctor 0x932DC0)
+    AC2_PAD(0x48 - 0x04);             // 0x004
     void* currentContext;             // 0x048  the context being updated (live: follows Ground / InAir / Ledge ...)
-    AC2_PAD(0x440 - 0x4C);            // 0x04C
+    AC2_PAD(0x100 - 0x4C);            // 0x04C
+    void* iHumanVftable;              // 0x100  the IHuman base: 0x19E69B0 (ctor 0x932DC0)
+    AC2_PAD(0x440 - 0x104);           // 0x104
     HumanContextBundle contexts;      // 0x440  (Mac Human::AddContextToMainAITrack: this + 1088)
+    AC2_PAD(0x991 - 0x49C);           // 0x49C
+    // The edge-clamping flags (Revelations PDB names; EdgeClampingComputation PC 0x931330, Mac 0x12ED4B6 at +0x971..).
+    bool isEdgeClampingActive;        // 0x991  set by the free-moving ground states' Enter (PC _EnterWait 0x61DFF2)
+    bool isFightEdgeClampingActive;   // 0x992
+    bool isEdgeClampingEnable;        // 0x993  IHuman::SetEdgeClamping
+    bool isEdgeClampingZeroSpeed;     // 0x994
+    bool edgeClampUsedLastFrame;      // 0x995
+    bool forcedGapUpdate;             // 0x996
+    AC2_PAD(0x9F0 - 0x997);           // 0x997
+    EdgeClampingSettings edgeClampingSettings;  // 0x9F0  IHuman::GetEdgeClampingSettings
 };
 
 AC2_ASSERT_SIZE(HumanContextBundle, 23 * sizeof(void*));
@@ -60,6 +81,12 @@ AC2_ASSERT_OFFSET(HumanContextBundle, inAir, 0x08);
 AC2_ASSERT_OFFSET(HumanContextBundle, narrowObject, 0x48);
 AC2_ASSERT_OFFSET(HumanContextBundle, upperBody, 0x50);
 AC2_ASSERT_OFFSET(Human, currentContext, 0x048);
+AC2_ASSERT_OFFSET(Human, iHumanVftable, 0x100);
 AC2_ASSERT_OFFSET(Human, contexts, 0x440);
+AC2_ASSERT_OFFSET(Human, isEdgeClampingActive, 0x991);
+AC2_ASSERT_OFFSET(Human, forcedGapUpdate, 0x996);
+AC2_ASSERT_OFFSET(Human, edgeClampingSettings, 0x9F0);
+AC2_ASSERT_OFFSET(EdgeClampingSettings, directionForRejectAngle, 0x10);
+AC2_ASSERT_OFFSET(EdgeClampingSettings, rejectAngle, 0x20);
 
 }  // namespace ac2sdk

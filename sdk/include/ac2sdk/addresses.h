@@ -14,6 +14,16 @@ namespace ac2sdk::addr {
 // scimitar::ac2::Human
 inline constexpr std::uint32_t Human_Update = 0x933480;      // Mac __ZN8scimitar3ac25Human6UpdateEv 0x12EDA06; named
 inline constexpr std::uint32_t Human_ApplyDeath = 0x929650;  // named
+inline constexpr std::uint32_t Human_ctor = 0x932DC0;                     // static (writes both vftables)
+inline constexpr std::uint32_t Human_vftable = 0x19E6B70;                 // static
+inline constexpr std::uint32_t Human_IHuman_vftable = 0x19E69B0;          // at +0x100; slots match Mac 0x2842CA8
+inline constexpr std::uint32_t Human_EdgeClampingComputation = 0x931330;  // Mac 0x12ED4B6; static (RE/11_ground.md 16)
+inline constexpr std::uint32_t Human_GetModifiedSpeed = 0x930540;         // Mac 0x12ED290; static
+inline constexpr std::uint32_t Human_GetGapList = 0x9282B0;               // IHuman +0x98, Mac 0x12D4BD6; static
+inline constexpr std::uint32_t Human_GetBestGapInDirectionInList = 0x91F1F0;  // IHuman +0x9C, Mac 0x12CE79C; static
+inline constexpr std::uint32_t Human_GetDepthInFrontOfEdge = 0x9251D0;    // Mac 0x12D0AD2; static
+inline constexpr std::uint32_t GetEdgeSegmentNearCharacterPos = 0x1007D20;  // Mac 0xD37540; static
+inline constexpr std::uint32_t DisplacementCullingBySegment = 0x1009420;    // Mac 0xD3675C; static
 
 // scimitar::ac2::HumanGround (RE/11_ground.md)
 inline constexpr std::uint32_t HumanGround_vftable = 0x19BFCD8;                // static (only xref of LinkFSM)

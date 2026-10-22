@@ -282,8 +282,8 @@ speeds come from `AssassinTask::UpdateGroundMovement` (`21_input.md` 8); the ang
 - [x] InAir's side of the landing hand-over (`HumanInAir::ExecMainToGroundMain`, section 11, 2026-10-21). Still open:
       EdgeLanding; `ComputeFallDamage`; the spring jump. (InAir's `m_LandingSpeedRatio`: `AssassinTask::UpdateInAir`,
       `21_input.md`.)
-- [ ] Edges outside free-run: live (2026-10-21) the player can't walk or run off an edge without high profile + legs;
-      the edge stop isn't decoded (the port walks off).
+- [x] Edges outside free-run: edge clamping (section 16, 2026-10-22), decoded and ported. Still open: the
+      high-profile case live (row 12), `GetDepthInFrontOfEdge` in full, the edge-jump decision.
 - [ ] Who sends the jump / edge / obstacle interface commands (the free-run / guidance system); `CanWallingVertical`,
       `TestForPotentialObstacleCollision`, `IsNarrowEdge`.
 - [x] `HumanGroundData`'s property names (section 15, 2026-10-21).
@@ -573,3 +573,114 @@ Enums: `HumanGroundSubState` (0 SubState_Movement, 1 SubState_Fight, 2 SubState_
 | +0x0f1 | `ActingPlaying` | bool |
 | +0x0f2 | `ActingInterrupted` | bool |
 | +0x0f3 | `Crouch` | bool |
+
+## 16. Edge clamping: why a walk stops at an edge (2026-10-22)
+Outside free-run the game doesn't let a walk carry Ezio off a deep edge. HumanGround has no state for this. The
+**Human** cuts each frame's root motion against the guidance edges near a *gap*. The player's controller decides when
+(`21_input.md`, "Gaps and edge clamping"). Decoded on Mac (symbols), matched on PC; ported
+(`port/src/scimitar/ac2/edge_clamping.*`, `Human::EdgeClampingComputation`).
+
+**The flags** (Human; Revelations PDB names, the AC2 block sits at Revelations −0x56):
+
+| PC | Mac | Name | Set by |
+|---|---|---|---|
+| +0x991 | +0x971 | `m_IsEdgeClampingActive` | the ground states below, on Enter (1) / Exit (0) |
+| +0x992 | +0x972 | `m_IsFightEdgeClampingActive` | a fight state's Enter (PC 0xF55950, with +0x996) |
+| +0x993 | +0x973 | `m_IsEdgeClampingEnable` | `IHuman::SetEdgeClamping` (+0x6C, Mac 0x161C68A), the controller, every ground frame |
+| +0x994 | +0x974 | `m_IsEdgeClampingZeroSpeed` | `EdgeClampingComputation`; read through IHuman +0x70 (no reader found yet) |
+| +0x995 | +0x975 | `m_EdgeClampUsedLastFrame` | `EdgeClampingComputation` |
+| +0x996 | +0x976 | `m_ForcedGapUpdate` | the fight state; makes `EdgeClampingComputation` search the gap itself |
+| +0x921 | +0x901 | (unnamed) | blocks that search |
+| +0x9F0 | +0x9C0 | `EdgeClampingSettings` | +0x00 edge distance **0.2** (Human ctor PC 0x932DC0), +0x10 reject direction, +0x20 reject angle (AC2 layout, not Revelations'; names by use, hypothesis) |
+
+`Human::LocalInit` (Mac 0x12C82CE) and PC 0x9220B0 clear the flags. **`m_IsEdgeClampingActive`** is set by the
+Enter of Wait (PC `_EnterWait` 0x61DFF2), MoveCycle [0xFBE706], MoveStop (PC 0x614577), CrouchMove [0xFC3338],
+EdgeStop, ObstacleCollision, Poisoned, `HumanGroundCarryObject` and `HumanGroundDodgeState`; their Exits clear it
+(Mac bytes checked). TurnStart, RunTurn, TurnOnSpot, the landings and Roll don't clamp.
+
+**`Human::EdgeClampingComputation`** (PC 0x931330, Mac 0x12ED4B6), called by `Human::Update` (PC 0x933480) after the
+actor's update and before `UpdateUnbalanceIgnoreList` (PC 0x92E420):
+```
+m_IsEdgeClampingZeroSpeed = 0
+if (m_IsEdgeClampingActive && (m_IsEdgeClampingEnable || m_IsFightEdgeClampingActive)) {
+  if (!+0x921 && m_ForcedGapUpdate) {                                    // PC 0x93139D
+    GetGapList(gaps, pos, 0.75, 0.45, true)                             // IHuman +0x98
+    v = GetBestGapInDirectionInList(gap, gaps, pos, sight, 0.75, pi)    // IHuman +0x9C
+    SetIsGapValid(v); if (v) SetGap(gap)
+  }
+  if (IsGapValid()) {                                                    // PC 0x9314C8
+    local = the current action's displacement over dt (sub_4F6E50, Action::GetDisplacementWithTime)
+    world = entity matrix * local
+    if (!IsNullWithEpsilon(local) && GetModifiedSpeed(world)) {          // epsilon 0.001, every lane (PC 0x2B3130)
+      if (IsNullWithEpsilon(world)) m_IsEdgeClampingZeroSpeed = 1
+      m_EdgeClampUsedLastFrame = 1
+      ActionComponent: SetDisplacementMode(2), persistence 2             // the action stops moving the character
+      if (|local|^2 > 2.5e-7) CharacterComponent target = pos + world    // PC 0x931640
+      return
+    }
+  }
+}
+if (m_EdgeClampUsedLastFrame) { clear it; ResetDisplacement; SetDisplacementMode(0) }
+```
+For the player the gap comes from the controller (`SetGap(gap B)`, `SetIsGapValid`); `m_ForcedGapUpdate` is a
+fight path.
+
+**`Human::GetModifiedSpeed`** (PC 0x930540, Mac 0x12ED290): `|d| < 0.0005` → d = 0, true. Otherwise
+`GetEdgeSegmentNearCharacterPos(workspace, entity, gap.m_EdgePosition, gap.m_EdgeNormal, normalize(d), |d| + 0.8,
+settings, segments, 32)` (PC 0x1007D20, Mac 0xD37540), then `DisplacementCullingBySegment(out, pos, d,
+settings.edgeDistance, segments)` (PC 0x1009420, Mac 0xD3675C); d = out when both succeed.
+
+**`GetEdgeSegmentNearCharacterPos`**:
+1. A `GuidanceZoneBox` on the entity (X = normalize(sight × K), Y = sight, Z = K), local bounds (−r, −r, −0.65) to
+   (r, r, 0.3), cast with `GuidanceZone::CastWorld` (PC 0x3FEA00). It reads **guidance data, not the navmesh**.
+2. Each line with `IsEdgeLeveled` (PC 0x5F9EE0: longer than 0.0005, |slope| ≤ 40°) becomes a flat segment with
+   `GetLineGlobalFlatNormal` (PC 0x414140: the normal of the lower face, i.e. out over the drop). At most 32.
+3. Crossing segments are split (`IntersectSegmentWithSegment` PC 0x10FC800 → `IntersectLineWithLine` PC 0x10FA790;
+   parallel lines never cross; the axis is picked on the cross product's components truncated to int). The first
+   part keeps p0; the tail is appended.
+4. Each segment is oriented against the travel direction (`OrientSegmentInDirection` PC 0xEC3FF0).
+5. The seed: the segment whose normal equals the gap's (0.001 per lane) closest to the gap's position (start 10000;
+   taken at once under 0.0005). None → no clamp.
+6. The chain from the seed, forward from p1 then backward from p0, through segments touching end to end
+   (`GetBestSegmentAngleTouchingPoint` PC 0x1007580: the least turn by `Gear::GetAngle`; a beaten candidate is
+   deleted). The list is cut to the chain. (A box-clipping pass follows behind a static flag that is 0.)
+7. `FilterSegmentListWithNormalAngle` (PC 0x10074B0): with a reject angle above 0.0005, segments whose normal is
+   within the angle of the reject direction are removed.
+
+**`DisplacementCullingBySegment`**, in the XY plane: each edge is pulled back by the edge distance against its
+normal. `DisplacementCollideWithPlane` (PC 0x1007780) finds the first pulled-back plane the move crosses outwards
+(type 1). Its hit must project onto the real edge within the edge distance + 0.0005. A start already past a plane
+but not past the edge is type 2. The move slides along the plane (`ProjectPointOnPlane` PC 0x10EA7E0), and the
+edge is dropped from the list. This repeats while there is movement left and edges remain. A slide that would turn
+back stops. Result: the clamped flat displacement, or false when nothing was hit.
+
+**`Gear::GetAngle(a, b, axis)`** (PC 0x53590, Mac 0x9D08C0): positive when b is counter-clockwise from a about the
+axis. So `m_TurnAngle` (`UpdateTurnAngle`, `GetAngle(DestHeading, sight, K)`) is **positive when the move direction is
+to the right** of the sight. The port had the opposite sign until 2026-10-22, which mirrored `EnterTurnStart`'s side.
+
+**Gaps** (`Human::GetGapList` PC 0x9282B0, Mac 0x12D4BD6):
+- **Query:** a `GuidanceZoneSphere` of the given radius on `pos`.
+- **Kept lines:** `IsEdgeLeveled`, with the foot of `pos` on the line inside the segment
+  (`IntersectSegmentWithInfinitePlane` PC 0x10FA690), within 0.3 m of `pos` in height, and with a non-null flat
+  normal.
+- **Depth:** `GetDepthInFrontOfEdge(pos, foot, normal, 7.0, 0.02, 0)` (PC 0x9251D0; outlined only: rays down at 50°
+  past the edge, layers 12 and 35, plus the deepest gap where they land). Under `minDepth` the line is no gap.
+- **Fields filled:**
+  - `m_EdgePosition` = the foot;
+  - `m_EdgeNormal`;
+  - `m_Depth`;
+  - `m_SquareDistance` = |foot − pos|², negative when `pos` is on the normal's side;
+  - `m_EdgeSubType`;
+  - `m_HolePosition` is never written.
+- **No-edge fallback:** with none found, `allowNoEdge` set and no shallow edge seen, the drop under `pos` itself becomes
+  the gap (`m_NoEdge` = 1, the normal the flat sight).
+- **Layout difference:** AC2 swaps Revelations' last two fields (+0x38 `m_NoEdge` byte, +0x3C `m_EdgeSubType`).
+- **`GetBestGapInDirectionInList`** (PC 0x91F1F0, Mac 0x12CE79C): within the distance (flat, strict), the smallest
+  `GetAngleAbsolute(dir, m_EdgeNormal)` not above the max angle.
+- **`GetClosestGapInList`** (Mac 0x12C6EFC): the smallest flat distance, strict.
+
+**Open:**
+- `GetDepthInFrontOfEdge` in full. The port measures the ground 0.07 m past the edge.
+- `CastEntityInternal` (Mac 0x62CC70): which lines a zone catches. The port tests the line against the sphere / box.
+- Who reads `IsEdgeClampingZeroSpeed`.
+- The high-profile rule, live row 12.

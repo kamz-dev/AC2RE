@@ -12511,6 +12511,8 @@ FFF84	c	char *
 4136A0	F	Microsoft VisualC 2-14/net runtime
 4136B0	F	Microsoft VisualC 2-14/net runtime
 413920	F	Microsoft VisualC 2-14/net runtime
+414140	F	Mac 0x144A2D4 GuidanceContactObject::GetLineGlobalFlatNormal
+414140	c	Mac 0x144A2D4 GuidanceContactObject::GetLineGlobalFlatNormal
 415BE0	c	float
 415BE3	c	int
 415BE7	c	int
@@ -17609,6 +17611,8 @@ FFF84	c	char *
 5F8832	c	Block
 5F8850	F	Microsoft VisualC 2-14/net runtime
 5F97E2	c	void *
+5F9EE0	F	Mac 0x144CD7A scimitar::ac2::IsEdgeLeveled
+5F9EE0	c	Mac 0x144CD7A scimitar::ac2::IsEdgeLeveled
 5FAF52	c	float
 5FB138	c	Source
 5FC062	c	float
@@ -17787,6 +17791,7 @@ FFF84	c	char *
 61CE49	c	float
 61CF1A	c	float
 61D519	c	float
+61DFF2	c	Human m_IsEdgeClampingActive (+0x991) := 1 (also EnterMoveCycle/MoveStop/CrouchMove/EdgeStop/ObstacleCollision/Poisoned; exits clear it)
 61E666	c	float
 61F200	F	Mac _TransitFromMoveStopToWaitMain 0xFD1C64 with ExecMoveStopToWaitMain (Mac 0xF9748A) inlined: +0x7B4 := 1, speed ratio +0x7BC := 0. Live 2026-10-21: ratio 0 after MoveStop->Wait.
 61F200	c	Mac _TransitFromMoveStopToWaitMain 0xFD1C64 with ExecMoveStopToWaitMain (Mac 0xF9748A) inlined: +0x7B4 := 1, speed ratio +0x7BC := 0. Live 2026-10-21: ratio 0 after MoveStop->Wait.
@@ -26580,6 +26585,10 @@ FFF84	c	char *
 9137E0	c	void *
 9137EC	c	void *
 9137F8	c	void *
+913A70	F	Mac 0x12C4EBE Human::SetGap (IHuman +0x80)
+913A70	c	Mac 0x12C4EBE Human::SetGap (IHuman +0x80)
+913AF0	F	Mac 0x12C40CC Human::SetIsGapValid (IHuman +0x88)
+913AF0	c	Mac 0x12C40CC Human::SetIsGapValid (IHuman +0x88)
 913BFE	c	float
 913DD0	F	Microsoft VisualC 2-14/net runtime
 914210	F	Microsoft VisualC 2-14/net runtime
@@ -26724,6 +26733,8 @@ FFF84	c	char *
 91E864	c	int
 91F180	c	float
 91F183	c	int
+91F1F0	F	Mac 0x12CE79C Human::GetBestGapInDirectionInList (IHuman +0x9C)
+91F1F0	c	Mac 0x12CE79C Human::GetBestGapInDirectionInList (IHuman +0x9C)
 91FA07	c	void *
 922AFE	c	void *
 922B20	c	void *
@@ -26738,8 +26749,12 @@ FFF84	c	char *
 924FBA	c	int
 924FBB	c	int
 924FBC	c	int
+9251D0	F	Mac 0x12D0AD2 Human::GetDepthInFrontOfEdge (outlined only)
+9251D0	c	Mac 0x12D0AD2 Human::GetDepthInFrontOfEdge (outlined only)
 9271D0	c	void *
 927D39	c	void *
+9282B0	F	Mac 0x12D4BD6 Human::GetGapList (IHuman vtable 0x19E69B0 +0x98)
+9282B0	c	Mac 0x12D4BD6 Human::GetGapList (IHuman vtable 0x19E69B0 +0x98)
 928BF1	c	char
 928BF3	c	int
 928BF8	c	int
@@ -26768,6 +26783,8 @@ FFF84	c	char *
 92E232	c	float
 92E23E	c	float
 92E241	c	int
+92E420	F	Mac 0x12C795C Human::UpdateUnbalanceIgnoreList (last call of Human::Update on both)
+92E420	c	Mac 0x12C795C Human::UpdateUnbalanceIgnoreList (last call of Human::Update on both)
 92F2D6	c	void *
 92FA80	c	void (__thiscall *)(void *)
 92FA85	c	int
@@ -26787,11 +26804,15 @@ FFF84	c	char *
 92FFC9	c	int
 92FFCE	c	float
 92FFD1	c	int
+930540	F	Mac 0x12ED290 Human::GetModifiedSpeed. EdgeClampingSettings at Human+0x9F0 (+0 edge distance 0.2, +0x10 reject direction, +0x20 reject angle)
+930540	c	Mac 0x12ED290 Human::GetModifiedSpeed. EdgeClampingSettings at Human+0x9F0 (+0 edge distance 0.2, +0x10 reject direction, +0x20 reject angle)
 930D51	c	Block
 930EFD	c	void (__thiscall *)(void *)
 930F02	c	int
 930F0A	c	unsigned int
 930F0C	c	void *
+931330	F	Mac 0x12ED4B6 __ZN8scimitar3ac25Human23EdgeClampingComputationEv. Flags: +0x991 m_IsEdgeClampingActive, +0x992 m_IsFightEdgeClampingActive, +0x993 m_IsEdgeClampingEnable, +0x994 m_IsEdgeClampingZeroSpeed, +0x995 m_EdgeClampUsedLastFrame, +0x996 m_ForcedGapUpdate (Revelations PDB names). RE/11_ground.md 16
+931330	c	Mac 0x12ED4B6 __ZN8scimitar3ac25Human23EdgeClampingComputationEv. Flags: +0x991 m_IsEdgeClampingActive, +0x992 m_IsFightEdgeClampingActive, +0x993 m_IsEdgeClampingEnable, +0x994 m_IsEdgeClampingZeroSpeed, +0x995 m_EdgeClampUsedLastFrame, +0x996 m_ForcedGapUpdate (Revelations PDB names). RE/11_ground.md 16
 9318F6	c	void *
 931AE0	c	void *
 93217F	c	int
@@ -36630,6 +36651,7 @@ DF7FE0	F	Mac 0x107F0EC __ZN8scimitar3ac212AssassinTask20UpdateGroundMovement... 
 DF7FE0	c	Mac 0x107F0EC __ZN8scimitar3ac212AssassinTask20UpdateGroundMovement... The player's stick/buttons -> IHumanGround (RE/21_input.md).
 DF82FA	c	float
 DF8D20	c	int
+DF941E	c	AssassinTask::UpdateGroundMovement: the gap searches and edge clamping block (Mac 0x1080A91..0x10810F2), RE/21_input.md
 DF9D8A	c	float
 DF9D8D	c	int
 DFA002	c	void *
@@ -40418,6 +40440,13 @@ FFFF48	c	Source
 10072F0	F	Microsoft VisualC 2-14/net runtime
 1007300	F	Microsoft VisualC 2-14/net runtime
 1007320	F	Microsoft VisualC 2-14/net runtime
+10074B0	F	Mac 0xD36E56 scimitar::ac2::FilterSegmentListWithNormalAngle
+10074B0	c	Mac 0xD36E56 scimitar::ac2::FilterSegmentListWithNormalAngle
+1007780	F	Mac 0xD3616E scimitar::ac2::DisplacementCollideWithPlane
+1007780	c	Mac 0xD3616E scimitar::ac2::DisplacementCollideWithPlane
+1007D20	c	Mac 0xD37540 scimitar::ac2::GetEdgeSegmentNearCharacterPos
+1009420	F	Mac 0xD3675C scimitar::ac2::DisplacementCullingBySegment
+1009420	c	Mac 0xD3675C scimitar::ac2::DisplacementCullingBySegment
 1009862	c	Block
 1009972	c	Block
 1009990	F	Microsoft VisualC 2-14/net runtime
@@ -44293,6 +44322,8 @@ FFFF48	c	Source
 10E86B1	c	Block
 10E8C6F	c	Y
 10E8C85	c	X
+10E8F90	F	Mac 0x213630 scimitar::PointSegmentProjection
+10E8F90	c	Mac 0x213630 scimitar::PointSegmentProjection
 10E92C5	c	X
 10E94D8	c	int
 10E94DB	c	float
@@ -44334,6 +44365,8 @@ FFFF48	c	Source
 10E98C7	c	float
 10E98F4	c	int
 10E98F7	c	float
+10EA7E0	F	Mac 0x212850 scimitar::ProjectPointOnPlane
+10EA7E0	c	Mac 0x212850 scimitar::ProjectPointOnPlane
 10ECF50	F	Microsoft VisualC 2-14/net runtime
 10ED110	F	Microsoft VisualC 2-14/net runtime
 10ED120	F	Microsoft VisualC 2-14/net runtime

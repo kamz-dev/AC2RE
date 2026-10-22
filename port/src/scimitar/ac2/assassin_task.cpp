@@ -27,14 +27,8 @@ int PortStickBand(float length) {
 
 Vec3 NormalizeAny(const Vec3& v) { return normalized(v); }
 
-// Gear::GetAngle(a, b, BaseK): the signed angle about +Z. PORT: the sign convention isn't checked; the decoded code
-// only uses its size.
-float GetAngleAboutK(const Vec3& a, const Vec3& b) {
-    float angle = yawFromDirection(a) - yawFromDirection(b);
-    while (angle > 3.14159265f) angle -= 6.28318531f;
-    while (angle <= -3.14159265f) angle += 6.28318531f;
-    return angle;
-}
+// Gear::GetAngle(a, b, BaseK) (scimitar/math.h).
+float GetAngleAboutK(const Vec3& a, const Vec3& b) { return Gear::GetAngle(a, b, Gear::kBaseK); }
 }  // namespace
 
 bool AssassinTask::ButtonPressed(int button) const {
@@ -83,7 +77,7 @@ void AssassinTask::Update(const port::MoveInput& input, Human& human, float dt) 
     // pick-up, carry, fight interaction; RE/21_input.md); any of them can take the frame. They are out of scope, so
     // the port always reaches UpdateGroundMovement.
     if (human.GetCurrentContextID() == HumanContextId::Ground)
-        UpdateGroundMovement(human.GetContextBundle().GetGround(), sight, dt);
+        UpdateGroundMovement(human, human.GetContextBundle().GetGround(), human.m_Position, sight, dt);
     else if (human.GetCurrentContextID() == HumanContextId::InAir)
         UpdateInAir(human.GetContextBundle().GetInAir(), sight);
 }
@@ -104,7 +98,8 @@ void AssassinTask::UpdateInAir(HumanInAir& inAir, const Vec3& sight) {
     inAir.SetLandingSpeedRatio(ratio);  // IHumanInAir +0x40
 }
 
-void AssassinTask::UpdateGroundMovement(IHumanGround& ground, const Vec3& sight, float dt) {
+void AssassinTask::UpdateGroundMovement(IHuman& human, IHumanGround& ground, const Vec3& position, const Vec3& sight,
+                                        float dt) {
     // ReorientCaracterInFirstPerson (PC 0xDDD960) runs first: first-person view only, not ported.
     if (!m_PortAllActions) {
         ground.SetSpeedRatio(0);
@@ -262,6 +257,77 @@ void AssassinTask::UpdateGroundMovement(IHumanGround& ground, const Vec3& sight,
         ground.SetSprint(false);
     // High profile runs when the ability allows more than a walk (PC 0xDF8C08).
     ground.SetMovementType(m_IsHighProfile && m_PortMaxSpeed > AssassinAbilitySet::Walk ? 1 : 0);
+
+    // PORT: PC 0xDF8C2D..0xDF941E isn't ported: ladders, object use areas, interactions, the beam probe (the
+    // CanEnterBeam out-flag below stays false) and the spring jump (IsRunning, button 0, CanEnterSpringJump(60 deg):
+    // DoEnterSpringJump ends the frame).
+    const bool beamAhead = false;
+
+    // The gaps (PC 0xDF941E, Mac 0x1080A91). The search direction is the stick above the dead zone, else the sight.
+    std::vector<Gap> gaps;
+    human.GetGapList(gaps, position, 0.75f, 0.45f, true);
+    const Vec3 searchDir = m_LastInputLength > 0.35f ? m_LastRelativeDirection : sight;
+    Gap gapA, gapB, gapC;
+    const bool foundA = human.GetBestGapInDirectionInList(gapA, gaps, position, searchDir, 0.75f, 1.7453293f);  // 100 deg
+    const bool foundB = human.GetBestGapInDirectionInList(gapB, gaps, position, sight, 0.75f, 3.1415927f);
+    const bool foundC = human.GetClosestGapInList(gapC, gaps, position, 0.75f);
+    const float aboveWater = gapA.m_EdgePosition.z - human.GetWaterLevel();
+    human.SetIsGapValid(foundB);
+    human.SetNearestGap(gapC);
+    human.SetIsNearestGapValid(foundC);
+
+    // Walking up to a deep edge (PC 0xDF96E9). (The targeting settings' downward-target position, +0x7F0 / +0x7E0,
+    // is set from gap A here too; not ported.)
+    if (foundA && !beamAhead && m_LastInputLength > 0.35f) {
+        const float toSight = Gear::GetAngleAbsolute(gapA.m_EdgeNormal, sight);
+        if (aboveWater > 0.1f && 0.16f > gapA.m_SquareDistance && gapA.m_Depth > 2.0f && 1.2217305f > toSight) {
+            if (!m_IsHighProfile) ground.SetBreakHard(true);
+            const float toStick = Gear::GetAngleAbsolute(gapA.m_EdgeNormal, m_LastRelativeDirection);
+            if (1.2217305f > toStick) {  // 70 degrees
+                if (!m_GapForStopWalking.m_IsSet) m_GapForStopWalking.m_TimeSinceSet = m_PortClock;
+                m_GapForStopWalking.m_Gap = gapA;
+                m_GapForStopWalking.m_IsSet = true;
+            } else {
+                m_GapForStopWalking.m_IsSet = false;
+            }
+        } else {
+            m_GapForStopWalking.m_IsSet = false;
+        }
+    } else {
+        m_GapForStopWalking.m_IsSet = false;
+    }
+    if (m_GapForStopWalking.m_IsSet && (!m_IsHighProfile || ground.IsCarryingObject())) ground.SetSpeedRatio(0);
+
+    // Edge clamping (PC 0xDF9853): carrying, any gap over 0.45 m; in low profile a gap over 2 m; in high profile only
+    // a gap over 5 m while the stick is pushed, and then directions within 60 degrees of the stick aren't clamped.
+    // LIVE: RE/20 row 12 (the high-profile case against session 4's note).
+    EdgeClampingSettings& settings = human.GetEdgeClampingSettings();
+    bool clamp = false;
+    if (ground.IsCarryingObject()) {
+        if (foundA && gapA.m_Depth > 0.45f) {
+            clamp = true;
+            settings.m_RejectAngle = 0;
+            settings.m_DirectionForRejectAngle = m_LastRelativeDirection;
+        }
+    } else if (aboveWater > 0.1f) {
+        if (m_IsHighProfile) {
+            if (m_LastInputLength > 0.35f && foundA && gapA.m_Depth > 5.0f) {
+                clamp = true;
+                settings.m_RejectAngle = 1.0471976f;
+                settings.m_DirectionForRejectAngle = m_LastRelativeDirection;
+            }
+        } else if (foundA && gapA.m_Depth > 2.0f) {
+            clamp = true;
+            settings.m_RejectAngle = 0;  // the direction isn't written
+        }
+    }
+    human.SetEdgeClamping(clamp);
+
+    // PC 0xDF994D..: a flag of the jump code is cleared by its timer or 0.5 m away (not ported). Then the clamping's
+    // gap: gap B, the best gap towards the sight.
+    if (foundB) human.SetGap(gapB);
+    // PORT: the edge-jump decision that follows (gap B deeper than 0.5 m, closer than 0.5 m, within 80 degrees of the
+    // stick, in a jump impulsion or with button 0) isn't decoded.
 }
 
 }  // namespace scimitar::ac2

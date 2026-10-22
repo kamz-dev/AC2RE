@@ -1,8 +1,8 @@
 # 21: Player input → movement (the player controller)
 
-Status 2026-10-21: **the ground controller is decoded and ported** (`port/src/scimitar/ac2/assassin_task.*`), up to
-PC 0xDF8C2D; the rest of `UpdateGroundMovement` (ladders, interactions) and the pad's own processing (stick bands,
-damping) are open. PC addresses first, Mac in brackets.
+Status 2026-10-22: **the ground controller is decoded and ported** (`port/src/scimitar/ac2/assassin_task.*`) up to
+PC 0xDF8C2D, plus its gaps and edge clamping (PC 0xDF941E–0xDF9997). Between those (ladders, interactions, beams,
+the spring jump) and the edge-jump decision after them are open. PC addresses first, Mac in brackets.
 
 ## Who drives the player
 - `BhvAssassin::UpdatePadInput` [0x1012A5A] updates the pad (`PadInput::Update` [0x81FC30], at BhvAssassin +240),
@@ -137,7 +137,53 @@ In order (`sight` is `BaseEntity::GetSight`; `dt` the entity's world dt, PC enti
 12. **Sprint** (0xDF8BA9): with MaxSpeed Sprint, `SetSprint(button 0)` (`OnSprintBegin` 0xDEB5E0 on a new press);
     otherwise `SetSprint(false)`.
 13. **Movement type** (0xDF8C08): `SetMovementType(high profile and MaxSpeed > Walk ? 1 : 0)`.
-14. From 0xDF8C2D [0x107FEF1]: ladders (the static `noLadder`) and more, not decoded.
+14. From 0xDF8C2D [0x107FEF1]: ladders (the static `noLadder`) and more, not decoded, up to the gaps (next section).
+    Before them: a beam probe (with the Jump ability and length > 0.35, IHumanGround +0x450 `CanEnterBeam(stick, …,
+    &flag)`; the out-flag is used below) and the spring jump (0xDF94D9: `IsRunning` +0x430, button 0,
+    `CanEnterSpringJump(60°)` +0x464 and the SpringJump ability → `DoEnterSpringJump` +0x468, which ends the frame).
+
+### Gaps and edge clamping (0xDF941E–0xDF994D [0x1080A91–0x10810F2], decoded 2026-10-22)
+`pos` is the global position, `len` +0xEC0, `stick` +0xED0, `HP` +0x94C. The calls go to `IHuman` (the Human's
+interface at Human +0x100; Mac: a virtual call on AssassinTask +0x10, vtable +0x4C). Constants are the same on both
+builds; PC compares two of them in double (exactly 0.1f and 0.45f).
+1. `GetGapList(gaps, pos, 0.75, 0.45, true)` (IHuman +0x98, `11_ground.md` 16).
+2. `dir` = `stick` when `len` > 0.35, else the sight.
+3. gap A = `GetBestGapInDirectionInList(dir, 0.75, 100°)` (0xDF9621); gap B = the same towards the sight with π
+   (0xDF9660); gap C = `GetClosestGapInList(0.75)` (IHuman +0xA0, 0xDF968C).
+4. `h` = gap A's edge height − `GetWaterLevel()` (IHuman +0xA8, 0xDF96AE).
+5. `SetIsGapValid(found B)`, `SetNearestGap(C)`, `SetIsNearestGapValid(found C)` (0xDF96C0–0xDF96E5).
+6. **GapForStopWalking** (Revelations `AssassinTaskGround::GapForStopWalking`: `m_Gap` +0x840, `m_TimeSinceSet`
+   timer +0x880, `m_IsSet` +0x8A0), 0xDF96E9:
+   - If gap A is found, the targeting settings' downward-target position (+0x7F0) and flag (+0x7E0) are set from it;
+     otherwise they are cleared and `m_IsSet` = 0.
+   - With gap A, no beam flag and `len` > 0.35, the stop condition is all of: h > 0.1; gap A's `m_SquareDistance`
+     < 0.16; its depth > 2.0; the angle between its edge normal and the sight < 70° (1.2217305).
+     - When it holds, low profile calls `SetBreakHard(true)` (0xDF978D).
+     - Then, if the edge normal is also within 70° of the stick, the timer restarts when `m_IsSet` was clear, and
+       `m_Gap` = gap A, `m_IsSet` = 1. Otherwise `m_IsSet` = 0.
+   - Any other path clears `m_IsSet`.
+7. If `m_IsSet` and (low profile or carrying): `SetSpeedRatio(0)` (0xDF9842).
+8. **The clamp** (0xDF9853). The controller writes `s = GetEdgeClampingSettings()` (IHuman +0x170) and calls
+   `SetEdgeClamping(clamp)` (IHuman +0x6C) every frame (0xDF994B). `clamp` is:
+   - **carrying:** gap A deeper than 0.45. Then `s.reject` = 0 and `s.dir` = stick.
+   - **otherwise, if h > 0.1:**
+     - in high profile: `len` > 0.35 and gap A deeper than **5.0**. Then `s.reject` = **60°** and `s.dir` = stick, so
+       edges whose normal is within 60° of the stick aren't clamped;
+     - in low profile: gap A deeper than **2.0**. Then `s.reject` = 0, and the direction isn't written.
+   - **anything else:** false.
+9. A flag of the jump code (PC +0x18F8, its timer +0x18D8, a position +0x1900; Mac +0x18E4 / +0x18C4 / +0x18F0:
+   **the PC offsets differ by +0x14 / +0x10**) is cleared when its timer runs out or 0.5 m away.
+10. If gap B is found: **`SetGap(B)`** (0xDF9997). This is the gap `Human::EdgeClampingComputation` clamps against.
+    An edge-jump decision follows (gap B deeper than 0.5, square distance < 0.25, the stick within 80° of its normal
+    (cos 0.17364818), in a jump impulsion (IHumanGround +0x418) or with button 0, the flag of 9 clear). Not decoded
+    further.
+
+What this means in play:
+- **Low profile:** a walk never leaves an edge with more than 2 m below. Facing and pushing within 70° of the edge,
+  it brakes and stops about 0.4 m short. Otherwise it slides along the edge, 0.2 m inside it.
+- **High profile:** only drops deeper than 5 m are clamped, and only for edges approached more than 60° off their
+  normal. So a run straight at any edge isn't clamped (live row 12).
+- **Free run** (high profile + legs): goes off edges through the edge-jump decision of step 10.
 
 A static `speedMethod` (PC dword_1E2C2B0) switches 5–8 to a debug path: `SetMovementSpeed` from the division speeds
 and a speed factor stepped by button 3.
@@ -177,7 +223,9 @@ and all three bands, consistent with the thresholds. The damped stick: see PadIn
 `scimitar::ac2::AssassinTask` (`port/src/scimitar/ac2/assassin_task.h`) runs steps 2–13 as above; `port::Sim` runs it
 before `Human::Update`, as the game's task runs before the contexts. `scimitar::PadInput`
 (`port/src/scimitar/pad_input.h`) has the snap cone, the curve and the length cap; the stick thresholds are the live
-values. `UpdateInAir` sets the landing speed ratio (the other InAir requests have no port side yet). PORT stand-ins:
+values. `UpdateInAir` sets the landing speed ratio (the other InAir requests have no port side yet). The gaps and edge
+clamping (steps 1–8 and 10's `SetGap`) are ported (2026-10-22); the beam probe, the spring jump, the targeting
+settings, the jump flag of step 9 and the edge-jump decision aren't. PORT stand-ins:
 `CameraProxy::RemapPadInput` is a rotation by `MoveInput::cameraYaw`; the `UpdateGround`
 handlers are skipped (out of scope); no crowds, carrying, praying, walls or group formations
 (their queries answer false or 0); the abilities default to everything allowed; `OnSprintBegin` and the first-person
@@ -185,7 +233,8 @@ reorientation aren't ported.
 
 ## Open
 - [ ] `UpdateGlobal`'s PC address.
-- [ ] The rest of `UpdateGroundMovement` (from PC 0xDF8C2D).
+- [ ] The rest of `UpdateGroundMovement`: PC 0xDF8C2D–0xDF941E (ladders, interactions, beams, the spring jump)
+      and the edge-jump decision after 0xDF9997. (The gaps and edge clamping: decoded 2026-10-22.)
 - [x] The stick thresholds (0.35 / 0.9 / 1.0, live 2026-10-21, row 11).
 - [x] The "damped" stick: PadInput's angle curve (2026-10-21, static + live with a gamepad).
 - [ ] Where the thresholds come from (`ControlScheme::SetupStickThresholds`); `CameraProxy::RemapPadInput`; the Mac

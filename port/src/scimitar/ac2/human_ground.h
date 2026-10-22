@@ -72,7 +72,9 @@ public:
     HumanContextId GetID() const override { return HumanContextId::Ground; }
     void LocalInit();  // PC 0x61F920 (vftable slot 2)
     void Enter() override;
+    void Exit() override;
     void Update(const port::MoveInput& input, const port::World& world, float dt) override;
+    void UpdateAfterPhysics(const port::World& world, float dt) override;
 
     // IHumanGround
     void SetDirection(const Vec3& direction) override;

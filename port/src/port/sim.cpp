@@ -6,6 +6,7 @@ Sim::Sim(const World& world, SpawnState spawn, float dt) : world_(world), dt_(dt
     human_.m_Position = spawn.position;
     human_.m_Yaw = spawn.yaw;
     human_.ForceContext(spawn.context);
+    human_.SetPortWorld(&world_);
 }
 
 void Sim::step(const MoveInput& in) {

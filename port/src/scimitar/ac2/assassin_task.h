@@ -6,6 +6,7 @@
 //
 // AI humans are driven through the same interfaces by the navigation services instead.
 
+#include "scimitar/ac2/edge_clamping.h"
 #include "scimitar/math.h"
 #include "scimitar/pad_input.h"
 
@@ -17,6 +18,7 @@ namespace scimitar::ac2 {
 
 class Human;
 class HumanInAir;
+class IHuman;
 class IHumanGround;
 
 // scimitar::ac2::AssassinAbilitySet (the mission's ability set; AssassinAbilities::GetAbility / GetMaxSpeed read it).
@@ -41,10 +43,11 @@ public:
     // Human is in its Ground context.
     void Update(const port::MoveInput& input, Human& human, float dt);
 
-    // PC 0xDF7FE0, Mac 0x107F0EC. The decoded part: break hard, the forced turn-around, the speed ratio, the heading
-    // rotation speeds, the direction, sprint and the movement type (RE/21_input.md). The rest of the function (from
-    // PC 0xDF8C2D: ladders and interactions) isn't decoded.
-    void UpdateGroundMovement(IHumanGround& ground, const Vec3& sight, float dt);
+    // PC 0xDF7FE0, Mac 0x107F0EC. The decoded parts: break hard, the forced turn-around, the speed ratio, the heading
+    // rotation speeds, the direction, sprint and the movement type, then the gaps and edge clamping (PC 0xDF941E;
+    // RE/21_input.md). Between them (PC 0xDF8C2D..: ladders, interactions, beams, the spring jump) isn't ported, nor
+    // the edge-jump decision after it. `position` is the entity's global position.
+    void UpdateGroundMovement(IHuman& human, IHumanGround& ground, const Vec3& position, const Vec3& sight, float dt);
 
     // PC 0xDEC620, Mac 0x105C244: the InAir context's update. The decoded part the port uses: the landing speed
     // ratio, which picks InAir's landing (RE/21_input.md, RE/11_ground.md 11). The grasp, dive, wall reception and
@@ -72,6 +75,14 @@ public:
 
     // +0x80: the ControlScheme's (+0x70) PadInput (+0x10). PORT: only the stick processing.
     PadInput m_PadInput;
+
+    // AssassinTaskGround::GapForStopWalking (Revelations layout): the gap that stops a low-profile walk at an edge.
+    struct GapForStopWalking {
+        Gap m_Gap;                  // +0x840
+        float m_TimeSinceSet = 0;   // +0x880 a scimitar::Timer restarted when it is set. PORT: the start time
+        bool m_IsSet = false;       // +0x8A0
+    };
+    GapForStopWalking m_GapForStopWalking;
 
 private:
     // ControlScheme::JoyThresholdPressed / JoyThresholdJustPressed (stick 0); PC inlines them (PC 0xDF8139..).

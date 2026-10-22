@@ -91,6 +91,9 @@ public:
     virtual void Enter() {}
     virtual void Exit() {}
     virtual void Update(const port::MoveInput& input, const port::World& world, float dt) = 0;
+    // The game's UpdateAfterPhysics slot. PORT: the port's physics step (moving by the root motion, the ground test)
+    // happens here.
+    virtual void UpdateAfterPhysics(const port::World& world, float dt) { (void)world, (void)dt; }
 
 protected:
     ac2::Human& m_Human;

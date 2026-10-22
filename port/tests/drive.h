@@ -11,6 +11,7 @@
 // The player: AssassinTask, then the Human (as port::Sim::step does).
 inline void PlayerStep(scimitar::ac2::AssassinTask& task, scimitar::ac2::Human& human, const port::MoveInput& in,
                        const port::World& world, float dt) {
+    human.SetPortWorld(&world);  // the controller's queries need it before Human::Update sets it
     task.Update(in, human, dt);
     human.Update(in, world, dt);
 }

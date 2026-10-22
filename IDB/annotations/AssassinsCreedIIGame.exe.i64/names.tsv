@@ -1753,6 +1753,7 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 40E350	__RTC_NumErrors_1090
 411F90	__RTC_NumErrors_1091
 413680	__RTC_NumErrors_1092
+414140	scimitar::GuidanceContactObject::GetLineGlobalFlatNormal
 415E80	__RTC_NumErrors_1093
 417750	j_nullsub_1494
 417D50	j_nullsub_1494_0
@@ -2612,6 +2613,7 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 5F5B70	scimitar::ac2::HumanGround::TestMoveStopToWaitMain
 5F5BB0	scimitar::ac2::HumanGround::TestMoveStopToMoveCycleMain
 5F72C0	scimitar::ac2::HumanGround::ActorCanPhysicallyStandUp
+5F9EE0	scimitar::ac2::IsEdgeLeveled
 5FA510	scimitar::ac2::HumanGround::_UpdateCrouchTurn
 5FA570	scimitar::ac2::HumanGround::_UpdateJumpImpulsionForwardFromIdle
 5FA7D0	scimitar::ac2::HumanGround::_TransitFromNavigationToInAirMain
@@ -4407,6 +4409,8 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 912AE0	?GetLocation@VirtualProcessor@details@Concurrency@@QBEABVlocation@3@XZ_11
 913394	def_91334E
 9133A0	jpt_91334E
+913A70	scimitar::ac2::Human::SetGap
+913AF0	scimitar::ac2::Human::SetIsGapValid
 914CD0	__RTC_NumErrors_2509
 914CE0	__RTC_NumErrors_2510
 914D30	__RTC_NumErrors_2511
@@ -4416,8 +4420,14 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 91A168	jpt_91A133
 91CCF8	def_91CB28
 91CD14	jpt_91CB28
+91F1F0	scimitar::ac2::Human::GetBestGapInDirectionInList
+9251D0	scimitar::ac2::Human::GetDepthInFrontOfEdge
+9282B0	scimitar::ac2::Human::GetGapList
 929510	scimitar::ac2::Human::EmitPresentationEvent
 929650	scimitar::ac2::Human::ApplyDeath
+92E420	scimitar::ac2::Human::UpdateUnbalanceIgnoreList
+930540	scimitar::ac2::Human::GetModifiedSpeed
+931330	scimitar::ac2::Human::EdgeClampingComputation
 933480	scimitar::ac2::Human::Update
 934800	scimitar::ac2::Human::CheckClearanceCapsuleGlobal
 937BA0	__RTC_NumErrors_2513
@@ -9633,6 +9643,10 @@ FFA4D0	_DllMain@12_441
 FFA4E0	_DllMain@12_442
 FFFAB2	def_FFF967
 FFFBB4	jpt_FFF967
+10074B0	scimitar::ac2::FilterSegmentListWithNormalAngle
+1007780	scimitar::ac2::DisplacementCollideWithPlane
+1007D20	scimitar::ac2::GetEdgeSegmentNearCharacterPos
+1009420	scimitar::ac2::DisplacementCullingBySegment
 100A04D	def_100A01C
 100A064	jpt_100A01C
 100D780	_DllMain@12_443
@@ -10011,6 +10025,8 @@ FFFBB4	jpt_FFF967
 10E65C0	scimitar::Statechart::HandleTrigger
 10E7430	__RTC_NumErrors_6793
 10E89B0	__RTC_NumErrors_6794
+10E8F90	scimitar::PointSegmentProjection
+10EA7E0	scimitar::ProjectPointOnPlane
 10ED3A0	def_10ED303
 10ED3A8	jpt_10ED303
 10ED413	def_10ED3DE

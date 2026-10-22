@@ -17,7 +17,10 @@ TEST(sdk_function_addresses_are_in_text) {
                             HumanGround_ctor, HumanGround_Update, HumanGround_LinkFSM, HumanGround_UpdateHumanGround,
                             HumanGround_UpdateMove, HumanGround_UpdateMoveCycle, HumanGround_UpdateMoveCycleMain,
                             HumanGround_ExecTurnStartToWaitMain, HumanGround_ExecTurnStartToMoveCycleMain,
-                            HumanGround_TransitFromMoveStopToWaitMain, EngineContext_GetCurrentGameWorld})
+                            HumanGround_TransitFromMoveStopToWaitMain, EngineContext_GetCurrentGameWorld,
+                            Human_ctor, Human_EdgeClampingComputation, Human_GetModifiedSpeed, Human_GetGapList,
+                            Human_GetBestGapInDirectionInList, Human_GetDepthInFrontOfEdge,
+                            GetEdgeSegmentNearCharacterPos, DisplacementCullingBySegment})
         CHECK(a >= kTextBegin && a < kTextEnd);
     static_assert(ac2sdk::addr::HumanGround_vftable >= kTextEnd);  // in .rdata
 }
