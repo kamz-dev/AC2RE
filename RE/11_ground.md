@@ -748,7 +748,8 @@ parameter. Mac symbols; the PC Can / Do entries are named (PC addresses in `21_i
 - A high-profile run goes MoveCycle → **EdgeStop** at square distance **0.0224** (just inside 0.0225), then **Ledge**
   0.27 s later with the stick held (three times).
 - On a 2.3 m drop the run goes MoveCycle → **InAir** at square distance −0.0115 (just past −0.01): FallOffEdge.
-- Not seen yet: EdgeStop → Move on releasing the stick; the grasp pull-down.
+- Releasing the stick in EdgeStop (session 6): no pull-down; still for the unbalance (0.27 s), then a steady step
+  back (~0.75 m/s, 0.50 m), and back to Move/Wait 0.94 s after EdgeStop began. Not seen yet: the grasp pull-down.
 
 **Port (2026-10-22):**
 - `HumanGround` has EdgeStop (kept with Move's children) and Wait's child LookDown, and the commands' tests as above.

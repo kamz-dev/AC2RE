@@ -161,6 +161,9 @@ struct TransitionSetupDataToMovement {
 struct PortGroundSpeeds {
     float atRatio[6] = {0.0f, 1.2f, 1.8f, 3.0f, 4.5f, 6.0f};
     float crouchMove = 1.0f;  // PORT: CrouchMove's speed (its animation's root motion)
+    // PORT: EdgeStop's step back from the edge after the unbalance (its loop's root motion). Live (session 6,
+    // RE/11_ground.md 17): 0.50 m in the 0.67 s after the unbalance, steady.
+    float edgeStopStepBack = 0.75f;
     // PORT: how far below the feet still counts as ground, metres. Not decoded.
     float stepDownHeight = 0.3f;
 };
@@ -194,9 +197,11 @@ struct PortActionLengths {
     float roll = 0.8f;
     float crouchTurn = 0.6f;
     float turnOnSpot[4] = {0.4f, 0.6f, 0.8f, 1.0f};  // by GetTurnAnimation's size (< 25, 70, 135 degrees, more)
-    // EdgeStop's unbalance action (115916159). Live (session 5, RE/11_ground.md 17): the pull-down to Ledge came
-    // 0.27 s after EdgeStop began, and it waits for this action to finish.
+    // EdgeStop (RE/11_ground.md 17): the unbalance action (115916159), then the loop (115916157) until the target
+    // action ends. Live (sessions 5-6): the pull-down to Ledge, which waits for the unbalance to finish, came 0.27 s
+    // after EdgeStop began; with the stick released, EdgeStop went back to Move after 0.94 s (one sample).
     float edgeStopUnbalance = 0.27f;
+    float edgeStop = 0.94f;
 };
 
 struct HumanInAirData {

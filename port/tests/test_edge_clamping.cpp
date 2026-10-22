@@ -192,3 +192,26 @@ TEST(high_profile_grazing_a_deep_edge_is_clamped) {
     CHECK(!SawInAir(sim));
     CHECK(sim.human().m_Position.y <= 4.8f + 1e-3f);
 }
+
+TEST(released_stick_in_edge_stop_goes_back_to_move) {
+    // Live (RE/20 row 13, session 6): the stick released 0.07 s into EdgeStop; no pull-down, and EdgeStop went back to
+    // Move (Wait) 0.94 s after it began.
+    BoxWorld world = Roof(8);
+    Sim sim(world, {.position = {0, 2, 8}}, kFineDt);
+    float edgeStopStart = -1;
+    float waitAgain = -1;
+    sim.run(4.0f, [&](float t) {
+        const auto& ground = sim.human().GetContextBundle().GetGround();
+        if (edgeStopStart < 0 && ground.IsInEdgeStop()) edgeStopStart = t;
+        if (edgeStopStart >= 0 && waitAgain < 0 && ground.GetMoveState() == GroundState::Wait) waitAgain = t;
+        if (edgeStopStart >= 0) return MoveInput{};
+        return Toward({0, 1, 0}, kHighProfile);
+    });
+    CHECK(edgeStopStart >= 0);
+    CHECK(waitAgain > edgeStopStart);
+    CHECK_NEAR(waitAgain - edgeStopStart, 0.94f, 0.02f);
+    CHECK(!SawInAir(sim));
+    // It stepped back about 0.5 m (live: from 0.13 m to 0.63 m from the edge) and doesn't wobble again.
+    CHECK(sim.human().m_Position.y < 5.0f - 0.55f);
+    CHECK(!sim.human().GetContextBundle().GetGround().IsInEdgeStop());
+}

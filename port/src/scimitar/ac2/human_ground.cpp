@@ -774,7 +774,7 @@ void HumanGround::SwitchMoveState(State next) {
             m_WaitState = State::Idle;
             break;
         case State::EdgeStop:  // EnterEdgeStop (Mac 0xFC27A2): the unbalance action 115916159
-            m_PortAction.Start(m_Human.GetPortActionLengths().edgeStopUnbalance);
+            m_PortAction.Start(m_Human.GetPortActionLengths().edgeStop);
             break;
         default: break;
     }
@@ -951,6 +951,12 @@ void HumanGround::UpdateMainPhase(const port::World& world, float dt) {
         case State::Roll:
             m_PortSpeed = m_PortEntrySpeed * (1.0f - m_PortAction.Progress());
             break;
+        case State::EdgeStop:
+            // Live (session 6): still during the unbalance, then backwards at a steady ~0.75 m/s until EdgeStop ends.
+            m_PortSpeed = m_PortAction.elapsed < h.GetPortActionLengths().edgeStopUnbalance
+                              ? 0.0f
+                              : -h.GetPortGroundSpeeds().edgeStopStepBack;
+            break;
         default:
             m_PortSpeed = 0;
             break;
@@ -1047,8 +1053,9 @@ bool HumanGround::TestMoveToLedgeOnLedgePullDown(const Gap& gap) const {
 }
 
 bool HumanGround::TestEdgeStopToLedgeOnLedgePullDown(const Gap& gap) const {
-    // Mac 0xFCB974: once the unbalance action (115916159) has finished, the same checks.
-    if (!m_PortAction.HasFinished()) return false;
+    // Mac 0xFCB974: once the unbalance action (115916159) has finished, the same checks. PORT: the stand-in action
+    // covers the whole EdgeStop; the unbalance is its first part.
+    if (m_PortAction.elapsed < m_Human.GetPortActionLengths().edgeStopUnbalance) return false;
     return TestMoveToLedgeOnLedgePullDown(gap);
 }
 
