@@ -30,7 +30,7 @@ Status: `open` / `claimed` / `partial` / `done`.
 ## P2: Contexts (one RE doc + port module + sim tests each)
 | Context | Owner | Status | RE doc |
 |---|---|---|---|
-| Ground (locomotion only) | kamz-dev (`kamz-dev/ground-re`, PR #1) | partial | `11_ground.md` sections 1–16: every movement state of HumanGround decoded and matched (2026-10-21); edge clamping (Human, 16) decoded and ported (2026-10-22); left: `HumanGroundData` property names (with 22_reflection), the outside drivers (controller → `21_input.md`, free-run / guidance → `19_guidance.md`) |
+| Ground (locomotion only) | kamz-dev (`kamz-dev/ground-re`, PR #1) | partial | `11_ground.md` sections 1–16: every movement state of HumanGround decoded and matched (2026-10-21); edge clamping (Human, 16) decoded and ported, the edge commands (LookDown, EdgeStop, FallOffEdge, LedgePullDown, 17) decoded and checked live (2026-10-22); left: porting 17, `HumanGroundData` property names (with 22_reflection), the outside drivers (controller → `21_input.md`, free-run / guidance → `19_guidance.md`) |
 | InAir (jumps, falls, catches, landings) | | open | `12_in_air.md` |
 | Ledge + Climb | | open | `13_ledge_climb.md` |
 | NarrowObject (beams, poles) | | open | `14_narrow_object.md` |

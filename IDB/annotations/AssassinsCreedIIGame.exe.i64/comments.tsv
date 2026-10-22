@@ -17467,6 +17467,8 @@ FFF84	c	char *
 5E03E0	F	Mac HumanGround::UpdateMovementIntention 0xF98C54. Movement division +0x7AC: AI override (+0x8A8) -> 2 if AI ratio +0x7C0 > 0 else 0; else GetMovementDivisionFromSpeedRatio(data+0x181 HP, data+0x88 stick): 0 -> 0, 1/2 -> 2 (others leave it). HP intention +0x7B4 = data+0x181 != 0.
 5E03E0	c	Mac HumanGround::UpdateMovementIntention 0xF98C54. Movement division +0x7AC: AI override (+0x8A8) -> 2 if AI ratio +0x7C0 > 0 else 0; else GetMovementDivisionFromSpeedRatio(data+0x181 HP, data+0x88 stick): 0 -> 0, 1/2 -> 2 (others leave it). HP intention +0x7B4 = data+0x181 != 0.
 5E092D	c	float
+5E0B20	F	IHumanGround +0x418 (Mac thunk), RE/21_input.md edge reactions
+5E0B20	c	IHumanGround +0x418 (Mac thunk), RE/21_input.md edge reactions
 5E0C48	c	void *
 5E0C57	c	void *
 5E1789	c	float
@@ -17576,6 +17578,8 @@ FFF84	c	char *
 5F3135	c	void *
 5F31F8	c	int
 5F390E	c	float
+5F4190	F	Mac 0xF9BC98 (IHumanGround +0x44C)
+5F4190	c	Mac 0xF9BC98 (IHumanGround +0x44C)
 5F43E2	c	int
 5F441E	c	void *
 5F4AD3	c	int
@@ -17885,6 +17889,8 @@ FFF84	c	char *
 62B124	c	lpvReserved
 62B125	c	fdwReason
 62B126	c	hinstDLL
+62B9B0	F	Mac 0xFD773A
+62B9B0	c	Mac 0xFD773A
 62B9D1	c	lpvReserved
 62B9D2	c	fdwReason
 62B9D3	c	hinstDLL
@@ -18244,12 +18250,18 @@ FFF84	c	char *
 62F0B0	c	lpvReserved
 62F0B2	c	fdwReason
 62F0B4	c	hinstDLL
+62F0D0	F	Mac 0xFDA29A (IHumanGround +0x43C), command 86 FallOffEdge -> InAir
+62F0D0	c	Mac 0xFDA29A (IHumanGround +0x43C), command 86 FallOffEdge -> InAir
 62F10B	c	lpvReserved
 62F110	c	fdwReason
 62F111	c	hinstDLL
+62F140	F	Mac 0xFDA2FA (IHumanGround +0x444), command 87 UnbalanceOnEdge -> EdgeStop / NarrowObject
+62F140	c	Mac 0xFDA2FA (IHumanGround +0x444), command 87 UnbalanceOnEdge -> EdgeStop / NarrowObject
 62F178	c	lpvReserved
 62F17C	c	fdwReason
 62F17D	c	hinstDLL
+62F1B0	F	Mac 0xFDA358 (IHumanGround +0x46C), command 88 LedgePullDown -> Ledge
+62F1B0	c	Mac 0xFDA358 (IHumanGround +0x46C), command 88 LedgePullDown -> Ledge
 62F1BC	c	lpvReserved
 62F1CD	c	fdwReason
 62F1CE	c	hinstDLL
@@ -18343,7 +18355,8 @@ FFF84	c	char *
 62F900	c	lpvReserved
 62F902	c	fdwReason
 62F904	c	hinstDLL
-62F920	c	lpvReserved
+62F920	F	Mac 0xFDAE98 (IHumanGround +0x7F4), command 136 EnterLookDown (Idle -> LookDown)
+62F920	c	Mac 0xFDAE98 (IHumanGround +0x7F4), command 136 EnterLookDown (Idle -> LookDown)
 62F922	c	fdwReason
 62F924	c	hinstDLL
 62F940	c	lpvReserved
@@ -18497,6 +18510,8 @@ FFF84	c	char *
 6367D1	c	Block
 6371E0	F	Mac HumanGround::_UpdateNavigation 0xFE35FA. TestNavigationToInAirMain inlined: entity type (entity+0xA8 &7)==2 and CheckForBoatCollision (Mac 0xFA05DC).
 6371E0	c	Mac HumanGround::_UpdateNavigation 0xFE35FA. TestNavigationToInAirMain inlined: entity type (entity+0xA8 &7)==2 and CheckForBoatCollision (Mac 0xFA05DC).
+637FA0	F	Mac 0xFE7A20
+637FA0	c	Mac 0xFE7A20
 6381D0	F	Mac HumanGround::_UpdateHumanGround 0xFED468. a2: 0 = main update, 1 = after physics. Dispatches on root current state this+0x42.
 6381D0	c	Mac HumanGround::_UpdateHumanGround 0xFED468. a2: 0 = main update, 1 = after physics. Dispatches on root current state this+0x42.
 6388D1	c	lpvReserved
@@ -18511,9 +18526,17 @@ FFF84	c	char *
 639431	c	lpvReserved
 639436	c	fdwReason
 639438	c	hinstDLL
+639E20	F	Mac IHumanGround +0x440 DoFallOffEdge(Gap, float)
+639E20	c	Mac IHumanGround +0x440 DoFallOffEdge(Gap, float)
+639E80	F	Mac 0xFEA806 (IHumanGround +0x448)
+639E80	c	Mac 0xFEA806 (IHumanGround +0x448)
+639ED0	F	Mac 0xFEA84C (IHumanGround +0x470)
+639ED0	c	Mac 0xFEA84C (IHumanGround +0x470)
 63A8A1	c	lpvReserved
 63A8A6	c	fdwReason
 63A8A8	c	hinstDLL
+63A970	F	Mac 0xFEB656 (IHumanGround +0x7F8)
+63A970	c	Mac 0xFEB656 (IHumanGround +0x7F8)
 63B6B0	F	Mac HumanUpperBody::LocalInit 0x1374282.
 63B6B0	c	Mac HumanUpperBody::LocalInit 0x1374282.
 63CEE0	c	int
@@ -36652,6 +36675,7 @@ DF7FE0	c	Mac 0x107F0EC __ZN8scimitar3ac212AssassinTask20UpdateGroundMovement... 
 DF82FA	c	float
 DF8D20	c	int
 DF941E	c	AssassinTask::UpdateGroundMovement: the gap searches and edge clamping block (Mac 0x1080A91..0x10810F2), RE/21_input.md
+DF9997	c	AssassinTask::UpdateGroundMovement edge reactions: SetGap(B), edge jump, run-off jump 0xDFA3DF, LookDown 0xDFA58B, Unbalance 0xDFA5F7, FallOffEdge 0xDFA657, PullDown 0xDFA6CA (RE/21_input.md)
 DF9D8A	c	float
 DF9D8D	c	int
 DFA002	c	void *

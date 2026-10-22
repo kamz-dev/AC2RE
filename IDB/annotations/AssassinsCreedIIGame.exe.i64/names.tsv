@@ -2555,6 +2555,7 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 5DF6C9	def_5DF675
 5DF6D0	jpt_5DF675
 5E03E0	scimitar::ac2::HumanGround::UpdateMovementIntention
+5E0B20	scimitar::ac2::HumanGround::IsInJumpImpulsion
 5E0B30	scimitar::ac2::HumanGround::HandleAnimDeath
 5E1920	scimitar::ac2::HumanGround::GetTurnOnSpotAnimation
 5E197A	def_5E192B
@@ -2605,6 +2606,7 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 5F14C0	scimitar::ac2::HumanGround::_TransitFromMoveToInAirMain
 5F2320	scimitar::ac2::HumanGround::GetCurrentCustomActionOrientation
 5F3A30	scimitar::ac2::HumanGround::EmitPresentationMovementType
+5F4190	scimitar::ac2::HumanGround::IsInEdgeStop
 5F4E70	scimitar::ac2::HumanGround::TestWaitToMoveCycleMain
 5F4EC0	scimitar::ac2::HumanGround::TestWaitToTurnStartMain
 5F4F30	scimitar::ac2::HumanGround::TestWaitToTurnOnSpotMain
@@ -2702,6 +2704,11 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 624150	scimitar::ac2::HumanGround::_UpdateEdgeStop
 624200	scimitar::ac2::HumanGround::_UpdateHumanGroundDodge
 626410	scimitar::ac2::HumanGround::_UpdateEdgeLanding
+62B9B0	scimitar::ac2::HumanGround::_TestInterfaceTransitionsHumanGround
+62F0D0	scimitar::ac2::HumanGround::CanFallOffEdge
+62F140	scimitar::ac2::HumanGround::CanUnbalanceOnEdge
+62F1B0	scimitar::ac2::HumanGround::CanPullDownOnEdge
+62F920	scimitar::ac2::HumanGround::CanEnterLookDown
 630800	scimitar::ac2::HumanGround::_UpdateLanding
 630890	scimitar::ac2::HumanGround::_UpdateLandingHard
 630940	scimitar::ac2::HumanGround::_UpdateLandingBalanceFall
@@ -2736,7 +2743,12 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 6367C0	scimitar::ac2::HumanGround::scalar_deleting_dtor
 6371E0	scimitar::ac2::HumanGround::_UpdateNavigation
 637D40	scimitar::ac2::HumanGround::_UpdateVulnerable
+637FA0	scimitar::ac2::HumanGround::_ExecInterfaceTransitionHumanGround
 6381D0	scimitar::ac2::HumanGround::_UpdateHumanGround
+639E20	scimitar::ac2::HumanGround::DoFallOffEdge
+639E80	scimitar::ac2::HumanGround::DoUnbalanceOnEdge
+639ED0	scimitar::ac2::HumanGround::DoPullDownOnEdge
+63A970	scimitar::ac2::HumanGround::DoEnterLookDown
 63B2C0	scimitar::ac2::HumanGround::Update
 63B380	_DllMain@12_86
 63B390	_DllMain@12_87

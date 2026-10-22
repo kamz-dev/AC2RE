@@ -284,7 +284,9 @@ speeds come from `AssassinTask::UpdateGroundMovement` (`21_input.md` 8); the ang
       `21_input.md`.)
 - [x] Edges outside free-run: edge clamping (section 16, 2026-10-22), decoded and ported. Still open: the
       high-profile case live (row 12), `GetDepthInFrontOfEdge` in full, the edge-jump decision.
-- [ ] Who sends the jump / edge / obstacle interface commands (the free-run / guidance system); `CanWallingVertical`,
+- [x] Who sends the edge commands (LookDown, UnbalanceOnEdge, FallOffEdge, LedgePullDown) and the jump to target:
+      the player's controller (section 17, `21_input.md`, 2026-10-22). Not ported yet.
+- [ ] Who sends the other jump / obstacle interface commands (the free-run / guidance system); `CanWallingVertical`,
       `TestForPotentialObstacleCollision`, `IsNarrowEdge`.
 - [x] `HumanGroundData`'s property names (section 15, 2026-10-21).
 - [ ] The actions' animations: root-motion speeds and turns, lengths (needed for the port's speeds, turns and the
@@ -689,3 +691,62 @@ to the right** of the sight. The port had the opposite sign until 2026-10-22, wh
   a low-profile stop at an edge the ground leaves the clamping states (+0x991 = 0); which state isn't known.
 - Who clears `m_GapCalculated` each frame; `m_IsGapValid` flickers between frames live while standing at an edge
   (another writer, hypothesis).
+
+## 17. The edge commands: LookDown, EdgeStop, FallOffEdge, LedgePullDown (2026-10-22)
+The controller's edge reactions (`21_input.md`, "Edge reactions") send these interface commands with a Gap
+parameter. Mac symbols; the PC Can / Do entries are named (PC addresses in `21_input.md`).
+- **EnterLookDown (136), Idle → LookDown** [`TestIdleToLookDown…` 0xF9832A]:
+  - The test passes while `*(HumanGround +0x790 PC / +0x770 Mac) + 0x24 == 1`. That object comes from LocalInit's
+    `Human->vfunc+0x24(4, 0x1B)`, which may be the UpperBody context (id 27) (hypothesis).
+  - The Exec copies the gap to +0x9B0 (Mac).
+  - `EnterLookDown` [0xFD1248]: pushes state 9, sets +0x954 = 1, plays 0x2669E0F7 / 0x2669E0F8 by the front foot
+    blended by the sight-to-edge angle, and emits a `StandOnLegdeEvent`.
+  - LookDown → Idle when that field isn't 1 (`TestLookDownToIdleMain` PC 0x5E18A0); ExitLookDown (137) always
+    passes.
+  - `DoEnter` / `DoExitLookDown` first call `Human->vfunc+0x4C(50)->vfunc+0x30(0 / 1)` (unidentified).
+- **UnbalanceOnEdge (87), Move → EdgeStop** [`TestMoveToEdgeStop…` 0xFCBF64], when all of these hold:
+  - no hurt fall;
+  - `IsNarrowEdge(gap, 0.0225, b) == 1` [0xFCBC84];
+  - depth > 2;
+  - `Human::TestPullDownToLedgeClearance(…, true)`.
+
+  `IsNarrowEdge` returns:
+  - 0 without an edge, at a depth ≤ 1.3, or with the signed square distance above 0.0225 (0.15 m);
+  - otherwise, by the flat angle from the sight to the normal: 1 within 60° (120° with b), 3 for (−120°, −60°],
+    4 for [60°, 120°), else 2.
+
+  3 / 4 lead to NarrowObject instead [0xFCC052]. EdgeStop plays the unbalance action and goes back to Move when it
+  ends (section 12).
+- **LedgePullDown (88), Move or EdgeStop → the Ledge context**:
+  - From Move [0xFCBB42], all of these hold:
+    - the gap has an edge;
+    - the current action item's flag 0x20 is clear;
+    - dot3(normal, sight) > 0;
+    - depth > 2;
+    - `TestPullDownToLedgeClearance(pos, edge, normal, false)`.
+  - From EdgeStop [0xFCB974]: once the unbalance action (115916159) has finished, the same checks.
+  - The Exec functions copy the gap into the Ledge data (+0xF0) and set +0x40 to 1 from Move or 0 from EdgeStop,
+    +0x44 = 0, +0x4C = 11.
+  - `TestPullDownToLedgeClearance` [0x12DB8AA] (outline):
+    - fails unless the edge is at least 0.5 above the water;
+    - clears two boxes: one in front of the edge at pos.z + 1.075, half-extents 0.3 / 0.75 / 0.725 (on layer 14 when
+      the bool is set), and one rotated about the edge, half-extents 0.3 / 0.3 / 0.8.
+- **FallOffEdge (86), Ground → InAir** [`CanFallOffEdge` 0xFDA29A; test 0xFCB406]. A timer must have elapsed, then
+  either a force flag, or all of these:
+  - +0x455 bit 0 clear;
+  - not in a bumping no-fall zone;
+  - the ragdoll isn't driving;
+  - depth ≥ 0.53;
+  - `TestIsEdgeValidForFall` [0xFCAB92]: no hurt fall, **square distance < −0.01** (already past the edge), and
+    `TestFallOffEdgeClearance`.
+
+**Live (session 5, 2026-10-22, `livelab/record_edges.py`, which logs the FSM's current children):**
+- A low-profile walk at a 7 m edge goes MoveCycle → Wait/Idle 0.40 m short (square distance 0.155–0.157), then
+  Idle → **LookDown** 0.25 s later (five times).
+- A high-profile run goes MoveCycle → **EdgeStop** at square distance **0.0224** (just inside 0.0225), then **Ledge**
+  0.27 s later with the stick held (three times).
+- On a 2.3 m drop the run goes MoveCycle → **InAir** at square distance −0.0115 (just past −0.01): FallOffEdge.
+- Not seen yet: EdgeStop → Move on releasing the stick; the grasp pull-down.
+
+Port: not ported yet. The port has no Ledge context, no LookDown / EdgeStop states, and leaves the ground by its
+own stand-in (the ground dropping away).

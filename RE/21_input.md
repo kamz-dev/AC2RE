@@ -174,16 +174,60 @@ builds; PC compares two of them in double (exactly 0.1f and 0.45f).
 9. A flag of the jump code (PC +0x18F8, its timer +0x18D8, a position +0x1900; Mac +0x18E4 / +0x18C4 / +0x18F0:
    **the PC offsets differ by +0x14 / +0x10**) is cleared when its timer runs out or 0.5 m away.
 10. If gap B is found: **`SetGap(B)`** (0xDF9997). This is the gap `Human::EdgeClampingComputation` clamps against.
-    An edge-jump decision follows (gap B deeper than 0.5, square distance < 0.25, the stick within 80° of its normal
-    (cos 0.17364818), in a jump impulsion (IHumanGround +0x418) or with button 0, the flag of 9 clear). Not decoded
-    further.
+    The edge reactions follow (next section).
+
+### Edge reactions (PC 0xDF9997–0xDFA850 [0x10810F2–0x1082790], decoded 2026-10-22)
+After the clamp the controller picks one edge reaction (each ends the frame). Gap B is the best gap towards the sight.
+IHumanGround slots (Mac vtable 0x281AC70, the same offsets on PC):
+- +0x43C / +0x440 `Can` / `DoFallOffEdge`: PC 0x62F0D0 / 0x639E20, command 86;
+- +0x444 / +0x448 `Can` / `DoUnbalanceOnEdge`: PC 0x62F140 / 0x639E80, command 87;
+- +0x44C `IsInEdgeStop`: PC 0x5F4190;
+- +0x46C / +0x470 `Can` / `DoPullDownOnEdge`: PC 0x62F1B0 / 0x639ED0, command 88;
+- +0x7F4 / +0x7F8 `Can` / `DoEnterLookDown`: PC 0x62F920 / 0x63A970, command 136;
+- +0x418 `IsInJumpImpulsion`: PC 0x5E0B20.
+
+The reactions, in order:
+```
+edgeJump = found B && B.depth > 0.5 && B.sqdist < 0.25 && dot(B.normal, stick) > cos 80deg
+           && (IsInJumpImpulsion || button 0) && !flag(PC +0x18F8 / Mac +0x18E4)
+if (len > 0.75) +0x8D0 = GetAdjustedJumpDirFromFreeRunningMagnets(stick)
+// PC 0xDF9D7A: the legs edge jump (free run)
+if (!+0xEE0 && ((HP && +0x946 && !button 0) || edgeJump) && |+0x8D0|^2 > 0.1225)
+    -> DoJumpToTarget: the best edge jump target (GetBestEdgeJumpTargetIndex), else a leap of faith (hiding object),
+       else the farthest foothold in the direction (a jump into the void); +0x946 = 0
+// (beams, cannons, boats, the overhead jump, cancelling a jump anticipation: not edge-related)
+// PC 0xDFA3DF: the run-off jump, right at the edge
+if (found B && B.sqdist < 0.01 && !+0xEE0 && len > 0.35 && stick and sight within 45deg of B.normal
+    && Jump ability && CanJumpToTarget && a jump target ahead (type HP ? 2 : 1))  -> DoJumpToTarget; +0x951 = 1
+// PC 0xDFA58B: LookDown
+if (GapForStopWalking.m_IsSet && its m_Gap.m_Depth > 2.0 && its timer > 0.25 s && LookDown ability
+    && CanEnterLookDown)  -> DoEnterLookDown(GapForStopWalking.m_Gap)
+// PC 0xDFA5F7: Unbalance
+if (found B && CanUnbalanceOnEdge(B, 0.0225, &dir, false) && dir == 1 && B.depth > 5.0)
+    -> DoUnbalanceOnEdge(B, 1, false)                              // HumanGround: Move -> EdgeStop
+// PC 0xDFA657: FallOffEdge
+if (!+0x951 && !IsInGroundTackle && found B && CanFallOffEdge(B, false, false))
+    -> DoFallOffEdge(B, HP ? 1.0 : 0.0)                            // HumanGround -> InAir
+// PC 0xDFA6CA: PullDown
+if (found B && Climb ability && CanPullDownOnEdge(B)) {             // (shows a prompt: ControlTypes +4 = 0x38, hypothesis)
+    if (IsInEdgeStop) { if (len > 0.35 && angle(B.normal, stick) < 70deg) -> DoPullDownOnEdge(B) }
+    else if (!+0x95D && ButtonJustPressedWithDelay(3, 0.2)) -> DoPullDownOnEdge(B)    // button 3: grasp
+}
+```
+Not decoded: the flags +0x946 (a buffered legs press), +0x951, +0x95D, +0xEE0 in this use, the jump detection types.
+The controller never calls `CanExitLookDown` / `DoExitLookDown`.
 
 What this means in play:
 - **Low profile:** a walk never leaves an edge with more than 2 m below. Facing and pushing within 70° of the edge,
   it brakes and stops about 0.4 m short. Otherwise it slides along the edge, 0.2 m inside it.
+  After 0.25 s it looks down (Idle → LookDown).
 - **High profile:** only drops deeper than 5 m are clamped, and only for edges approached more than 60° off their
-  normal. So a run straight at any edge isn't clamped (live row 12).
-- **Free run** (high profile + legs): goes off edges through the edge-jump decision of step 10.
+  normal. So a run straight at any edge isn't clamped (live row 12):
+  - above 5 m, at 0.15 m from the edge it unbalances (EdgeStop), and with the stick still towards the edge it pulls
+    down to a hang (Ledge);
+  - from 2 to 5 m (and below) it runs past the edge and falls off (FallOffEdge → InAir).
+- **Free run** (high profile + legs): the edge jump, to a target or into the void.
+- **Grasp** (button 3) at a pull-down-able edge hangs from it in any profile.
 
 A static `speedMethod` (PC dword_1E2C2B0) switches 5–8 to a debug path: `SetMovementSpeed` from the division speeds
 and a speed factor stepped by button 3.
@@ -234,7 +278,7 @@ reorientation aren't ported.
 ## Open
 - [ ] `UpdateGlobal`'s PC address.
 - [ ] The rest of `UpdateGroundMovement`: PC 0xDF8C2D–0xDF941E (ladders, interactions, beams, the spring jump)
-      and the edge-jump decision after 0xDF9997. (The gaps and edge clamping: decoded 2026-10-22.)
+      (The gaps, the clamp and the edge reactions after 0xDF9997: decoded 2026-10-22.)
 - [x] The stick thresholds (0.35 / 0.9 / 1.0, live 2026-10-21, row 11).
 - [x] The "damped" stick: PadInput's angle curve (2026-10-21, static + live with a gamepad).
 - [ ] Where the thresholds come from (`ControlScheme::SetupStickThresholds`); `CameraProxy::RemapPadInput`; the Mac

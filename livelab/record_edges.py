@@ -17,6 +17,22 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from peek import Proc, player_entity, player_task  # noqa: E402
 
+# HumanGround's FSM: the current child at each level (sdk/include/ac2sdk/human_ground.h): the root (+0x42) and the
+# records of Vulnerable, Navigation, Move and Wait (their current-child byte: record +2).
+STATE_BYTES = {"root": 0x42, "vuln": 0x8E, "nav": 0x91, "move": 0x94, "wait": 0x97}
+STATES = {1: "Vulnerable", 2: "Navigation", 3: "Move", 4: "Wait", 5: "Idle", 8: "LookDown", 10: "Search", 11: "Loot",
+          15: "MoveCycle", 16: "MoveCycleDefault", 22: "MoveStop", 23: "Roll", 24: "HandPassOverReception",
+          25: "Landing", 26: "LandingHard", 27: "LandingBalanceFall", 28: "RunTurn", 29: "TurnStart",
+          30: "TurnOnSpot", 32: "Shocked", 35: "CrouchWait", 36: "CrouchMove", 37: "CrouchTurn", 38: "JumpImpulsion",
+          39: "JumpImpulsionStraight", 40: "JumpImpulsionForwardFromIdle", 41: "WallingImpulsion",
+          42: "ObstacleCollision", 43: "EdgeStop", 44: "OrientedMove", 45: "CarryObject", 46: "CustomAction",
+          47: "Acting", 48: "Frozen", 49: "Dodge", 50: "Rest", 62: "EdgeLanding", 63: "GetUp", 64: "Fight"}
+
+
+def state_name(i):
+    return STATES.get(i, str(i))
+
+
 CONTEXTS = {0x19BFCD8: "Ground", 0x19C05B0: "InAir", 0x19C0010: "Ledge", 0x1A2EC08: "Walling",
             0x1A30588: "NarrowObject"}
 
@@ -37,6 +53,7 @@ def sample(p, ent, human, task, t):
     hg = struct.unpack_from("<I", h, 0x440)[0]
     gd = p.u32(hg + 0x10) if hg else None
     g = p.read(gd, 0xF0) if gd else None
+    hgb = p.read(hg, 0x100) if hg else None
     return {
         "t": round(t, 4),
         "pos": [round(v, 3) for v in struct.unpack("<3f", e)],
@@ -53,7 +70,15 @@ def sample(p, ent, human, task, t):
         "cur": round(struct.unpack_from("<f", g, 0x84)[0], 3) if g else None,
         "dest": round(struct.unpack_from("<f", g, 0x88)[0], 3) if g else None,
         "brk": g[0xED] if g else None, "sprint": g[0xEE] if g else None,
+        "st": {k: hgb[o] for k, o in STATE_BYTES.items()} if hgb else None,
     }
+
+
+def states(s):
+    st = s.get("st")
+    if not st:
+        return "-"
+    return "/".join(state_name(st[k]) for k in ("nav", "move", "wait"))
 
 
 def record(secs, out):
@@ -75,7 +100,7 @@ def record(secs, out):
                     print(f"{t:6.1f} {s['ctx']:>7} z {s['pos'][2]:7.2f} hp {s['hp']} spr {s['sprint']} "
                           f"act {s['active']} en {s['enable']} zero {s['zero']} rej {s['rejectAngle']:.2f} "
                           f"gap {s['gapValid']} depth {gp['depth']:5.2f} sq {gp['sq']:6.3f} stop {s['stopSet']} "
-                          f"brk {s['brk']} dest {s['dest']}", flush=True)
+                          f"brk {s['brk']} dest {s['dest']} | {states(s)}", flush=True)
             time.sleep(0.008)
     print("done", out)
 
@@ -85,12 +110,12 @@ def summary(path):
     prev = None
     for line in open(path):
         s = json.loads(line)
-        key = (s["ctx"], s["enable"], s["stopSet"], s["hp"], s["sprint"])
+        key = (s["ctx"], s["enable"], s["stopSet"], s["hp"], s["sprint"], states(s))
         if key != prev:
             print(f"{s['t']:7.2f} {s['ctx']:>7} pos {s['pos']} hp {s['hp']} sprint {s['sprint']} "
                   f"active {s['active']} enable {s['enable']} zero {s['zero']} reject {s['rejectAngle']} "
                   f"gapValid {s['gapValid']} depth {s['gap']['depth']} sq {s['gap']['sq']} "
-                  f"stop {s['stopSet']} stopDepth {s['stopGap']['depth']}")
+                  f"stop {s['stopSet']} stopDepth {s['stopGap']['depth']} | {states(s)}")
             prev = key
 
 
