@@ -124,14 +124,64 @@ TEST(high_profile_runs_off_a_drop_of_5m_or_less) {
     CHECK(SawInAir(sim));
 }
 
-TEST(high_profile_head_on_at_a_deep_edge_is_not_clamped) {
+namespace {
+// The game ran at ~290 fps live (RE/20 row 2); at 30 Hz a run steps 0.18 m a frame, past the 0.15 m Unbalance
+// window. The edge-reaction tests run at 120 Hz.
+constexpr float kFineDt = 1.0f / 120.0f;
+
+using GroundState = scimitar::ac2::HumanGround::State;
+}  // namespace
+
+TEST(high_profile_run_at_a_deep_edge_unbalances_into_edge_stop) {
     // Above 5 m the clamp is on, but edges whose normal is within 60 degrees of the stick are filtered out
-    // (FilterSegmentListWithNormalAngle). Live (RE/20 row 12): the game's run goes over too, into a hang (Ground ->
-    // Ledge; the port has no Ledge and falls).
-    BoxWorld world = Roof(6);
-    Sim sim(world, {.position = {0, 0, 6}});
-    sim.run(4.0f, [](float) { return Toward({0, 1, 0}, kHighProfile); });
+    // (FilterSegmentListWithNormalAngle), so the run reaches the edge; within 0.15 m it unbalances (EdgeStop). Live
+    // (RE/11_ground.md 17): EdgeStop at square distance 0.0224, then the pull-down to Ledge. PORT: no Ledge context,
+    // so the port stays on the ground, wobbling.
+    BoxWorld world = Roof(8);
+    Sim sim(world, {.position = {0, 2, 8}}, kFineDt);
+    bool sawEdgeStop = false;
+    float edgeStopY = 0;
+    sim.run(3.0f, [&](float) {
+        const auto& ground = sim.human().GetContextBundle().GetGround();
+        if (!sawEdgeStop && ground.IsInEdgeStop()) {
+            sawEdgeStop = true;
+            edgeStopY = sim.human().m_Position.y;
+        }
+        return Toward({0, 1, 0}, kHighProfile);
+    });
+    CHECK(sawEdgeStop);
+    CHECK(edgeStopY > 5.0f - 0.15f - 1e-3f);
+    CHECK(edgeStopY <= 5.0f);
+    CHECK(!SawInAir(sim));
+    CHECK_NEAR(sim.human().m_Position.z, 8.0f, 1e-6f);
+}
+
+TEST(high_profile_run_off_a_mid_drop_falls_off_the_edge) {
+    // 2 to 5 m: no clamp, no Unbalance (needs over 5 m); FallOffEdge once 0.1 m past the edge (square distance
+    // < -0.01). Live: InAir at square distance -0.0115 on a 2.3 m drop.
+    BoxWorld world = Roof(3);
+    Sim sim(world, {.position = {0, 2, 3}}, kFineDt);
+    float firstAirY = 0;
+    sim.run(3.0f, [&](float) {
+        if (firstAirY == 0 && sim.human().GetCurrentContextID() == HumanContextId::InAir)
+            firstAirY = sim.human().m_Position.y;
+        return Toward({0, 1, 0}, kHighProfile);
+    });
     CHECK(SawInAir(sim));
+    CHECK(firstAirY > 5.1f);
+    CHECK(firstAirY < 5.38f);  // before the port's own support radius (0.38) would let go
+}
+
+TEST(low_profile_walk_at_a_deep_edge_looks_down) {
+    // GapForStopWalking stops the walk 0.4 m short; 0.25 s later the controller enters LookDown (Wait's child).
+    BoxWorld world = Roof(8);
+    Sim sim(world, {.position = {0, 2, 8}}, kFineDt);
+    sim.run(6.0f, [](float) { return Toward({0, 1, 0}); });
+    const auto& ground = sim.human().GetContextBundle().GetGround();
+    CHECK(ground.GetMoveState() == GroundState::Wait);
+    CHECK(ground.GetWaitState() == GroundState::LookDown);
+    CHECK(sim.human().m_Position.y > 4.5f);
+    CHECK(sim.human().m_Position.y <= 4.8f);
 }
 
 TEST(high_profile_grazing_a_deep_edge_is_clamped) {

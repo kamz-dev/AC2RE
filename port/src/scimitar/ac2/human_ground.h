@@ -8,6 +8,7 @@
 // states so far; the rest of Move's children come one by one with their RE.
 
 #include "ac2sdk/human_ground.h"
+#include "scimitar/ac2/edge_clamping.h"
 #include "scimitar/ac2/human_data.h"
 #include "scimitar/ac2/human_context.h"
 #include "scimitar/math.h"
@@ -55,6 +56,19 @@ public:
     virtual void DoTurnOnSpot(const Vec3& direction) = 0;                   // Mac 0xFEBEDE
     virtual bool IsInTurnOnSpotTurn() const = 0;                            // Mac 0xF9BC7A
     virtual void SetUseTurnOnSpotCycle(bool use) = 0;                       // Mac 0xF979FE
+    // The edge commands the controller sends with a gap (RE/11_ground.md 17). Can* run the command's transition test
+    // from the current state; Do* queue the command, which the FSM runs in its update.
+    virtual bool IsInJumpImpulsion() const { return false; }  // [+0x418] PC 0x5E0B20. PORT: no jump states
+    virtual bool CanFallOffEdge(const Gap& gap, bool force, bool b) = 0;    // [+0x43C] PC 0x62F0D0, Mac 0xFDA29A
+    virtual void DoFallOffEdge(const Gap& gap, float value) = 0;            // [+0x440] PC 0x639E20
+    // [+0x444] PC 0x62F140, Mac 0xFDA2FA. `direction` gets IsNarrowEdge's answer (1 = facing out over the edge).
+    virtual bool CanUnbalanceOnEdge(const Gap& gap, float maxSquareDistance, int& direction, bool b) = 0;
+    virtual void DoUnbalanceOnEdge(const Gap& gap, int direction, bool b) = 0;  // [+0x448] PC 0x639E80, Mac 0xFEA806
+    virtual bool IsInEdgeStop() const = 0;                                   // [+0x44C] PC 0x5F4190, Mac 0xF9BC98
+    virtual bool CanPullDownOnEdge(const Gap& gap) = 0;                      // [+0x46C] PC 0x62F1B0, Mac 0xFDA358
+    virtual void DoPullDownOnEdge(const Gap& gap) = 0;                       // [+0x470] PC 0x639ED0, Mac 0xFEA84C
+    virtual bool CanEnterLookDown() = 0;                                     // [+0x7F4] PC 0x62F920, Mac 0xFDAE98
+    virtual void DoEnterLookDown(const Gap& gap) = 0;                        // [+0x7F8] PC 0x63A970, Mac 0xFEB656
 };
 
 // Mac 0xFB4A3C, PC 0x5FF930. Turns `from` towards `to` (about +Z) by one frame at an angular speed that grows with
@@ -97,12 +111,27 @@ public:
     void DoTurnOnSpot(const Vec3& direction) override;
     bool IsInTurnOnSpotTurn() const override { return m_MoveState == State::TurnOnSpot; }  // IsStateActive(TurnOnSpot)
     void SetUseTurnOnSpotCycle(bool use) override;
+    bool CanFallOffEdge(const Gap& gap, bool force, bool b) override;
+    void DoFallOffEdge(const Gap& gap, float value) override;
+    bool CanUnbalanceOnEdge(const Gap& gap, float maxSquareDistance, int& direction, bool b) override;
+    void DoUnbalanceOnEdge(const Gap& gap, int direction, bool b) override;
+    bool IsInEdgeStop() const override { return m_MoveState == State::EdgeStop; }  // IsStateActive(EdgeStop)
+    bool CanPullDownOnEdge(const Gap& gap) override;
+    void DoPullDownOnEdge(const Gap& gap) override;
+    bool CanEnterLookDown() override;
+    void DoEnterLookDown(const Gap& gap) override;
+
+    // Mac 0xFCBC84: how the character stands at the gap's edge. 0: no edge, a drop of 1.3 m or less, or further
+    // than `maxSquareDistance`; otherwise by the flat angle from the sight to the edge's normal: 1 within 60 degrees
+    // (120 with `wide`), 3 for (-120, -60], 4 for [60, 120), else 2.
+    int IsNarrowEdge(const Gap& gap, float maxSquareDistance, bool wide) const;
 
     // Mac 0xFB3550, PC 0x5FDF00: which of the 8 turn-on-spot animations turns the sight towards `target`; the
     // signed angle sight -> target about +Z picks the size (25 / 70 / 135 degrees) and the side (even = positive).
     static int GetTurnAnimation(float signedAngle);
 
     State GetMoveState() const { return m_MoveState; }
+    State GetWaitState() const { return m_WaitState; }
     float GetHeadingMinRotationSpeed() const { return m_HeadingMinRotationSpeed; }
     float GetHeadingMaxRotationSpeed() const { return m_HeadingMaxRotationSpeed; }
     float GetSpeedRatio() const { return m_CurrentSpeedRatio; }
@@ -193,6 +222,19 @@ private:
     void EnterRunTurn();     // Mac 0xFB76DE
     void SwitchMoveState(State next);
 
+    // The edge commands' transition tests (RE/11_ground.md 17).
+    bool TestMoveToEdgeStopOnUnbalanceOnEdge(const Gap& gap, float maxSquareDistance, int& direction, bool b) const;  // Mac 0xFCBF64
+    bool TestMoveToLedgeOnLedgePullDown(const Gap& gap) const;      // Mac 0xFCBB42
+    bool TestEdgeStopToLedgeOnLedgePullDown(const Gap& gap) const;  // Mac 0xFCB974
+    bool TestGroundToInAirOnFallOffEdge(const Gap& gap, bool force) const;  // Mac 0xFCB406
+    bool TestIsEdgeValidForFall(const Gap& gap) const;              // Mac 0xFCAB92
+    bool TestEdgeStopToMoveMain() const;                            // Mac 0xF9D2EA
+    // PORT: Human::TestPullDownToLedgeClearance (Mac 0x12DB8AA; two box casts at the edge) and
+    // TestFallOffEdgeClearance aren't decoded: always clear.
+    bool PortTestPullDownToLedgeClearance(const Gap&, bool) const { return true; }
+    bool PortTestFallOffEdgeClearance(const Gap&) const { return true; }
+    bool RunPendingCommand();  // true when the context is being left
+
     float PortSpeedFromRatio() const;
 
     // PORT: stands in for the action component (animations are not loaded yet). Each animation-driven state starts
@@ -208,6 +250,15 @@ private:
 
     // Mirrors of HumanGround's fields (PC offsets).
     State m_MoveState = State::Wait;     // the Move record's current child (+0x94)
+    // The Wait record's current child (+0x97): Idle or LookDown. PORT: EdgeStop (a Navigation child in the game) is
+    // kept in m_MoveState with Move's children.
+    State m_WaitState = State::Idle;
+    Gap m_LookDownGap;                   // the gap ExecIdleToLookDown stores (Mac +0x9B0)
+    // The interface command waiting for the FSM's update (the game queues it at +0x84; RE/11_ground.md 12).
+    // PORT: only the edge commands that leave the context are queued; the others run at once.
+    enum class PortCommand { None, FallOffEdge, LedgePullDown };
+    PortCommand m_PortPendingCommand = PortCommand::None;
+    Gap m_PortPendingGap;
     // Names from the Revelations PDB's HumanGround (RE/11_ground.md 2); the enums' values are in the comments.
     int m_TurnMode = 0;                  // +0x464 IHumanGround::TurnMode: 0 MainCharacter, 1 NPC (TurnOnSpot needs 1)
     int m_TurnIntention = 0;             // +0x468 HumanGround::TurnIntention: 0 Left, 1 Right, 2 Back, 3 Unknown

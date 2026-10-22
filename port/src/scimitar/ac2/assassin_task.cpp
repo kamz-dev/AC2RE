@@ -326,8 +326,39 @@ void AssassinTask::UpdateGroundMovement(IHuman& human, IHumanGround& ground, con
     // PC 0xDF994D..: a flag of the jump code is cleared by its timer or 0.5 m away (not ported). Then the clamping's
     // gap: gap B, the best gap towards the sight.
     if (foundB) human.SetGap(gapB);
-    // PORT: the edge-jump decision that follows (gap B deeper than 0.5 m, closer than 0.5 m, within 80 degrees of the
-    // stick, in a jump impulsion or with button 0) isn't decoded.
+
+    // The edge reactions (PC 0xDF9997..0xDFA850, RE/21_input.md "Edge reactions"). PORT: the jumps aren't ported
+    // (the free-run edge jump at PC 0xDF9D7A, the run-off jump at 0xDFA3DF: no jump targets or jump states), nor
+    // beams, cannons, boats and the overhead jump; the abilities they test count as granted.
+    // LookDown (PC 0xDFA58B): GapForStopWalking held for more than 0.25 s over a drop deeper than 2 m.
+    if (m_GapForStopWalking.m_IsSet && m_GapForStopWalking.m_Gap.m_Depth > 2.0f &&
+        m_PortClock - m_GapForStopWalking.m_TimeSinceSet > 0.25f && ground.CanEnterLookDown()) {
+        ground.DoEnterLookDown(m_GapForStopWalking.m_Gap);
+        return;
+    }
+    // Unbalance (PC 0xDFA5F7): within 0.15 m (square distance 0.0225), facing out, over a drop deeper than 5 m.
+    int edgeDirection = 0;
+    if (foundB && ground.CanUnbalanceOnEdge(gapB, 0.0225f, edgeDirection, false) && edgeDirection == 1 &&
+        gapB.m_Depth > 5.0f) {
+        ground.DoUnbalanceOnEdge(gapB, 1, false);
+        return;
+    }
+    // FallOffEdge (PC 0xDFA657). PORT: +0x951 (set by the run-off jump) is never set; no ground tackle.
+    if (!foundB) return;
+    if (ground.CanFallOffEdge(gapB, false, false)) {
+        ground.DoFallOffEdge(gapB, m_IsHighProfile ? 1.0f : 0.0f);
+        return;
+    }
+    // PullDown (PC 0xDFA6CA): from EdgeStop while the stick still points within 70 degrees of the edge's normal, or
+    // on a grasp press (pad button 3, ButtonJustPressedWithDelay(3, 0.2)). PORT: the port has no button 3, and the
+    // prompt (ControlTypes +4 = 0x38) isn't ported.
+    if (ground.CanPullDownOnEdge(gapB)) {
+        if (ground.IsInEdgeStop()) {
+            if (m_LastInputLength > 0.35f &&
+                Gear::GetAngleAbsolute(gapB.m_EdgeNormal, m_LastRelativeDirection) < 1.2217305f)
+                ground.DoPullDownOnEdge(gapB);
+        }
+    }
 }
 
 }  // namespace scimitar::ac2

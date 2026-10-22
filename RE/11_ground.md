@@ -748,5 +748,18 @@ parameter. Mac symbols; the PC Can / Do entries are named (PC addresses in `21_i
 - On a 2.3 m drop the run goes MoveCycle → **InAir** at square distance −0.0115 (just past −0.01): FallOffEdge.
 - Not seen yet: EdgeStop → Move on releasing the stick; the grasp pull-down.
 
-Port: not ported yet. The port has no Ledge context, no LookDown / EdgeStop states, and leaves the ground by its
-own stand-in (the ground dropping away).
+**Port (2026-10-22):**
+- `HumanGround` has EdgeStop (kept with Move's children) and Wait's child LookDown, and the commands' tests as above.
+- `AssassinTask` sends LookDown, Unbalance, FallOffEdge and the EdgeStop pull-down.
+- FallOffEdge and LedgePullDown are queued and run at the start of the ground's update, as the game's interface
+  commands are; the others run at once (as TurnOnSpot already did).
+- PORT stand-ins:
+  - the two clearance tests pass;
+  - no upper body (LookDown's +0x24 taken as 1);
+  - EdgeStop's unbalance lasts the measured 0.27 s and goes back to Wait;
+  - the pull-down requests the Ledge context, which the port doesn't have yet, so a run at a deep edge wobbles in
+    EdgeStop instead of hanging;
+  - the jumps and the grasp button aren't ported;
+  - the ground holds while any point within 0.38 m of the centre has ground (the stand-up capsule's radius), so
+    FallOffEdge (0.1 m past) comes first, as in the game.
+- Tests run at 120 Hz: at 30 Hz a run steps over the 0.15 m Unbalance window.

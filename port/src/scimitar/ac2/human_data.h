@@ -194,6 +194,9 @@ struct PortActionLengths {
     float roll = 0.8f;
     float crouchTurn = 0.6f;
     float turnOnSpot[4] = {0.4f, 0.6f, 0.8f, 1.0f};  // by GetTurnAnimation's size (< 25, 70, 135 degrees, more)
+    // EdgeStop's unbalance action (115916159). Live (session 5, RE/11_ground.md 17): the pull-down to Ledge came
+    // 0.27 s after EdgeStop began, and it waits for this action to finish.
+    float edgeStopUnbalance = 0.27f;
 };
 
 struct HumanInAirData {
