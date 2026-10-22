@@ -590,7 +590,8 @@ Outside free-run the game doesn't let a walk carry Ezio off a deep edge. HumanGr
 | +0x994 | +0x974 | `m_IsEdgeClampingZeroSpeed` | `EdgeClampingComputation`; read through IHuman +0x70 (no reader found yet) |
 | +0x995 | +0x975 | `m_EdgeClampUsedLastFrame` | `EdgeClampingComputation` |
 | +0x996 | +0x976 | `m_ForcedGapUpdate` | the fight state; makes `EdgeClampingComputation` search the gap itself |
-| +0x921 | +0x901 | (unnamed) | blocks that search |
+| +0x921 | +0x901 | `m_GapCalculated` | set by `SetIsGapValid` (PC 0x913AF0 writes IHuman +0x821); blocks that search |
+| +0x8E0 / +0x920 | | `m_Gap` / `m_IsGapValid` | `SetGap` (PC 0x913A70, IHuman +0x7E0) / `SetIsGapValid` (IHuman +0x820); both run on the IHuman base at Human +0x100 |
 | +0x9F0 | +0x9C0 | `EdgeClampingSettings` | +0x00 edge distance **0.2** (Human ctor PC 0x932DC0), +0x10 reject direction, +0x20 reject angle (AC2 layout, not Revelations'; names by use, hypothesis) |
 
 `Human::LocalInit` (Mac 0x12C82CE) and PC 0x9220B0 clear the flags. **`m_IsEdgeClampingActive`** is set by the
@@ -683,4 +684,8 @@ to the right** of the sight. The port had the opposite sign until 2026-10-22, wh
 - `GetDepthInFrontOfEdge` in full. The port measures the ground 0.07 m past the edge.
 - `CastEntityInternal` (Mac 0x62CC70): which lines a zone catches. The port tests the line against the sphere / box.
 - Who reads `IsEdgeClampingZeroSpeed`.
-- The high-profile rule, live row 12.
+- Live (row 12, 2026-10-22): the rules hold on roofs of 1.2, 2.3 and 7+ m. A high-profile run over a deep edge goes
+  from Ground **straight to Ledge** (a hang); that hand-over isn't decoded (the port falls into InAir instead). After
+  a low-profile stop at an edge the ground leaves the clamping states (+0x991 = 0); which state isn't known.
+- Who clears `m_GapCalculated` each frame; `m_IsGapValid` flickers between frames live while standing at an edge
+  (another writer, hypothesis).

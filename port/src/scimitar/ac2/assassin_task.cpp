@@ -300,7 +300,7 @@ void AssassinTask::UpdateGroundMovement(IHuman& human, IHumanGround& ground, con
 
     // Edge clamping (PC 0xDF9853): carrying, any gap over 0.45 m; in low profile a gap over 2 m; in high profile only
     // a gap over 5 m while the stick is pushed, and then directions within 60 degrees of the stick aren't clamped.
-    // LIVE: RE/20 row 12 (the high-profile case against session 4's note).
+    // Checked live on roofs of 1.2, 2.3 and 7+ m (RE/20 row 12, 2026-10-22).
     EdgeClampingSettings& settings = human.GetEdgeClampingSettings();
     bool clamp = false;
     if (ground.IsCarryingObject()) {

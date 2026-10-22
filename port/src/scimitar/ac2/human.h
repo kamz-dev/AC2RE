@@ -87,7 +87,10 @@ public:
     bool IsEdgeClampingZeroSpeed() const override { return m_IsEdgeClampingZeroSpeed; }
     void SetGap(const Gap& gap) override { m_Gap = gap; }
     const Gap& GetGap() const override { return m_Gap; }
-    void SetIsGapValid(bool valid) override { m_IsGapValid = valid; }
+    void SetIsGapValid(bool valid) override {  // PC 0x913AF0
+        m_GapCalculated = true;
+        m_IsGapValid = valid;
+    }
     bool IsGapValid() const override { return m_IsGapValid; }
     void SetNearestGap(const Gap& gap) override { m_NearestGap = gap; }
     void SetIsNearestGapValid(bool valid) override { m_IsNearestGapValid = valid; }
@@ -118,7 +121,7 @@ public:
     bool m_IsEdgeClampingZeroSpeed = false;    // +0x994 the clamp left no displacement this frame
     bool m_EdgeClampUsedLastFrame = false;     // +0x995
     bool m_ForcedGapUpdate = false;            // +0x996 EdgeClampingComputation searches the gap itself (fight)
-    bool m_GapUpdateBlocked = false;           // +0x921 (unnamed) blocks that search; not ported
+    bool m_GapCalculated = false;              // +0x921 set by SetIsGapValid; blocks that search
 
     // PORT: the frame's root motion, in world space: what the current action would move the character by this frame
     // (the game's ActionComponent displacement, Action::GetDisplacementWithTime). The context sets it in its update;
@@ -159,9 +162,9 @@ private:
 
     const port::World* m_PortWorld = nullptr;
     EdgeClampingSettings m_EdgeClampingSettings;  // +0x9F0
-    Gap m_Gap;
+    Gap m_Gap;           // +0x8E0
     Gap m_NearestGap;
-    bool m_IsGapValid = false;
+    bool m_IsGapValid = false;  // +0x920
     bool m_IsNearestGapValid = false;
 
     HumanContextBundle m_ContextBundle{*this};

@@ -247,7 +247,7 @@ bool Human::GetModifiedSpeed(Vec3& displacement) {
 void Human::EdgeClampingComputation() {
     m_IsEdgeClampingZeroSpeed = false;
     if (m_PortWorld && m_IsEdgeClampingActive && (m_IsEdgeClampingEnable || m_IsFightEdgeClampingActive)) {
-        if (!m_GapUpdateBlocked && m_ForcedGapUpdate) {
+        if (!m_GapCalculated && m_ForcedGapUpdate) {
             std::vector<Gap> gaps;
             GetGapList(gaps, m_Position, 0.75f, 0.45f, true);
             Gap gap;

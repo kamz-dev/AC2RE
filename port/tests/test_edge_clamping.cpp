@@ -126,7 +126,8 @@ TEST(high_profile_runs_off_a_drop_of_5m_or_less) {
 
 TEST(high_profile_head_on_at_a_deep_edge_is_not_clamped) {
     // Above 5 m the clamp is on, but edges whose normal is within 60 degrees of the stick are filtered out
-    // (FilterSegmentListWithNormalAngle). LIVE: RE/20 row 12.
+    // (FilterSegmentListWithNormalAngle). Live (RE/20 row 12): the game's run goes over too, into a hang (Ground ->
+    // Ledge; the port has no Ledge and falls).
     BoxWorld world = Roof(6);
     Sim sim(world, {.position = {0, 0, 6}});
     sim.run(4.0f, [](float) { return Toward({0, 1, 0}, kHighProfile); });
