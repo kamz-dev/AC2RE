@@ -205,11 +205,43 @@ same tracker as HumanGround's); `DoX` packs the parameters and runs `_ExecInterf
   **NarrowObject** (`ExecPullupToNarrowObjectMain`) for 0.27 s before Ground, standing 0.05–0.08 m back from the edge.
 - The player's controller sends them from `AssassinTask::UpdateLedge` [0x1076B30] (0x1E74 bytes, not read yet).
 
+## 8. The player's controller: `AssassinTask::UpdateLedge` [0x1076B30] (PC not located yet)
+Called through `IHumanLedge`, whose 48 slots are, from +0 (Mac `__ZTVN8scimitar3ac211IHumanLedgeE` 0x285C7E0; the
+HumanLedge vtable's IHumanLedge part from slot 93 [0x2847320]): +0 `SetDirection`, +4 `SetSpeedRatio`,
++8 / +0xC `Get` / `SetMovementType`, +0x10 `SetDirectionType`, +0x14 `SetRelativeDirection`, +0x18 / +0x1C
+`Can` / `DoRebound`, +0x20 / +0x24 `…JumpFromHangKnee`, **+0x28 / +0x2C `Can` / `DoRelease`**, +0x30 / +0x34
+`…ReleaseToTarget`, +0x38 / +0x3C `…VerticalLeap`, **+0x40 / +0x44 `Can` / `DoPullup`**, +0x48 / +0x4C `…PassOver`,
++0x50 / +0x54 `…PullupToActor`, +0x58–+0x64 the two assassinations, +0x68 `IsOnRope`, +0x6C `IsOnPole`,
++0x70 / +0x74 `…TurnAround`, +0x78–+0x84 `Start` / `StopSwing`, +0x88–+0x90 `JumpFromSwing` (one and two targets),
++0x94 `HasEnoughRoomToJumpFromSwing`, +0x98 / +0x9C `…JumpFromHandPassOver`, +0xA0 / +0xA4 `Set` / `GetHangAfterPassover`,
++0xA8 `SetDetectionType`, +0xAC `SetPullupToActorBranch`, +0xB0 / +0xB4 `…ExitWaterWell`, +0xB8 `IsWaterWellLedge`,
++0xBC `GetWaterWell`.
+
+Each frame, in order (the stick is the ControlScheme's, `21_input.md`; the threshold 0.35 is the first band):
+1. **Direction.** With the stick above 0.35, the angle *a* of the pad stick from the pad's up (`GetAngle(AssassinTask
+   +0x1030 [Mac], BaseJ, BaseK)`) picks the move direction: |a| < 45° up the wall (the flat sight), 45°–135° the
+   horizon to that side, above 135° the reverse of the sight. `SetDirection(dir)`, `SetDirectionType(0)`,
+   `SetRelativeDirection(relative stick)`, `SetSpeedRatio(length)`. At 0.35 or below: `SetSpeedRatio(0)` and the
+   relative direction is the flat sight.
+2. The ledge-top assassination, the climb leap (high profile, +0x946, the stick turned more than 120°:
+   `CanVerticalLeap` → `DoVerticalLeap`), the air assassination and tackle.
+3. **Rebound** (the back eject): `CanRebound` with high profile, the buffered legs press (+0x946) and an allowed
+   direction → the best edge-jump target, else a leap of faith, else a jump in the direction; `DoRebound`.
+4. **Release:** `CanRelease` and the buffered **empty-hand press** (+0x94A) → a leap of faith below when there is
+   one (`DoRelease(foothold, 2048)`), else `DoRelease(null, 0x80000000)`. +0x94A is set in `UpdateGlobal`
+   [0x106C1B0] on `ButtonJustPressed(3)` (pad button 3; Shift on the keyboard, live row 13), cleared unless
+   `ButtonJustPressedWithDelay(0, 0.3)` or by a timer (+0xA64), and on entering Ledge, Climb, Ladder or Main.
+5. Otherwise: the action ids, the hand-pass-over jump; `SetHangAfterPassover(stick ≤ 0.35 or |a| ≥ 45° or button 3
+   held)`; then with |a| < 45° **`CanPullup` → `DoPullup`**, else `CanPassOver` → `DoPassOver`; with |a| > 135°
+   `CanTurnAround` → `DoTurnAround`; then the swings with high profile and button 0 (+0x94F / +0x950).
+
+So on the keyboard: **forward pulls up, Shift drops.**
+
 ## Open
 - PC addresses of the Enter / Exit / Test / Exec functions (only the `_Update`s are named).
 - `ComputeHangWallEntityPosition`, `ComputeHangFreeEntityPosition`, `GetNextVerticalLimbPos`, the anchor points
   (`AnchorPoint`, `19_guidance.md`), `SetupInterpolatorForHumanLedgeMove` / `DisplacementManager`.
-- `UpdateWaitMain` [0x133B696], `ReleaseToInAir`, `EvaluatePullupFromMovement`, Pullup → Ground, and
-  `AssassinTask::UpdateLedge` [0x1076B30] (the AI's is `GroundNavigationTask::UpdateLedgeContext` [0xE30D5C]).
+- `UpdateWaitMain` [0x133B696], `ReleaseToInAir`, `EvaluatePullupFromMovement`, Pullup → Ground; the PC
+  `AssassinTask::UpdateLedge`; AssassinTask +0x1030 [Mac] (the pad-space stick, hypothesis).
 - Live: the pull-down's three step durations, the hang position against the edge (wall and free), and how a
   high-profile run hands Ground over to Ledge (`11_ground.md` 16 Open).
