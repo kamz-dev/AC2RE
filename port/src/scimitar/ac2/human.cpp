@@ -130,17 +130,6 @@ bool IsNullWithEpsilon(const Vec3& v) {  // Gear::IsNullWithEpsilon, PC 0x2B3130
 bool NullWithEpsilon(const Vec3& v, float eps) {
     return std::fabs(v.x) <= eps && std::fabs(v.y) <= eps && std::fabs(v.z) <= eps;
 }
-
-// IntersectSegmentWithInfinitePlane (Mac 0x1C2E50, PC 0x10FA690).
-bool IntersectSegmentWithInfinitePlane(Vec3& hit, const Vec3& p0, const Vec3& p1, const Vec3& planePoint,
-                                       const Vec3& planeNormal) {
-    const float den = dot(p1 - p0, planeNormal);
-    if (den == 0.0f) return false;
-    const float t = dot(planePoint - p0, planeNormal) / den;
-    if (t < 0.0f || t > 1.0f) return false;
-    hit = p0 * (1.0f - t) + p1 * t;
-    return true;
-}
 }  // namespace
 
 namespace {
@@ -313,16 +302,22 @@ bool Human::GetGapList(std::vector<Gap>& gaps, const Vec3& position, float radiu
                        bool allowNoEdge) const {
     gaps.clear();
     if (!m_PortWorld) return false;
-    std::vector<port::GuidanceLine> lines;
-    m_PortWorld->CastGuidanceSphere(position, radius, lines);  // a GuidanceZoneSphere on `position`
+    // A GuidanceZoneSphere on `position`, cast for contacts of every subtype (PC 0x928347).
+    GuidanceZoneSphere zone;
+    zone.m_Matrix.m_Rows[3] = position;
+    zone.m_Radius = radius;
+    std::vector<GuidanceContactObject> report;
+    zone.CastWorld(report, false, kGuidanceContactObjectSubType_All, *m_PortWorld);
     bool shallowSeen = false;
-    for (const port::GuidanceLine& c : lines) {
-        if (!IsEdgeLeveled(c.p0, c.p1)) continue;
-        const Vec3 n = normalized(Vec3{c.p0.x - c.p1.x, c.p0.y - c.p1.y, 0});  // the edge's flat direction
+    for (const GuidanceContactObject& c : report) {
+        const Vec3& p0 = c.m_LineGlobalPoint0;
+        const Vec3& p1 = c.m_LineGlobalPoint1;
+        if (!IsEdgeLeveled(p0, p1)) continue;
+        const Vec3 n = normalized(Vec3{p0.x - p1.x, p0.y - p1.y, 0});  // the edge's flat direction
         Vec3 hit;
-        if (!IntersectSegmentWithInfinitePlane(hit, c.p0, c.p1, position, n)) continue;  // the foot of `position`
+        if (!IntersectSegmentWithInfinitePlane(hit, p0, p1, position, n)) continue;  // the foot of `position`
         if (!(std::fabs(position.z - hit.z) < 0.3f)) continue;
-        const Vec3 fn = GetLineGlobalFlatNormal(c.p0, c.p1, c.faceNormal0, c.faceNormal1);
+        const Vec3 fn = GetLineGlobalFlatNormal(p0, p1, c.m_LineGlobalNormalLeft, c.m_LineGlobalNormalRight);
         if (NullWithEpsilon(fn, 0.0005f)) continue;
         const float depth = GetDepthInFrontOfEdge(position, hit, fn, 7.0f, 0.02f, 0.0f);
         if (minDepth > depth) {
@@ -336,7 +331,7 @@ bool Human::GetGapList(std::vector<Gap>& gaps, const Vec3& position, float radiu
         g.m_SquareDistance = dot(hit - position, hit - position);
         if (dot(fn, position - hit) > 0.0f) g.m_SquareDistance = -g.m_SquareDistance;  // already past the edge
         g.m_NoEdge = false;
-        g.m_EdgeSubType = c.subType & 0x3F;
+        g.m_EdgeSubType = c.m_SubType & 0x3F;
         gaps.push_back(g);
     }
     if (!gaps.empty()) return true;

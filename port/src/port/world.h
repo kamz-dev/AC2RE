@@ -4,38 +4,44 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
+#include <functional>
+#include <memory>
 #include <optional>
 #include <vector>
 
+#include "scimitar/guidance.h"
 #include "scimitar/math.h"
 
 namespace port {
-
-// A guidance line as a cast reports it (the game's GuidanceContactObject, 0x60 bytes: the edge P0 +0x10 / P1 +0x20,
-// the two faces' normals +0x30 / +0x40, the subtype byte +0x5C & 0x3F; RE/11_ground.md 16).
-struct GuidanceLine {
-    scimitar::Vec3 p0, p1;
-    scimitar::Vec3 faceNormal0, faceNormal1;
-    int subType = 0;
-};
 
 class World {
 public:
     virtual ~World() = default;
     // Height of the walkable surface under (x, y) at or below `fromZ`, if any.
     virtual std::optional<float> groundBelow(float x, float y, float fromZ) const = 0;
-    // The guidance lines a GuidanceZoneSphere (GuidanceZone::CastWorld, PC 0x3FEA00) or a GuidanceZoneBox finds. The
-    // box is given by its matrix (the axes and the origin) and its local bounds. PORT: the game casts the guidance
-    // data of the entities the zone overlaps (CastEntityInternal, not decoded); the port's worlds supply their own
-    // lines and test the overlap themselves. A world without guidance finds none.
-    virtual void CastGuidanceSphere(const scimitar::Vec3& center, float radius, std::vector<GuidanceLine>& out) const {
-        (void)center, (void)radius, (void)out;
+    // The guidance components whose entities overlap the box (min, max): stands in for GuidanceZone::CastWorld's
+    // broadphase (PhysicWorkspace::GetOverlappingEntities, PC 0x17C080, or the Havok broadphase) and the entities'
+    // components (RE/19_guidance.md 3). A world without guidance has none.
+    virtual void GetGuidanceSystemComponents(const scimitar::Vec3& min, const scimitar::Vec3& max,
+                                             std::vector<const scimitar::GuidanceSystemComponent*>& out) const {
+        (void)min, (void)max, (void)out;
     }
-    struct OrientedBox {
-        scimitar::Vec3 axisX, axisY, axisZ, origin;
-        scimitar::Vec3 min, max;  // local bounds
+    // A collision mesh as the guidance workspace slices it (scimitar::MeshShape: a float3 vertex array and u16
+    // triangle indices, in its entity's local space; RE/19_guidance.md 6).
+    struct CollisionMesh {
+        std::vector<scimitar::Vec3> vertices;
+        std::vector<std::uint16_t> indices;  // 3 per triangle
     };
-    virtual void CastGuidanceBox(const OrientedBox& box, std::vector<GuidanceLine>& out) const { (void)box, (void)out; }
+    // Every collision mesh whose entity overlaps the world box (min, max), with its entity's global matrix: stands in
+    // for GuidanceWorkspace::BroadPhase (PhysicWorkspace::GetOverlappingPhysicComponents on layer 5, the
+    // MultiInertComponent split) and the components' MeshShapes. PORT: the world's own overlap test; every triangle
+    // of an overlapping mesh is given (the game's MOPP query returns a superset too). A world without collision has
+    // none.
+    virtual void ForEachCollisionMesh(const scimitar::Vec3& min, const scimitar::Vec3& max,
+                                      const std::function<void(const Gear::Matrix44&, const CollisionMesh&)>& fn) const {
+        (void)min, (void)max, (void)fn;
+    }
     // Whether a capsule (segment a-b, radius) touches nothing: stands in for the game's physics query
     // (Human::CheckClearanceCapsuleGlobal, PC 0x934800). A world without collision is always clear.
     virtual bool capsuleIsClear(const scimitar::Vec3& a, const scimitar::Vec3& b, float radius) const {
@@ -65,8 +71,27 @@ public:
         scimitar::Vec3 min, max;
     };
 
-    explicit BoxWorld(bool hasFloor = true, float floorZ = 0) : hasFloor_(hasFloor), floorZ_(floorZ) {}
-    void add(Box b) { boxes_.push_back(b); }
+    explicit BoxWorld(bool hasFloor = true, float floorZ = 0) : hasFloor_(hasFloor), floorZ_(floorZ) {
+        buildFloorMesh();
+    }
+    void add(Box b) {
+        boxes_.push_back(b);
+        addGuidance(b);
+        addMesh(b);
+    }
+
+    // PORT: each box is a closed mesh (12 triangles, wound so their normals face out) at its centre; the floor is a
+    // 2000 m square of two triangles.
+    void ForEachCollisionMesh(const scimitar::Vec3& min, const scimitar::Vec3& max,
+                              const std::function<void(const Gear::Matrix44&, const CollisionMesh&)>& fn) const override {
+        for (const MeshEntity& m : meshes_) {
+            if (m.max.x < min.x || m.min.x > max.x || m.max.y < min.y || m.min.y > max.y || m.max.z < min.z ||
+                m.min.z > max.z)
+                continue;
+            fn(m.global, m.mesh);
+        }
+        if (hasFloor_ && floorZ_ >= min.z && floorZ_ <= max.z) fn(floorGlobal_, floorMesh_);
+    }
 
     std::optional<float> groundBelow(float x, float y, float fromZ) const override {
         std::optional<float> best;
@@ -141,67 +166,86 @@ public:
         return best;
     }
 
-    // PORT: every box's four top edges are guidance lines, with the top face's normal (0, 0, 1) and the side face's
-    // outward normal. Edges shared by flush boxes are not removed.
-    void CastGuidanceSphere(const scimitar::Vec3& center, float radius, std::vector<GuidanceLine>& out) const override {
-        // PORT: a line counts when it comes within the radius (CastEntityInternal's test isn't decoded).
-        forEachTopEdge([&](const GuidanceLine& line) {
-            if (distanceToSegmentSq(center, line.p0, line.p1) <= radius * radius) out.push_back(line);
-        });
-    }
-
-    void CastGuidanceBox(const OrientedBox& box, std::vector<GuidanceLine>& out) const override {
-        // PORT: a line counts when part of it lies inside the box (CastEntityInternal's test isn't decoded).
-        forEachTopEdge([&](const GuidanceLine& line) {
-            if (segmentTouchesBox(box, line.p0, line.p1)) out.push_back(line);
-        });
+    // PORT: each box is an entity with one GuidanceSystemComponent: its four top edges, LedgeGrab, between the top
+    // face (normal +Z) and the side face, with an EdgeFilter that takes ground/wall edges (the game's data sets its
+    // own; RE/19 1). Edges shared by flush boxes are not removed.
+    void GetGuidanceSystemComponents(const scimitar::Vec3& min, const scimitar::Vec3& max,
+                                     std::vector<const scimitar::GuidanceSystemComponent*>& out) const override {
+        for (const Guidance& g : guidance_) {
+            if (g.max.x < min.x || g.min.x > max.x || g.max.y < min.y || g.min.y > max.y || g.max.z < min.z ||
+                g.min.z > max.z)
+                continue;
+            out.push_back(g.component.get());
+        }
     }
 
 private:
-    template <class F>
-    void forEachTopEdge(F&& f) const {
-        for (const Box& b : boxes_) {
-            const float z = b.max.z;
-            const scimitar::Vec3 c[4] = {{b.min.x, b.min.y, z}, {b.max.x, b.min.y, z}, {b.max.x, b.max.y, z},
-                                         {b.min.x, b.max.y, z}};
-            const scimitar::Vec3 side[4] = {{0, -1, 0}, {1, 0, 0}, {0, 1, 0}, {-1, 0, 0}};
-            for (int i = 0; i < 4; ++i) f(GuidanceLine{c[i], c[(i + 1) % 4], {0, 0, 1}, side[i], 0});
+    struct Guidance {
+        std::unique_ptr<scimitar::GuidanceSystemComponent> component;
+        scimitar::Vec3 min, max;  // its world AABB
+    };
+
+    void addGuidance(const Box& b) {
+        auto c = std::make_unique<scimitar::GuidanceSystemComponent>();
+        // The entity sits at the centre of the top face; its points are local to it.
+        const scimitar::Vec3 origin{(b.min.x + b.max.x) * 0.5f, (b.min.y + b.max.y) * 0.5f, b.max.z};
+        c->m_PortGlobalMatrix = Gear::Matrix44::Translation(origin);
+        const float hx = (b.max.x - b.min.x) * 0.5f, hy = (b.max.y - b.min.y) * 0.5f;
+        const scimitar::Vec3 corner[4] = {{-hx, -hy, 0}, {hx, -hy, 0}, {hx, hy, 0}, {-hx, hy, 0}};
+        const scimitar::Vec3 side[4] = {{0, -1, 0}, {1, 0, 0}, {0, 1, 0}, {-1, 0, 0}};
+        std::uint32_t index[4];
+        for (int i = 0; i < 4; ++i) index[i] = c->PortAddPoint(corner[i]);
+        for (int i = 0; i < 4; ++i) {
+            scimitar::GuidanceObject o;
+            o.SetValid(true);
+            o.SetSubType(scimitar::GuidanceObjectSubTypeLedgeGrab);
+            o.SetLineIndex0(index[i]);
+            o.SetLineIndex1(index[(i + 1) % 4]);
+            o.SetLineNormalLeft({0, 0, 1});
+            o.SetLineNormalRight(side[i]);
+            c->m_GuidanceObjects.push_back(o);
         }
+        c->m_EdgeFilter.m_Filter = scimitar::EdgeFilter::EdgeWallGround;
+        Guidance g;
+        c->PortGetAABBox(g.min, g.max);
+        g.component = std::move(c);
+        guidance_.push_back(std::move(g));
     }
 
-    static float distanceToSegmentSq(const scimitar::Vec3& p, const scimitar::Vec3& a, const scimitar::Vec3& b) {
-        const scimitar::Vec3 ab = b - a;
-        const float len2 = scimitar::dot(ab, ab);
-        float t = len2 > 0 ? scimitar::dot(p - a, ab) / len2 : 0.0f;
-        t = std::clamp(t, 0.0f, 1.0f);
-        const scimitar::Vec3 d = a + ab * t - p;
-        return scimitar::dot(d, d);
+    struct MeshEntity {
+        Gear::Matrix44 global;
+        CollisionMesh mesh;
+        scimitar::Vec3 min, max;
+    };
+    void addMesh(const Box& b) {
+        MeshEntity m;
+        const scimitar::Vec3 c = (b.min + b.max) * 0.5f;
+        const scimitar::Vec3 h = (b.max - b.min) * 0.5f;
+        m.global = Gear::Matrix44::Translation(c);
+        for (int i = 0; i < 8; ++i)
+            m.mesh.vertices.push_back({(i & 1) ? h.x : -h.x, (i & 2) ? h.y : -h.y, (i & 4) ? h.z : -h.z});
+        // Two triangles per face, counter-clockwise seen from outside.
+        static const std::uint16_t kFaces[12][3] = {{0, 2, 1}, {1, 2, 3}, {4, 5, 6}, {5, 7, 6},   // -z, +z
+                                                    {0, 1, 4}, {1, 5, 4}, {2, 6, 3}, {3, 6, 7},   // -y, +y
+                                                    {0, 4, 2}, {2, 4, 6}, {1, 3, 5}, {3, 7, 5}};  // -x, +x
+        for (const auto& f : kFaces) m.mesh.indices.insert(m.mesh.indices.end(), {f[0], f[1], f[2]});
+        m.min = b.min;
+        m.max = b.max;
+        meshes_.push_back(std::move(m));
     }
-
-    // Clips the segment against the box's three slabs.
-    static bool segmentTouchesBox(const OrientedBox& box, const scimitar::Vec3& a, const scimitar::Vec3& b) {
-        const scimitar::Vec3 axes[3] = {box.axisX, box.axisY, box.axisZ};
-        const float lo[3] = {box.min.x, box.min.y, box.min.z}, hi[3] = {box.max.x, box.max.y, box.max.z};
-        float t0 = 0, t1 = 1;
-        for (int i = 0; i < 3; ++i) {
-            const float pa = scimitar::dot(a - box.origin, axes[i]);
-            const float d = scimitar::dot(b - a, axes[i]);
-            if (std::fabs(d) < 1e-9f) {
-                if (pa < lo[i] || pa > hi[i]) return false;
-                continue;
-            }
-            float ta = (lo[i] - pa) / d, tb = (hi[i] - pa) / d;
-            if (ta > tb) std::swap(ta, tb);
-            t0 = std::max(t0, ta);
-            t1 = std::min(t1, tb);
-            if (t0 > t1) return false;
-        }
-        return true;
+    void buildFloorMesh() {
+        floorGlobal_ = Gear::Matrix44::Translation({0, 0, floorZ_});
+        floorMesh_.vertices = {{-1000, -1000, 0}, {1000, -1000, 0}, {1000, 1000, 0}, {-1000, 1000, 0}};
+        floorMesh_.indices = {0, 1, 2, 0, 2, 3};
     }
 
     bool hasFloor_;
     float floorZ_;
+    std::vector<MeshEntity> meshes_;
+    Gear::Matrix44 floorGlobal_;
+    CollisionMesh floorMesh_;
     std::vector<Box> boxes_;
+    std::vector<Guidance> guidance_;
 };
 
 }  // namespace port

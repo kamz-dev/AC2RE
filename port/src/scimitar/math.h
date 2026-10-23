@@ -71,4 +71,39 @@ inline float GetAngleAbsolute(const scimitar::Vec3& a, const scimitar::Vec3& b) 
 
 inline constexpr scimitar::Vec3 kBaseK{0, 0, 1};  // Vector4::GetBaseK
 
+// Gear::Matrix44<float>, as the engine stores an entity's or a zone's frame: rows 0-2 the axes (X, Y, Z), row 3 the
+// position (TransformVertex: x·row0 + y·row1 + z·row2 + row3). PORT: only the affine part the port uses.
+struct Matrix44 {
+    scimitar::Vec3 m_Rows[4] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {0, 0, 0}};
+
+    static Matrix44 Translation(const scimitar::Vec3& t) {
+        Matrix44 m;
+        m.m_Rows[3] = t;
+        return m;
+    }
+    scimitar::Vec3 TransformVector(const scimitar::Vec3& v) const {
+        return m_Rows[0] * v.x + m_Rows[1] * v.y + m_Rows[2] * v.z;
+    }
+    scimitar::Vec3 TransformVertex(const scimitar::Vec3& v) const { return TransformVector(v) + m_Rows[3]; }
+    // Matrix44::SetAffineInverse: the transpose of the rotation, and the position brought back through it (the axes
+    // are orthonormal).
+    Matrix44 GetAffineInverse() const {
+        Matrix44 r;
+        for (int i = 0; i < 3; ++i) {
+            r.m_Rows[i] = {i == 0 ? m_Rows[0].x : i == 1 ? m_Rows[0].y : m_Rows[0].z,
+                           i == 0 ? m_Rows[1].x : i == 1 ? m_Rows[1].y : m_Rows[1].z,
+                           i == 0 ? m_Rows[2].x : i == 1 ? m_Rows[2].y : m_Rows[2].z};
+        }
+        r.m_Rows[3] = r.TransformVector(m_Rows[3]) * -1.0f;
+        return r;
+    }
+    // Matrix44::operator*= as the engine composes frames: (this * other) maps a point through `this`, then `other`.
+    Matrix44 operator*(const Matrix44& other) const {
+        Matrix44 r;
+        for (int i = 0; i < 3; ++i) r.m_Rows[i] = other.TransformVector(m_Rows[i]);
+        r.m_Rows[3] = other.TransformVertex(m_Rows[3]);
+        return r;
+    }
+};
+
 }  // namespace Gear

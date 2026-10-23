@@ -5,6 +5,7 @@
 
 #include <vector>
 
+#include "scimitar/guidance.h"
 #include "scimitar/math.h"
 
 namespace port {
@@ -46,10 +47,6 @@ bool IsEdgeLeveled(const Vec3& p0, const Vec3& p1);
 // GuidanceContactObject::GetLineGlobalFlatNormal (Mac 0x144A2D4, PC 0x414140): the horizontal normal of the line,
 // on the side of the lower of its two faces (the wall), i.e. pointing out over the drop.
 Vec3 GetLineGlobalFlatNormal(const Vec3& p0, const Vec3& p1, const Vec3& faceNormal0, const Vec3& faceNormal1);
-// scimitar::PointSegmentProjection (Mac 0x213630, PC 0x10E8F90): the closest point of the segment.
-Vec3 PointSegmentProjection(const Vec3& p, const Vec3& a, const Vec3& b);
-// scimitar::ProjectPointOnPlane (Mac 0x212850, PC 0x10EA7E0): p moved along `dir` onto the plane (q, n).
-Vec3 ProjectPointOnPlane(const Vec3& p, const Vec3& q, const Vec3& n, const Vec3& dir);
 
 // Mac 0xD37540, PC 0x1007D20.
 bool GetEdgeSegmentNearCharacterPos(const port::World& world, const Vec3& entityPosition, const Vec3& entitySight,

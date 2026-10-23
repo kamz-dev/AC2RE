@@ -35,27 +35,6 @@ Vec3 GetLineGlobalFlatNormal(const Vec3& p0, const Vec3& p1, const Vec3& faceNor
     return dot(f, normalized(Flat(wall))) >= 0.0f ? f : f * -1.0f;
 }
 
-Vec3 PointSegmentProjection(const Vec3& p, const Vec3& a, const Vec3& b) {
-    const Vec3 ab = b - a;
-    const float t = dot(p - a, ab);
-    if (t <= 0.0f) return a;
-    const float len2 = dot(ab, ab);
-    if (t < len2) return ab * (t / len2) + a;
-    return b;
-}
-
-Vec3 ProjectPointOnPlane(const Vec3& p, const Vec3& q, const Vec3& n, const Vec3& dir) {
-    const float d = dot(dir, n);
-    if (d == 0.0f) return {};
-    float f = 1.0f;
-    if (d > 1.0f)
-        f = -1.0f;
-    else if (d >= -1.0f)
-        f = -1.0f / d;
-    const Vec3 pq = p - q;
-    return pq + (dir * (f * dot(pq, n)) + q);
-}
-
 void FilterSegmentListWithNormalAngle(std::vector<Segment>& segments, const Vec3& direction, float rejectAngle) {
     if (!(std::fabs(rejectAngle) > 0.0005f)) return;
     for (size_t i = 0; i < segments.size();) {
@@ -165,24 +144,25 @@ bool GetEdgeSegmentNearCharacterPos(const port::World& world, const Vec3& entity
                                     float radius, const EdgeClampingSettings& settings, std::vector<Segment>& segs,
                                     unsigned maxCount) {
     // The query: a GuidanceZoneBox on the entity (X = sight x K, Y = sight, Z = K), local bounds (-r, -r, -0.65) to
-    // (r, r, 0.3), cast with GuidanceZone::CastWorld.
-    port::World::OrientedBox box;
-    box.axisX = normalized(cross(entitySight, Gear::kBaseK));
-    box.axisY = entitySight;
-    box.axisZ = Gear::kBaseK;
-    box.origin = entityPosition;
-    box.min = {-radius, -radius, -0.65f};
-    box.max = {radius, radius, 0.3f};
-    std::vector<port::GuidanceLine> lines;
-    world.CastGuidanceBox(box, lines);
+    // (r, r, 0.3), cast with GuidanceZone::CastWorld (contacts, every subtype; PC 0x1007F8D).
+    GuidanceZoneBox box;
+    box.m_Matrix.m_Rows[0] = normalized(cross(entitySight, Gear::kBaseK));
+    box.m_Matrix.m_Rows[1] = entitySight;
+    box.m_Matrix.m_Rows[2] = Gear::kBaseK;
+    box.m_Matrix.m_Rows[3] = entityPosition;
+    box.m_Min = {-radius, -radius, -0.65f};
+    box.m_Max = {radius, radius, 0.3f};
+    std::vector<GuidanceContactObject> report;
+    box.CastWorld(report, false, kGuidanceContactObjectSubType_All, world);
     segs.clear();
-    for (const port::GuidanceLine& line : lines) {
+    for (const GuidanceContactObject& c : report) {
         if (segs.size() == maxCount) break;
-        if (!IsEdgeLeveled(line.p0, line.p1)) continue;
+        if (!IsEdgeLeveled(c.m_LineGlobalPoint0, c.m_LineGlobalPoint1)) continue;
         Segment s;
-        s.m_Points[0] = Flat(line.p0);
-        s.m_Points[1] = Flat(line.p1);
-        s.m_Normal = normalized(Flat(GetLineGlobalFlatNormal(line.p0, line.p1, line.faceNormal0, line.faceNormal1)));
+        s.m_Points[0] = Flat(c.m_LineGlobalPoint0);
+        s.m_Points[1] = Flat(c.m_LineGlobalPoint1);
+        s.m_Normal = normalized(Flat(GetLineGlobalFlatNormal(c.m_LineGlobalPoint0, c.m_LineGlobalPoint1,
+                                                             c.m_LineGlobalNormalLeft, c.m_LineGlobalNormalRight)));
         segs.push_back(s);
     }
 
