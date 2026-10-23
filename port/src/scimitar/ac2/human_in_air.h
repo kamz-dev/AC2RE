@@ -12,7 +12,9 @@ public:
     using ActorContext::ActorContext;
     HumanContextId GetID() const override { return HumanContextId::InAir; }
     void Enter() override;
-    void Update(const port::MoveInput& input, const port::World& world, float dt) override;
+    void Exit() override { m_PortEntered = false; }
+    // Phase 0: the fall (PORT: ballistic) and the landing; phase 1: nothing yet.
+    void Update(long phase, const PortUpdateArgs& args) override;
 
     // IHumanInAir::SetLandingSpeedRatio (Mac 0x15FF30A).
     void SetLandingSpeedRatio(float ratio) { m_LandingSpeedRatio = ratio; }

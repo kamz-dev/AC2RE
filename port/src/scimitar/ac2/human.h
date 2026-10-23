@@ -10,6 +10,7 @@
 #include "scimitar/ac2/edge_clamping.h"
 #include "scimitar/ac2/human_context.h"
 #include "scimitar/ac2/human_data.h"
+#include "scimitar/ai_actor.h"
 #include "scimitar/math.h"
 
 namespace scimitar::ac2 {
@@ -58,7 +59,7 @@ public:
     // Not implemented yet: GetLedge 0x12C48EA, GetClimb 0x12C48C8, GetWalling 0x12C48A6, GetLadder 0x12C492E,
     // GetNarrowObject 0x12C46A8, GetHayStack 0x12C4774, GetKiosk 0x12C47B8, GetSwim 0x12C4686.
 
-    ActorContext* Get(HumanContextId id);  // PORT: by id, for the port's switching
+    ActorContext* Get(HumanContextId id);  // PORT: by id (Human::GetContextByID's lookup); null when not ported
 
 private:
     template <class T>
@@ -68,14 +69,25 @@ private:
     std::array<std::unique_ptr<ActorContext>, kHumanContextBundleSlotCount> m_Contexts;  // game slot order
 };
 
-class Human : public IHuman {
+// scimitar::ac2::Human: an AIActor (its contexts on the main track) with the IHuman interface at +0x100.
+class Human : public AIActor, public IHuman {
 public:
+    // PORT: the game creates the AI (Human::CreateAI PC 0x9333A0: Ground on the main track, initial, with
+    // InitMainTrack) and enters it when the entity is added to the world (AIActor::Enter); the port does both here.
     Human();
     ~Human();
 
-    // Mac Human::Update() takes no arguments: the game reads input and time from its own systems.
-    // PORT: the port passes them in.
+    // PC 0x933480, Mac 0x12EDA06: the tracks' main update, edge clamping, then (PORT: here, in one call) the main
+    // track's after-physics update (Human::UpdateAfterPhysics PC 0x922390). The game reads input and time from its
+    // own systems; the port passes them in.
     void Update(const port::MoveInput& input, const port::World& world, float dt);
+
+    // PC 0x91CD80 (vftable slot 8): the track's context with that id; on the main track a missing one is created
+    // with its LocalInit (AddContextToMainAITrack PC 0x91CB10). PORT: null for the contexts the port doesn't have.
+    ActorContext* GetContextByID(long track, HumanContextId id) override;
+    // PC 0x914F20, Mac 0x12C3820: the main track's init functor: Ground's entry data, a default
+    // TransitionSetupDataToMovement (MovementState 0 WaitLow, BlendWalkToJog, 0.5; RE/10_human_update.md 4).
+    void InitMainTrack();
 
     // PORT: stands in for AIActor::GetPhysicWorkspace (the world the queries go to). Human::Update sets it; the Sim
     // sets it before the controller's first frame.
@@ -129,9 +141,10 @@ public:
     Vec3 m_PortRootMotion;
 
     HumanContextBundle& GetContextBundle() { return m_ContextBundle; }
-    HumanContextId GetCurrentContextID() const { return m_CurrentContext; }
-    HumanContextId GetPreviousContextID() const { return m_PreviousContext; }
-    float GetTimeInContext() const { return m_TimeInContext; }
+    // Human +0x48 is the main track's current context, +0x44 the id of the one it left (RE/10_human_update.md 1).
+    HumanContextId GetCurrentContextID() const { return AIActor::GetCurrentContextID(); }
+    HumanContextId GetPreviousContextID() const { return AIActor::GetPreviousContextID(); }
+    float GetTimeInContext() const { return m_PortTimeInContext; }
 
     HumanGroundData& GetGroundData() { return m_GroundData; }
     const HumanGroundData& GetGroundData() const { return m_GroundData; }
@@ -140,8 +153,6 @@ public:
     const PortGroundSpeeds& GetPortGroundSpeeds() const { return m_PortGroundSpeeds; }
     const PortActionLengths& GetPortActionLengths() const { return m_PortActionLengths; }
 
-    // A context asks to hand over to another one; the switch happens at the end of the update.
-    void RequestContext(HumanContextId id) { m_RequestedContext = id; }
     // PORT: puts the human in a context without running Exit / Enter (spawning, teleports, tests).
     void ForceContext(HumanContextId id);
 
@@ -168,10 +179,8 @@ private:
     bool m_IsNearestGapValid = false;
 
     HumanContextBundle m_ContextBundle{*this};
-    HumanContextId m_CurrentContext = HumanContextId::Ground;
-    HumanContextId m_PreviousContext = HumanContextId::Ground;
-    HumanContextId m_RequestedContext = HumanContextId::None;
-    float m_TimeInContext = 0;
+    float m_PortTimeInContext = 0;          // PORT: time since the main track's context last changed
+    const ActorContext* m_PortTimedContext = nullptr;
     HumanGroundData m_GroundData;
     HumanInAirData m_InAirData;
     PortGroundSpeeds m_PortGroundSpeeds;

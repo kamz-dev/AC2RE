@@ -33,8 +33,15 @@ float GetAngleAboutK(const Vec3& a, const Vec3& b) { return Gear::GetAngle(a, b,
 
 bool AssassinTask::ButtonPressed(int button) const {
     // ControlScheme::ButtonPressed: not held by another control scheme, then Pad::ButtonPressed (PC 0x10B1710).
-    // PORT: the port has pad button 0 only (the port's kLegs: A / Space, live RE/20 row 5).
-    return button == 0 && m_PortButton0;
+    // PORT: the port has pad buttons 0 (kLegs: A / Space, live RE/20 row 5) and 3 (kHand: B / Shift, row 13).
+    if (button == 0) return m_PortButton0;
+    if (button == 3) return m_PortButton3;
+    return false;
+}
+
+bool AssassinTask::PortButtonJustPressedWithDelay(int button, float delay) const {
+    (void)delay;
+    return button == 3 && m_PortButton3 && !m_PortButton3Before;
 }
 
 int AssassinTask::PortReorientDirectionFromWallCollision(const Vec3&, float, float, const Vec3&, Vec3&) { return 0; }
@@ -71,6 +78,8 @@ void AssassinTask::Update(const port::MoveInput& input, Human& human, float dt) 
     m_PortPreviousStickBand = m_PortStickBand;
     m_PortStickBand = PortStickBand(m_LastInputLength);
     m_PortButton0 = input.held(port::kLegs);
+    m_PortButton3Before = m_PortButton3;
+    m_PortButton3 = input.held(port::kHand);
 
     // PORT: the task's FSM runs the current context's update; the port has the ground one. The game's UpdateGround
     // (PC 0xE049A0) first runs a chain of handlers (mission interaction, rest, loot, formations, weapons, fight,
@@ -350,13 +359,15 @@ void AssassinTask::UpdateGroundMovement(IHuman& human, IHumanGround& ground, con
         return;
     }
     // PullDown (PC 0xDFA6CA): from EdgeStop while the stick still points within 70 degrees of the edge's normal, or
-    // on a grasp press (pad button 3, ButtonJustPressedWithDelay(3, 0.2)). PORT: the port has no button 3, and the
-    // prompt (ControlTypes +4 = 0x38) isn't ported.
+    // on a grasp press (pad button 3, the empty hand; live RE/20 row 13: Shift at the look-down hangs from the edge).
+    // PORT: +0x95D (blocks the press) is never set, and the prompt (ControlTypes +4 = 0x38) isn't ported.
     if (ground.CanPullDownOnEdge(gapB)) {
         if (ground.IsInEdgeStop()) {
             if (m_LastInputLength > 0.35f &&
                 Gear::GetAngleAbsolute(gapB.m_EdgeNormal, m_LastRelativeDirection) < 1.2217305f)
                 ground.DoPullDownOnEdge(gapB);
+        } else if (PortButtonJustPressedWithDelay(3, 0.2f)) {
+            ground.DoPullDownOnEdge(gapB);
         }
     }
 }

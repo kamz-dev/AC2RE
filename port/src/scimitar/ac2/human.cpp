@@ -62,6 +62,19 @@ ActorContext* HumanContextBundle::Get(HumanContextId id) {
 
 Human::Human() {
     SetPortHeading(kPortHeadingNormal);
+    SetInitialContext(kMainTrack, HumanContextId::Ground, [this] { InitMainTrack(); });
+    AIActor::Enter();
+}
+
+ActorContext* Human::GetContextByID(long track, HumanContextId id) {
+    // PORT: only the main track has contexts in the port.
+    return track == kMainTrack ? m_ContextBundle.Get(id) : nullptr;
+}
+
+void Human::InitMainTrack() {
+    TransitionSetupDataToMovement{HumanGroundData::MovementState_WaitLow, 0.0f, 0.5f,
+                                  TransitionToMotionType_BlendWalkToJog}
+        .SetupTransitionData(m_GroundData);
 }
 
 void Human::SetPortHeading(const PortHeadingSettings& heading) {
@@ -76,35 +89,33 @@ void Human::SetPortHeading(const PortHeadingSettings& heading) {
 Human::~Human() = default;
 
 void Human::ForceContext(HumanContextId id) {
-    m_CurrentContext = m_PreviousContext = id;
-    m_RequestedContext = HumanContextId::None;
-    m_TimeInContext = 0;
+    if (ActorContext* context = m_ContextBundle.Get(id)) PortForceContext(kMainTrack, context);
+    m_Tracks[kMainTrack].m_PreviousContextID = id;
+    m_PortTimeInContext = 0;
+    m_PortTimedContext = GetCurrentContext();
 }
 
 void Human::Update(const port::MoveInput& input, const port::World& world, float dt) {
     // The player's controller (AssassinTask, port/src/scimitar/ac2/assassin_task.h) or an AI drives the contexts
     // through their interfaces before this runs.
     m_PortWorld = &world;
-    m_RequestedContext = HumanContextId::None;
     m_PortRootMotion = {};
-    ActorContext* ctx = m_ContextBundle.Get(m_CurrentContext);
-    if (ctx) ctx->Update(input, world, dt);
-    // PC 0x933480: after the actor's update (the contexts), EdgeClampingComputation, then UpdateUnbalanceIgnoreList
-    // (PC 0x92E420; not ported). PORT: the physics step follows as the context's after-physics phase.
+    const PortUpdateArgs args{input, world, dt};
+    // AIActor::Update (PC 0x7AC40): every track's Update(0). A context switches inside its own update or inside a
+    // controller's command (AIActor::TransitToContext, at once); a track that switched before this is skipped once.
+    UpdateTracks(0, args);
+    // Then EdgeClampingComputation and UpdateUnbalanceIgnoreList (PC 0x92E420; not ported).
     EdgeClampingComputation();
-    if (ctx) ctx->UpdateAfterPhysics(world, dt);
-    m_TimeInContext += dt;
+    // PORT: the physics step (the root motion applied, the ground test) is the main track's Update(1), which the game
+    // runs from Human::UpdateAfterPhysics (PC 0x922390 -> AIActor::UpdateAfterPhysics PC 0x7AC50) after physics.
+    AIActor::UpdateAfterPhysics(args);
 
-    // PORT: the game's switching goes through its FSMs and interface commands; not decoded yet.
-    HumanContextId next = m_RequestedContext;
-    if (next == HumanContextId::None || next == m_CurrentContext) return;
-    ActorContext* to = m_ContextBundle.Get(next);
-    if (!to) return;  // a context the port doesn't have yet: stay
-    if (ActorContext* from = m_ContextBundle.Get(m_CurrentContext)) from->Exit();
-    m_PreviousContext = m_CurrentContext;
-    m_CurrentContext = next;
-    m_TimeInContext = 0;
-    to->Enter();
+    if (GetCurrentContext() != m_PortTimedContext) {
+        m_PortTimedContext = GetCurrentContext();
+        m_PortTimeInContext = 0;
+    } else {
+        m_PortTimeInContext += dt;
+    }
 }
 
 // --- Gaps and edge clamping (RE/11_ground.md 16) ---

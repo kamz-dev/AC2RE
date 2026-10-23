@@ -141,8 +141,6 @@ Vec3 RotateVectorToVectorWithAngularSpeed(const Vec3& from, const Vec3& to, floa
 HumanGround::HumanGround(Human& human) : ActorContext(human) {
     // PORT: the game calls LocalInit through the vftable when the actor is initialised; the port does it here.
     LocalInit();
-    // PORT: the port starts in Wait without running its Enter; this is the part of EnterWait the port needs.
-    m_Human.m_IsEdgeClampingActive = true;
 }
 
 void HumanGround::LocalInit() {
@@ -712,8 +710,21 @@ bool ClampsAtEdges(HumanGround::State state) {
 }  // namespace
 
 void HumanGround::Exit() {
-    // The current state's Exit runs as the context is left.
+    // _ExitHumanGround (PC 0x634C00): the active branch's Exits, the leaf's first (RE/10_human_update.md 4). PORT: the
+    // Exits of the port's states.
+    if (m_MoveState == State::TurnOnSpot) ExitTurnOnSpot();
+    if (m_MoveState == State::CrouchWait || m_MoveState == State::CrouchMove) SetCrouched(false);
+    if (m_MoveState == State::MoveCycle) ExitMoveCycle();
+    m_PortMoveCycleEntryPending = false;
     if (ClampsAtEdges(m_MoveState)) m_Human.m_IsEdgeClampingActive = false;
+}
+
+void HumanGround::Update(long phase, const PortUpdateArgs& args) {
+    // _UpdateHumanGround(phase), PC 0x6381D0.
+    if (phase == 0)
+        UpdateMainPhase(args.world, args.dt);
+    else
+        UpdateAfterPhysicsPhase(args.world, args.dt);
 }
 
 void HumanGround::SwitchMoveState(State next) {
@@ -763,7 +774,7 @@ void HumanGround::SwitchMoveState(State next) {
             m_WaitState = State::Idle;
             break;
         case State::EdgeStop:  // EnterEdgeStop (Mac 0xFC27A2): the unbalance action 115916159
-            m_PortAction.Start(m_Human.GetPortActionLengths().edgeStopUnbalance);
+            m_PortAction.Start(m_Human.GetPortActionLengths().edgeStop);
             break;
         default: break;
     }
@@ -787,13 +798,11 @@ float HumanGround::PortSpeedFromRatio() const {
     return s[i] + (s[i + 1] - s[i]) * f;
 }
 
-void HumanGround::Update(const port::MoveInput&, const port::World& world, float dt) {
+void HumanGround::UpdateMainPhase(const port::World& world, float dt) {
     Human& h = m_Human;
 
     // _UpdateMove (PC 0x634D20): UpdateMoveMain, then the current child's update and its transitions, in the
     // game's order.
-    // PORT: the deferred edge command (see m_PortPendingCommand).
-    if (RunPendingCommand()) return;  // the context is being left
     // PORT: EdgeStop is Navigation's child, not Move's, so Move's update doesn't run in it.
     if (m_MoveState != State::EdgeStop) UpdateMoveMain(dt);
     switch (m_MoveState) {
@@ -942,6 +951,12 @@ void HumanGround::Update(const port::MoveInput&, const port::World& world, float
         case State::Roll:
             m_PortSpeed = m_PortEntrySpeed * (1.0f - m_PortAction.Progress());
             break;
+        case State::EdgeStop:
+            // Live (session 6): still during the unbalance, then backwards at a steady ~0.75 m/s until EdgeStop ends.
+            m_PortSpeed = m_PortAction.elapsed < h.GetPortActionLengths().edgeStopUnbalance
+                              ? 0.0f
+                              : -h.GetPortGroundSpeeds().edgeStopStepBack;
+            break;
         default:
             m_PortSpeed = 0;
             break;
@@ -958,7 +973,7 @@ void HumanGround::Update(const port::MoveInput&, const port::World& world, float
     h.m_PortRootMotion = forwardFromYaw(h.m_Yaw) * (m_PortSpeed * dt);
 }
 
-void HumanGround::UpdateAfterPhysics(const port::World& world, float dt) {
+void HumanGround::UpdateAfterPhysicsPhase(const port::World& world, float dt) {
     // PORT: the character component moves by the (possibly clamped) root motion; then the ground test.
     Human& h = m_Human;
     h.m_Velocity = dt > 0 ? h.m_PortRootMotion * (1.0f / dt) : Vec3{};
@@ -977,8 +992,9 @@ void HumanGround::UpdateAfterPhysics(const port::World& world, float dt) {
     h.m_Position = next;
     if (!ground || *ground < next.z - h.GetPortGroundSpeeds().stepDownHeight) {
         // The game leaves the ground through _TransitFromMoveToInAirMain / _TransitFromNavigationToInAirMain etc.
-        // PORT: the port switches directly when the ground drops away.
-        h.RequestContext(HumanContextId::InAir);
+        // (PC 0x5F14C0 / 0x5FA7D0: TransitToContext(InAir) with their Exec). PORT: the port switches when the ground
+        // drops away, without their tests and Execs.
+        h.TransitToContext(HumanContextId::InAir);
         return;
     }
     h.m_Position.z = *ground;
@@ -1037,8 +1053,9 @@ bool HumanGround::TestMoveToLedgeOnLedgePullDown(const Gap& gap) const {
 }
 
 bool HumanGround::TestEdgeStopToLedgeOnLedgePullDown(const Gap& gap) const {
-    // Mac 0xFCB974: once the unbalance action (115916159) has finished, the same checks.
-    if (!m_PortAction.HasFinished()) return false;
+    // Mac 0xFCB974: once the unbalance action (115916159) has finished, the same checks. PORT: the stand-in action
+    // covers the whole EdgeStop; the unbalance is its first part.
+    if (m_PortAction.elapsed < m_Human.GetPortActionLengths().edgeStopUnbalance) return false;
     return TestMoveToLedgeOnLedgePullDown(gap);
 }
 
@@ -1047,10 +1064,11 @@ bool HumanGround::CanPullDownOnEdge(const Gap& gap) {
 }
 
 void HumanGround::DoPullDownOnEdge(const Gap& gap) {
-    // The Exec (Mac 0xF98DA6 from Move, 0xF9B884 from EdgeStop) copies the gap into the Ledge data, and the context
-    // changes to Ledge.
-    m_PortPendingCommand = PortCommand::LedgePullDown;
-    m_PortPendingGap = gap;
+    // _TransitFrom{Move,EdgeStop}ToLedge...LedgePullDown (Mac 0xF99D34 / 0xF9A45A): TransitToContext(Ledge) at once;
+    // the Exec (Mac 0xF98DA6 / 0xF9B884) copies the gap into the Ledge data. PORT: the port has no Ledge context yet,
+    // so TransitToContext does nothing and the Human stays on the ground.
+    if (!CanPullDownOnEdge(gap)) return;
+    m_Human.TransitToContext(HumanContextId::Ledge);
 }
 
 bool HumanGround::TestIsEdgeValidForFall(const Gap& gap) const {
@@ -1072,10 +1090,12 @@ bool HumanGround::CanFallOffEdge(const Gap& gap, bool force, bool b) {
 }
 
 void HumanGround::DoFallOffEdge(const Gap& gap, float value) {
-    // The float goes on to InAir (high profile 1, else 0; not decoded). PORT: not passed on.
+    // _TransitFromHumanGroundToInAirOnHumanGroundInterfaceCommand_FallOffEdge (PC 0x60BA30): TransitToContext(InAir)
+    // at once, with the Exec PC 0x6056F0 -> ExecuteFallOffEdge PC 0x5FC890 (the gap and the float: high profile 1,
+    // else 0). PORT: the Exec isn't decoded.
     (void)value;
-    m_PortPendingCommand = PortCommand::FallOffEdge;
-    m_PortPendingGap = gap;
+    if (!CanFallOffEdge(gap, false, false)) return;
+    m_Human.TransitToContext(HumanContextId::InAir);
 }
 
 bool HumanGround::CanEnterLookDown() {
@@ -1091,26 +1111,6 @@ void HumanGround::DoEnterLookDown(const Gap& gap) {
     if (!CanEnterLookDown()) return;
     m_LookDownGap = gap;
     m_WaitState = State::LookDown;
-}
-
-bool HumanGround::RunPendingCommand() {
-    const PortCommand command = m_PortPendingCommand;
-    m_PortPendingCommand = PortCommand::None;
-    switch (command) {
-        case PortCommand::FallOffEdge:
-            if (CanFallOffEdge(m_PortPendingGap, false, false)) {
-                m_Human.RequestContext(HumanContextId::InAir);
-                return true;
-            }
-            break;
-        case PortCommand::LedgePullDown:
-            // PORT: no Ledge context yet; Human::Update keeps the Human in Ground.
-            if (CanPullDownOnEdge(m_PortPendingGap)) m_Human.RequestContext(HumanContextId::Ledge);
-            break;
-        case PortCommand::None:
-            break;
-    }
-    return false;
 }
 
 }  // namespace scimitar::ac2
