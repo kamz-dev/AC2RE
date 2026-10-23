@@ -38,7 +38,7 @@ Status: `open` / `claimed` / `partial` / `done`.
 | Ladder | | open | `16_ladder.md` |
 | HayStack + Kiosk | | open | `17_haystack_kiosk.md` |
 | Swim | | open | `18_swim.md` |
-| Guidance (climbable geometry data) | | open | `19_guidance.md` |
+| Guidance (climbable geometry data) | kamz-dev (`kamz-dev/guidance`) | claimed | `19_guidance.md` |
 | Input: pad → interpreter → move direction | kamz-dev (`kamz-dev/ground-re`, PR #1) | partial | `21_input.md`: the ground controller (`AssassinTask::UpdateGroundMovement` PC 0xDF7FE0) decoded and ported (2026-10-21), its gaps and edge clamping (2026-10-22); left: PC 0xDF8C2D–0xDF941E (ladders, beams, spring jump), the edge-jump decision, the other contexts' controllers |
 
 ## P3: Replay comparison, triage and fixes
