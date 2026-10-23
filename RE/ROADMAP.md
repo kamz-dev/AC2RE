@@ -32,7 +32,7 @@ Status: `open` / `claimed` / `partial` / `done`.
 |---|---|---|---|
 | Ground (locomotion only) | kamz-dev (`kamz-dev/ground-re`, PR #1) | partial | `11_ground.md` sections 1–16: every movement state of HumanGround decoded and matched (2026-10-21); edge clamping (Human, 16) decoded and ported, the edge commands (LookDown, EdgeStop, FallOffEdge, LedgePullDown, 17) decoded and checked live (2026-10-22); 17 ported with stand-ins (no Ledge context yet); `HumanGroundData` property names (with 22_reflection), the outside drivers (controller → `21_input.md`, free-run / guidance → `19_guidance.md`) |
 | InAir (jumps, falls, catches, landings) | | open | `12_in_air.md` |
-| Ledge + Climb | | open | `13_ledge_climb.md` |
+| Ledge + Climb | kamz-dev (`kamz-dev/ledge`: Ledge first) | claimed | `13_ledge_climb.md` |
 | NarrowObject (beams, poles) | | open | `14_narrow_object.md` |
 | Walling (wall runs) | | open | `15_walling.md` |
 | Ladder | | open | `16_ladder.md` |
