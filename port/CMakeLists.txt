@@ -7,6 +7,7 @@ target_include_directories(ac2_sdk INTERFACE ../sdk/include)
 
 add_library(ac2_movement STATIC
   src/scimitar/ai_actor.cpp
+  src/scimitar/guidance.cpp
   src/scimitar/ac2/assassin_task.cpp
   src/scimitar/ac2/edge_clamping.cpp
   src/scimitar/ac2/human.cpp
@@ -31,6 +32,7 @@ add_executable(ac2_tests
   tests/test_ground_landing.cpp
   tests/test_ground_crouch.cpp
   tests/test_edge_clamping.cpp
+  tests/test_guidance.cpp
   tests/test_ledge.cpp
   tests/test_context_switch.cpp
   tests/test_movement.cpp

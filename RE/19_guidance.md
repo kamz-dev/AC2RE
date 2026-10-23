@@ -136,8 +136,21 @@ past it)]; else [p0 + t0·d, t1 > 1 ? p1 : p0 + t1·d].
 `SlopeCosAngle` = `DEFAULT_SLOPE_COS_ANGLE` 0.70703125 (≈ cos 45°), `WallAngle` = `DEFAULT_WALL_ANGLE` 0.3926991
 (22.5°), and **no filter bits**: a component accepts no edge until its data (FastLoad [0x3F00B0]) sets them.
 
-The port's stand-ins until now (`port/world.h`: every box's top edges as lines, "within the radius" tested by the
-port) differ from this in the strictness (`<` radius) and in having no EdgeFilter or subtype mask.
+## 4. The port (`port/src/scimitar/guidance.{h,cpp}`, 2026-10-23)
+The data (`GuidanceObject`'s packing, `LoadDecN4` / `StoreDecN4`, the compressed points, `EdgeFilter::AcceptEdge`),
+`GuidanceContactObject`, `GuidanceZoneSphere` / `GuidanceZoneBox` with both modes, `CastWorld`, and the geometry
+(`IntersectSegmentWithSphere` both forms, `IntersectSegmentWithOOBBox`, `IntersectRayAABBox`, `IntersectSegmentAABBox`,
+`IntersectSegmentOOBBox`, `PointSegmentProjection`) follow the decode above. The gap search (`Human::GetGapList`) and
+the edge clamping (`GetEdgeSegmentNearCharacterPos`) now cast these zones as the game does (contacts, mask −1).
+PORT stand-ins:
+- the broadphase is the world's own AABB overlap (`port::World::GetGuidanceSystemComponents`); no
+  `MultiInertComponent` split, no entity children;
+- a component carries its owner entity's matrix (`m_PortGlobalMatrix`), orthonormal, so `SetInverse` is the affine
+  inverse; the zone has no parent entity;
+- the component's vftable +0xC4 check before a sphere or box collide isn't decoded (passes);
+- `PortAddPoint` rounds to the nearest 5 mm (the game's points are precompiled);
+- `BoxWorld` makes each box an entity with one component: its four top edges, LedgeGrab, top face / side face,
+  `EdgeFilter` WallGround (the game's data sets its own); the box zone's AABB is its corners' (not decoded).
 
 ## Open
 - The other zones (box: edge clamping's `GetEdgeSegmentNearCharacterPos`; capsule, plane, mesh), the cut mode,

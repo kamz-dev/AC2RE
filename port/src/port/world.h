@@ -4,38 +4,27 @@
 
 #include <algorithm>
 #include <cmath>
+#include <memory>
 #include <optional>
 #include <vector>
 
+#include "scimitar/guidance.h"
 #include "scimitar/math.h"
 
 namespace port {
-
-// A guidance line as a cast reports it (the game's GuidanceContactObject, 0x60 bytes: the edge P0 +0x10 / P1 +0x20,
-// the two faces' normals +0x30 / +0x40, the subtype byte +0x5C & 0x3F; RE/11_ground.md 16).
-struct GuidanceLine {
-    scimitar::Vec3 p0, p1;
-    scimitar::Vec3 faceNormal0, faceNormal1;
-    int subType = 0;
-};
 
 class World {
 public:
     virtual ~World() = default;
     // Height of the walkable surface under (x, y) at or below `fromZ`, if any.
     virtual std::optional<float> groundBelow(float x, float y, float fromZ) const = 0;
-    // The guidance lines a GuidanceZoneSphere (GuidanceZone::CastWorld, PC 0x3FEA00) or a GuidanceZoneBox finds. The
-    // box is given by its matrix (the axes and the origin) and its local bounds. PORT: the game casts the guidance
-    // data of the entities the zone overlaps (CastEntityInternal, not decoded); the port's worlds supply their own
-    // lines and test the overlap themselves. A world without guidance finds none.
-    virtual void CastGuidanceSphere(const scimitar::Vec3& center, float radius, std::vector<GuidanceLine>& out) const {
-        (void)center, (void)radius, (void)out;
+    // The guidance components whose entities overlap the box (min, max): stands in for GuidanceZone::CastWorld's
+    // broadphase (PhysicWorkspace::GetOverlappingEntities, PC 0x17C080, or the Havok broadphase) and the entities'
+    // components (RE/19_guidance.md 3). A world without guidance has none.
+    virtual void GetGuidanceSystemComponents(const scimitar::Vec3& min, const scimitar::Vec3& max,
+                                             std::vector<const scimitar::GuidanceSystemComponent*>& out) const {
+        (void)min, (void)max, (void)out;
     }
-    struct OrientedBox {
-        scimitar::Vec3 axisX, axisY, axisZ, origin;
-        scimitar::Vec3 min, max;  // local bounds
-    };
-    virtual void CastGuidanceBox(const OrientedBox& box, std::vector<GuidanceLine>& out) const { (void)box, (void)out; }
     // Whether a capsule (segment a-b, radius) touches nothing: stands in for the game's physics query
     // (Human::CheckClearanceCapsuleGlobal, PC 0x934800). A world without collision is always clear.
     virtual bool capsuleIsClear(const scimitar::Vec3& a, const scimitar::Vec3& b, float radius) const {
@@ -66,7 +55,10 @@ public:
     };
 
     explicit BoxWorld(bool hasFloor = true, float floorZ = 0) : hasFloor_(hasFloor), floorZ_(floorZ) {}
-    void add(Box b) { boxes_.push_back(b); }
+    void add(Box b) {
+        boxes_.push_back(b);
+        addGuidance(b);
+    }
 
     std::optional<float> groundBelow(float x, float y, float fromZ) const override {
         std::optional<float> best;
@@ -141,67 +133,56 @@ public:
         return best;
     }
 
-    // PORT: every box's four top edges are guidance lines, with the top face's normal (0, 0, 1) and the side face's
-    // outward normal. Edges shared by flush boxes are not removed.
-    void CastGuidanceSphere(const scimitar::Vec3& center, float radius, std::vector<GuidanceLine>& out) const override {
-        // PORT: a line counts when it comes within the radius (CastEntityInternal's test isn't decoded).
-        forEachTopEdge([&](const GuidanceLine& line) {
-            if (distanceToSegmentSq(center, line.p0, line.p1) <= radius * radius) out.push_back(line);
-        });
-    }
-
-    void CastGuidanceBox(const OrientedBox& box, std::vector<GuidanceLine>& out) const override {
-        // PORT: a line counts when part of it lies inside the box (CastEntityInternal's test isn't decoded).
-        forEachTopEdge([&](const GuidanceLine& line) {
-            if (segmentTouchesBox(box, line.p0, line.p1)) out.push_back(line);
-        });
+    // PORT: each box is an entity with one GuidanceSystemComponent: its four top edges, LedgeGrab, between the top
+    // face (normal +Z) and the side face, with an EdgeFilter that takes ground/wall edges (the game's data sets its
+    // own; RE/19 1). Edges shared by flush boxes are not removed.
+    void GetGuidanceSystemComponents(const scimitar::Vec3& min, const scimitar::Vec3& max,
+                                     std::vector<const scimitar::GuidanceSystemComponent*>& out) const override {
+        for (const Guidance& g : guidance_) {
+            if (g.max.x < min.x || g.min.x > max.x || g.max.y < min.y || g.min.y > max.y || g.max.z < min.z ||
+                g.min.z > max.z)
+                continue;
+            out.push_back(g.component.get());
+        }
     }
 
 private:
-    template <class F>
-    void forEachTopEdge(F&& f) const {
-        for (const Box& b : boxes_) {
-            const float z = b.max.z;
-            const scimitar::Vec3 c[4] = {{b.min.x, b.min.y, z}, {b.max.x, b.min.y, z}, {b.max.x, b.max.y, z},
-                                         {b.min.x, b.max.y, z}};
-            const scimitar::Vec3 side[4] = {{0, -1, 0}, {1, 0, 0}, {0, 1, 0}, {-1, 0, 0}};
-            for (int i = 0; i < 4; ++i) f(GuidanceLine{c[i], c[(i + 1) % 4], {0, 0, 1}, side[i], 0});
-        }
-    }
+    struct Guidance {
+        std::unique_ptr<scimitar::GuidanceSystemComponent> component;
+        scimitar::Vec3 min, max;  // its world AABB
+    };
 
-    static float distanceToSegmentSq(const scimitar::Vec3& p, const scimitar::Vec3& a, const scimitar::Vec3& b) {
-        const scimitar::Vec3 ab = b - a;
-        const float len2 = scimitar::dot(ab, ab);
-        float t = len2 > 0 ? scimitar::dot(p - a, ab) / len2 : 0.0f;
-        t = std::clamp(t, 0.0f, 1.0f);
-        const scimitar::Vec3 d = a + ab * t - p;
-        return scimitar::dot(d, d);
-    }
-
-    // Clips the segment against the box's three slabs.
-    static bool segmentTouchesBox(const OrientedBox& box, const scimitar::Vec3& a, const scimitar::Vec3& b) {
-        const scimitar::Vec3 axes[3] = {box.axisX, box.axisY, box.axisZ};
-        const float lo[3] = {box.min.x, box.min.y, box.min.z}, hi[3] = {box.max.x, box.max.y, box.max.z};
-        float t0 = 0, t1 = 1;
-        for (int i = 0; i < 3; ++i) {
-            const float pa = scimitar::dot(a - box.origin, axes[i]);
-            const float d = scimitar::dot(b - a, axes[i]);
-            if (std::fabs(d) < 1e-9f) {
-                if (pa < lo[i] || pa > hi[i]) return false;
-                continue;
-            }
-            float ta = (lo[i] - pa) / d, tb = (hi[i] - pa) / d;
-            if (ta > tb) std::swap(ta, tb);
-            t0 = std::max(t0, ta);
-            t1 = std::min(t1, tb);
-            if (t0 > t1) return false;
+    void addGuidance(const Box& b) {
+        auto c = std::make_unique<scimitar::GuidanceSystemComponent>();
+        // The entity sits at the centre of the top face; its points are local to it.
+        const scimitar::Vec3 origin{(b.min.x + b.max.x) * 0.5f, (b.min.y + b.max.y) * 0.5f, b.max.z};
+        c->m_PortGlobalMatrix = Gear::Matrix44::Translation(origin);
+        const float hx = (b.max.x - b.min.x) * 0.5f, hy = (b.max.y - b.min.y) * 0.5f;
+        const scimitar::Vec3 corner[4] = {{-hx, -hy, 0}, {hx, -hy, 0}, {hx, hy, 0}, {-hx, hy, 0}};
+        const scimitar::Vec3 side[4] = {{0, -1, 0}, {1, 0, 0}, {0, 1, 0}, {-1, 0, 0}};
+        std::uint32_t index[4];
+        for (int i = 0; i < 4; ++i) index[i] = c->PortAddPoint(corner[i]);
+        for (int i = 0; i < 4; ++i) {
+            scimitar::GuidanceObject o;
+            o.SetValid(true);
+            o.SetSubType(scimitar::GuidanceObjectSubTypeLedgeGrab);
+            o.SetLineIndex0(index[i]);
+            o.SetLineIndex1(index[(i + 1) % 4]);
+            o.SetLineNormalLeft({0, 0, 1});
+            o.SetLineNormalRight(side[i]);
+            c->m_GuidanceObjects.push_back(o);
         }
-        return true;
+        c->m_EdgeFilter.m_Filter = scimitar::EdgeFilter::EdgeWallGround;
+        Guidance g;
+        c->PortGetAABBox(g.min, g.max);
+        g.component = std::move(c);
+        guidance_.push_back(std::move(g));
     }
 
     bool hasFloor_;
     float floorZ_;
     std::vector<Box> boxes_;
+    std::vector<Guidance> guidance_;
 };
 
 }  // namespace port

@@ -12359,6 +12359,8 @@ FFF84	c	char *
 3FAA91	c	Block
 3FACD0	F	Microsoft VisualC 2-14/net runtime
 3FAE27	c	Block
+3FB3E0	F	Mac 0x9AFF40 GuidanceZoneSphere::Cast(accumulator, component, cut): enabled component -> component vt +0xB8 InternalCollideWithZoneSphere
+3FB3E0	c	Mac 0x9AFF40 GuidanceZoneSphere::Cast(accumulator, component, cut): enabled component -> component vt +0xB8 InternalCollideWithZoneSphere
 3FB472	c	float
 3FB475	c	int
 3FB479	c	int
@@ -12405,8 +12407,20 @@ FFF84	c	char *
 3FDAC0	F	Microsoft VisualC 2-14/net runtime
 3FDAD0	F	Microsoft VisualC 2-14/net runtime
 3FDAE0	F	Microsoft VisualC 2-14/net runtime
+3FDBC0	F	port_: inlined on Mac. Point i of the component: the three u16 at CompressPoints + 6*i, times 0.005, minus g_CompressVector3To48_Range (163.84)
+3FDBC0	c	port_: inlined on Mac. Point i of the component: the three u16 at CompressPoints + 6*i, times 0.005, minus g_CompressVector3To48_Range (163.84)
 3FDD67	c	Block
 3FE207	c	dwTlsIndex
+3FE3C0	F	Mac 0x62C770 GuidanceZone::AddContactPoint(accumulator, component, object): the whole line as a GuidanceContactObject (world space), kept when (1 << subtype) & mask and not degenerate
+3FE3C0	c	Mac 0x62C770 GuidanceZone::AddContactPoint(accumulator, component, object): the whole line as a GuidanceContactObject (world space), kept when (1 << subtype) & mask and not degenerate
+3FE4F0	F	Mac 0x62C2F0 GuidanceZone::AddContactPoint(accumulator, component, object, GuidanceCutObject const&): the cut overload (name port_: IDA can't hold two overloads)
+3FE4F0	c	Mac 0x62C2F0 GuidanceZone::AddContactPoint(accumulator, component, object, GuidanceCutObject const&): the cut overload (name port_: IDA can't hold two overloads)
+3FE720	F	Mac 0x62CC70 GuidanceZone::CastEntityInternal(entity, accumulator, cut): a MultiInertComponent's sub-entities in the AABB, else the entity's own GuidanceSystemComponents; each enabled one (dword +4 & 0x4000000) -> zone vt +0x28 Cast(accumulator, component, cut)
+3FE720	c	Mac 0x62CC70 GuidanceZone::CastEntityInternal(entity, accumulator, cut): a MultiInertComponent's sub-entities in the AABB, else the entity's own GuidanceSystemComponents; each enabled one (dword +4 & 0x4000000) -> zone vt +0x28 Cast(accumulator, component, cut)
+3FE950	F	Mac 0x62D0D0 GuidanceZone::CastEntities
+3FE950	c	Mac 0x62D0D0 GuidanceZone::CastEntities
+3FEA00	F	Mac 0x62D230 GuidanceZone::CastWorld(report, PhysicWorkspace*, cut, subTypeMask, World*, clear): zone AABB (vt +0x20) -> GetOverlappingEntities (layer 5) or the Havok broadphase -> CastEntityInternal per entity and per child (entity +0x140 / +0x146). RE/19_guidance.md
+3FEA00	c	Mac 0x62D230 GuidanceZone::CastWorld(report, PhysicWorkspace*, cut, subTypeMask, World*, clear): zone AABB (vt +0x20) -> GetOverlappingEntities (layer 5) or the Havok broadphase -> CastEntityInternal per entity and per child (entity +0x140 / +0x146). RE/19_guidance.md
 3FEC8A	c	dwTlsIndex
 3FF600	F	Microsoft VisualC 2-14/net runtime
 3FF610	F	Microsoft VisualC 2-14/net runtime
@@ -12512,6 +12526,10 @@ FFF84	c	char *
 40E181	c	Block
 40E310	F	Microsoft VisualC 2-14/net runtime
 40EA81	c	Block
+40EFE0	F	Mac 0x9F79E0 GuidanceSystemComponent::IsValid(object): Valid bit 0, then EdgeFilter::AcceptEdge(component +0x1C, the two normals rotated to world)
+40EFE0	c	Mac 0x9F79E0 GuidanceSystemComponent::IsValid(object): Valid bit 0, then EdgeFilter::AcceptEdge(component +0x1C, the two normals rotated to world)
+40F390	F	Mac 0x3F0ED0 GuidanceSystemComponent::InternalCollideWithZoneSphere: centre to local space; each IsValid object: CollideWithSphere -> AddContactPoint, or (cut) IncludeCutWithSphere -> AddContactPoint(cut). Radius at zone +0x60.
+40F390	c	Mac 0x3F0ED0 GuidanceSystemComponent::InternalCollideWithZoneSphere: centre to local space; each IsValid object: CollideWithSphere -> AddContactPoint, or (cut) IncludeCutWithSphere -> AddContactPoint(cut). Radius at zone +0x60.
 40FD02	c	int
 40FD03	c	void *
 40FD05	c	int
@@ -12543,6 +12561,10 @@ FFF84	c	char *
 413920	F	Microsoft VisualC 2-14/net runtime
 414140	F	Mac 0x144A2D4 GuidanceContactObject::GetLineGlobalFlatNormal
 414140	c	Mac 0x144A2D4 GuidanceContactObject::GetLineGlobalFlatNormal
+415AF0	F	Mac 0xA4B360 GuidanceObject::GetLineIndex0: (packing >> 6) & 0x1FFF
+415AF0	c	Mac 0xA4B360 GuidanceObject::GetLineIndex0: (packing >> 6) & 0x1FFF
+415B00	F	Mac 0xA4B350 GuidanceObject::GetLineIndex1: packing >> 19
+415B00	c	Mac 0xA4B350 GuidanceObject::GetLineIndex1: packing >> 19
 415BE0	c	float
 415BE3	c	int
 415BE7	c	int
@@ -12558,11 +12580,17 @@ FFF84	c	char *
 415E30	F	Microsoft VisualC 2-14/net runtime
 415E40	F	Microsoft VisualC 2-14/net runtime
 415E50	F	Microsoft VisualC 2-14/net runtime
+416260	F	Mac 0x803360 GuidanceObject::CollideWithSphere: the decoded segment vs the sphere (IntersectSegmentWithSphere)
+416260	c	Mac 0x803360 GuidanceObject::CollideWithSphere: the decoded segment vs the sphere (IntersectSegmentWithSphere)
 41640F	c	float
 416412	c	int
 416413	c	int
 416417	c	int
 41641B	c	int
+416B50	F	Mac 0xA4B420 GuidanceObject::GetLineNormalLeft: DecN4 at +4 (x, y, z 10-bit signed / 511)
+416B50	c	Mac 0xA4B420 GuidanceObject::GetLineNormalLeft: DecN4 at +4 (x, y, z 10-bit signed / 511)
+416B90	F	Mac 0xA4B4E0 GuidanceObject::GetLineNormalRight: DecN4 at +8
+416B90	c	Mac 0xA4B4E0 GuidanceObject::GetLineNormalRight: DecN4 at +8
 417770	F	Microsoft VisualC 2-14/net runtime
 4177F7	c	Block
 417BF7	c	Block
@@ -13476,6 +13504,8 @@ FFF84	c	char *
 485270	F	Microsoft VisualC 2-14/net runtime
 485280	F	Microsoft VisualC 2-14/net runtime
 485290	F	Microsoft VisualC 2-14/net runtime
+4858E0	F	Mac 0x4513B0 EdgeFilter::AcceptEdge(filter, nLeft, nRight): faces by n.z vs SlopeCosAngle (ground / wall / ceiling); filter bits (PC LSB-first) 1 WallWall (angle > WallAngle), 2 WallGround, 4 WallCeiling, 0x10 GroundCeiling
+4858E0	c	Mac 0x4513B0 EdgeFilter::AcceptEdge(filter, nLeft, nRight): faces by n.z vs SlopeCosAngle (ground / wall / ceiling); filter bits (PC LSB-first) 1 WallWall (angle > WallAngle), 2 WallGround, 4 WallCeiling, 0x10 GroundCeiling
 485BE7	c	Block
 485CD7	c	Block
 485DC7	c	Block
