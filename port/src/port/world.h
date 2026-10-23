@@ -4,6 +4,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <vector>
@@ -24,6 +26,21 @@ public:
     virtual void GetGuidanceSystemComponents(const scimitar::Vec3& min, const scimitar::Vec3& max,
                                              std::vector<const scimitar::GuidanceSystemComponent*>& out) const {
         (void)min, (void)max, (void)out;
+    }
+    // A collision mesh as the guidance workspace slices it (scimitar::MeshShape: a float3 vertex array and u16
+    // triangle indices, in its entity's local space; RE/19_guidance.md 6).
+    struct CollisionMesh {
+        std::vector<scimitar::Vec3> vertices;
+        std::vector<std::uint16_t> indices;  // 3 per triangle
+    };
+    // Every collision mesh whose entity overlaps the world box (min, max), with its entity's global matrix: stands in
+    // for GuidanceWorkspace::BroadPhase (PhysicWorkspace::GetOverlappingPhysicComponents on layer 5, the
+    // MultiInertComponent split) and the components' MeshShapes. PORT: the world's own overlap test; every triangle
+    // of an overlapping mesh is given (the game's MOPP query returns a superset too). A world without collision has
+    // none.
+    virtual void ForEachCollisionMesh(const scimitar::Vec3& min, const scimitar::Vec3& max,
+                                      const std::function<void(const Gear::Matrix44&, const CollisionMesh&)>& fn) const {
+        (void)min, (void)max, (void)fn;
     }
     // Whether a capsule (segment a-b, radius) touches nothing: stands in for the game's physics query
     // (Human::CheckClearanceCapsuleGlobal, PC 0x934800). A world without collision is always clear.
@@ -54,10 +71,26 @@ public:
         scimitar::Vec3 min, max;
     };
 
-    explicit BoxWorld(bool hasFloor = true, float floorZ = 0) : hasFloor_(hasFloor), floorZ_(floorZ) {}
+    explicit BoxWorld(bool hasFloor = true, float floorZ = 0) : hasFloor_(hasFloor), floorZ_(floorZ) {
+        buildFloorMesh();
+    }
     void add(Box b) {
         boxes_.push_back(b);
         addGuidance(b);
+        addMesh(b);
+    }
+
+    // PORT: each box is a closed mesh (12 triangles, wound so their normals face out) at its centre; the floor is a
+    // 2000 m square of two triangles.
+    void ForEachCollisionMesh(const scimitar::Vec3& min, const scimitar::Vec3& max,
+                              const std::function<void(const Gear::Matrix44&, const CollisionMesh&)>& fn) const override {
+        for (const MeshEntity& m : meshes_) {
+            if (m.max.x < min.x || m.min.x > max.x || m.max.y < min.y || m.min.y > max.y || m.max.z < min.z ||
+                m.min.z > max.z)
+                continue;
+            fn(m.global, m.mesh);
+        }
+        if (hasFloor_ && floorZ_ >= min.z && floorZ_ <= max.z) fn(floorGlobal_, floorMesh_);
     }
 
     std::optional<float> groundBelow(float x, float y, float fromZ) const override {
@@ -179,8 +212,38 @@ private:
         guidance_.push_back(std::move(g));
     }
 
+    struct MeshEntity {
+        Gear::Matrix44 global;
+        CollisionMesh mesh;
+        scimitar::Vec3 min, max;
+    };
+    void addMesh(const Box& b) {
+        MeshEntity m;
+        const scimitar::Vec3 c = (b.min + b.max) * 0.5f;
+        const scimitar::Vec3 h = (b.max - b.min) * 0.5f;
+        m.global = Gear::Matrix44::Translation(c);
+        for (int i = 0; i < 8; ++i)
+            m.mesh.vertices.push_back({(i & 1) ? h.x : -h.x, (i & 2) ? h.y : -h.y, (i & 4) ? h.z : -h.z});
+        // Two triangles per face, counter-clockwise seen from outside.
+        static const std::uint16_t kFaces[12][3] = {{0, 2, 1}, {1, 2, 3}, {4, 5, 6}, {5, 7, 6},   // -z, +z
+                                                    {0, 1, 4}, {1, 5, 4}, {2, 6, 3}, {3, 6, 7},   // -y, +y
+                                                    {0, 4, 2}, {2, 4, 6}, {1, 3, 5}, {3, 7, 5}};  // -x, +x
+        for (const auto& f : kFaces) m.mesh.indices.insert(m.mesh.indices.end(), {f[0], f[1], f[2]});
+        m.min = b.min;
+        m.max = b.max;
+        meshes_.push_back(std::move(m));
+    }
+    void buildFloorMesh() {
+        floorGlobal_ = Gear::Matrix44::Translation({0, 0, floorZ_});
+        floorMesh_.vertices = {{-1000, -1000, 0}, {1000, -1000, 0}, {1000, 1000, 0}, {-1000, 1000, 0}};
+        floorMesh_.indices = {0, 1, 2, 0, 2, 3};
+    }
+
     bool hasFloor_;
     float floorZ_;
+    std::vector<MeshEntity> meshes_;
+    Gear::Matrix44 floorGlobal_;
+    CollisionMesh floorMesh_;
     std::vector<Box> boxes_;
     std::vector<Guidance> guidance_;
 };

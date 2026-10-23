@@ -19011,6 +19011,8 @@ FFF84	c	char *
 665045	c	int
 665047	c	float
 66504A	c	int
+665A50	F	Mac 0x132B7EA HumanLedge::CastPullDownGuidanceReport (by its callees: CastWorld, the depth detector, the occluded report, the ladder helpers)
+665A50	c	Mac 0x132B7EA HumanLedge::CastPullDownGuidanceReport (by its callees: CastWorld, the depth detector, the occluded report, the ladder helpers)
 66679E	c	void *
 6667AE	c	void *
 6667BD	c	void *
@@ -19036,6 +19038,8 @@ FFF84	c	char *
 667A46	c	int
 667BD6	c	float
 667BD9	c	int
+667C40	F	Mac 0x132BBA8 HumanLedge::UpdatePullDownMain (first call of _UpdatePullDown 0x66A880)
+667C40	c	Mac 0x132BBA8 HumanLedge::UpdatePullDownMain (first call of _UpdatePullDown 0x66A880)
 667D03	c	float
 667D06	c	int
 667E1F	c	void *
@@ -19206,6 +19210,8 @@ FFF84	c	char *
 66DD00	c	int
 66DD08	c	int
 66DD09	c	int
+66DE40	F	Mac 0x13477BA HumanLedge::EnterHumanLedge (RE/13 4)
+66DE40	c	Mac 0x13477BA HumanLedge::EnterHumanLedge (RE/13 4)
 66E1E0	c	float
 66E77D	c	float
 66E780	c	int
@@ -19229,6 +19235,8 @@ FFF84	c	char *
 66F273	c	int
 66F27B	c	int
 66F27C	c	int
+66F3B0	F	Mac 0x1347BE0 HumanLedge::_EnterHumanLedge (Enter 0x670A00 jumps here)
+66F3B0	c	Mac 0x1347BE0 HumanLedge::_EnterHumanLedge (Enter 0x670A00 jumps here)
 66FB7E	c	void *
 66FBAE	c	int
 66FBAF	c	int
@@ -26853,6 +26861,12 @@ FFF84	c	char *
 91F1F0	F	Mac 0x12CE79C Human::GetBestGapInDirectionInList (IHuman +0x9C)
 91F1F0	c	Mac 0x12CE79C Human::GetBestGapInDirectionInList (IHuman +0x9C)
 91FA07	c	void *
+91FDE0	F	Mac 0x12D61CE Human::ComputeHangWallEntityPosition(pos, sight, up, h0, h1, n0, n1, t0, t1, maxZ): up = hands - toes (in the side plane), sight = up x side, pos = hands mid (max/min z) - 1.1 up - 0.5 sight. RE/19 5
+91FDE0	c	Mac 0x12D61CE Human::ComputeHangWallEntityPosition(pos, sight, up, h0, h1, n0, n1, t0, t1, maxZ): up = hands - toes (in the side plane), sight = up x side, pos = hands mid (max/min z) - 1.1 up - 0.5 sight. RE/19 5
+9200A0	F	Mac 0x12CDE14 Human::ComputeHangFreeEntityPosition(pos, sight, up, h0, h1, n0, n1): pos = hands mid (higher z) - 2.4 K, sight = -flat(n0 + n1), up = K. RE/19 5
+9200A0	c	Mac 0x12CDE14 Human::ComputeHangFreeEntityPosition(pos, sight, up, h0, h1, n0, n1): pos = hands mid (higher z) - 2.4 K, sight = -flat(n0 + n1), up = K. RE/19 5
+9212B0	F	Mac 0x12DBE14 Human::GetToesDestAnchors(toeL, toeR, pos, normal, f, bool): two probes (0xEC9A50) around pos - 1 K + normal (f/2 + 0.25 - 0.5) - 0.2 side; RE/19 5
+9212B0	c	Mac 0x12DBE14 Human::GetToesDestAnchors(toeL, toeR, pos, normal, f, bool): two probes (0xEC9A50) around pos - 1 K + normal (f/2 + 0.25 - 0.5) - 0.2 side; RE/19 5
 922390	F	Mac 0x12EDFBC (Human vftable slot 17)
 922390	c	Mac 0x12EDFBC (Human vftable slot 17)
 922AFE	c	void *
@@ -26905,6 +26919,10 @@ FFF84	c	char *
 92E420	F	Mac 0x12C795C Human::UpdateUnbalanceIgnoreList (last call of Human::Update on both)
 92E420	c	Mac 0x12C795C Human::UpdateUnbalanceIgnoreList (last call of Human::Update on both)
 92F2D6	c	void *
+92F550	F	Mac Human::CastGuidanceDepthDetector (the overload CastPullDownGuidanceReport calls; by call order)
+92F550	c	Mac Human::CastGuidanceDepthDetector (the overload CastPullDownGuidanceReport calls; by call order)
+92F850	F	Mac Human::CreateOccludedGuidanceReport (the overload CastPullDownGuidanceReport calls; by call order)
+92F850	c	Mac Human::CreateOccludedGuidanceReport (the overload CastPullDownGuidanceReport calls; by call order)
 92FA80	c	void (__thiscall *)(void *)
 92FA85	c	int
 92FA87	c	unsigned int
@@ -38214,6 +38232,10 @@ EC4FF7	c	int
 EC4FFE	c	int
 EC5014	c	int
 EC5015	c	int
+EC5210	F	Mac 0xD1D488 RemoveGuidanceObstructedByLadders (by call order)
+EC5210	c	Mac 0xD1D488 RemoveGuidanceObstructedByLadders (by call order)
+EC57D0	F	Mac 0xD1F226 GetNextVerticalLimbPosWithLimbOcclusion
+EC57D0	c	Mac 0xD1F226 GetNextVerticalLimbPosWithLimbOcclusion
 EC678E	c	void *
 EC68BA	c	void *
 EC702B	c	void *
@@ -38240,15 +38262,21 @@ EC740D	c	int
 EC7417	c	int
 EC7427	c	int
 EC7428	c	int
+EC7570	F	Mac 0xD206F8 GetNextVerticalLimbPos (wrapper: no occlusion pointers). RE/19_guidance.md 5
+EC7570	c	Mac 0xD206F8 GetNextVerticalLimbPos (wrapper: no occlusion pointers). RE/19_guidance.md 5
 EC7661	c	void *
 EC7977	c	void *
 EC79B6	c	void *
+EC8800	F	Mac 0xD1A9E0 BuildLadderListFromGuidanceReport (by call order in CastPullDownGuidanceReport)
+EC8800	c	Mac 0xD1A9E0 BuildLadderListFromGuidanceReport (by call order in CastPullDownGuidanceReport)
 EC91F5	c	void *
 EC923F	c	void *
 EC9787	c	struct Concurrency::details::QuickBitSet *
 EC9788	c	this
 EC99BE	c	struct Concurrency::details::QuickBitSet *
 EC99BF	c	this
+EC9A50	F	port_: the toe probe GetToesDestAnchors calls (Mac name not matched yet): a ray along the normal; else a plane-sliced GuidanceWorkspace cast (Surface lines every 0.07 m) and the nearest facing one (flat normal . n < -0.707).
+EC9A50	c	port_: the toe probe GetToesDestAnchors calls (Mac name not matched yet): a ray along the normal; else a plane-sliced GuidanceWorkspace cast (Surface lines every 0.07 m) and the nearest facing one (flat normal . n < -0.707).
 EC9AC3	c	struct Concurrency::details::QuickBitSet *
 EC9AC4	c	this
 ECB48D	c	float

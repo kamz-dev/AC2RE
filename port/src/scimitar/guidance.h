@@ -88,6 +88,9 @@ struct EdgeFilter {
 // scimitar::GuidanceContactObject (0x60; reflected PC 0x1CB70B8): a line in world space, as a cast returns it.
 struct GuidanceSystemComponent;
 struct GuidanceContactObject {
+    // +0x00 m_Floats[4]: the clearances a depth detector's occluded report writes (track k: [2k] before, [2k + 1]
+    // after the piece; RE/19_guidance.md 6).
+    float m_Floats[4] = {0, 0, 0, 0};
     Vec3 m_LineGlobalPoint0;       // +0x10
     Vec3 m_LineGlobalPoint1;       // +0x20
     Vec3 m_LineGlobalNormalLeft;   // +0x30
@@ -95,6 +98,7 @@ struct GuidanceContactObject {
     // +0x50 m_Entity. PORT: the component stands in for its owner entity.
     const GuidanceSystemComponent* m_Entity = nullptr;
     const GuidanceObject* m_ParentGuidanceObject = nullptr;  // +0x54
+    const GuidanceContactObject* m_ParentContactObject = nullptr;  // +0x58 (a slice's input line)
     std::uint8_t m_SubType = 0;                              // +0x5C bits 0-5
 };
 
