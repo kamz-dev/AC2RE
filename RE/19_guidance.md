@@ -110,6 +110,32 @@ one's entity; otherwise the entity itself. For each of their `GuidanceSystemComp
      [0x62C2F0]) adds it.
 3. Returns whether anything was added.
 
+**The box** (`InternalCollideWithZoneBox` [0x3F08D0]; PC not mapped yet): the box's matrix brought into the
+component's local space (the entity's affine inverse × the zone's global matrix), then per valid object:
+- **contact mode:** `CollideWithBox` [0x8034B0] → `IntersectSegmentWithOOBBox(p0, p1, matrix, min, max)`
+  [0x1C5980], a separating-axis test: centre `M·(min+max)/2`, half-extents `(max−min)/2`, the segment's midpoint and
+  half vector `h`; separated along a box axis *a* when |(mid − centre)·a| > |h·a| + extent; then along the three
+  axes `h × (mid − centre)` dotted with each box axis, against the matching pair of extents, where a pair within
+  0.0005 of 0 on both sides doesn't separate.
+- **cut mode:** `IncludeCutWithBox` [0x803BC0] → `IntersectSegmentOOBBox` [0x1C5780]: the segment into the box's
+  frame (the matrix's inverse), `IntersectSegmentAABBox` [0x1C1780]: a ray from p0 along p1 − p0 and one from p1
+  back along p0 − p1, each `IntersectRayAABBox` [0x1C13B0] (Woo's test: the candidate planes, the largest t,
+  then the hit point checked against the other two slabs; a start inside the box is its own hit); both entry
+  points, back to world.
+
+**The cut mode** keeps only the part of the line inside the zone: the contact's two points are the cut's
+(`GuidanceCutObject`: two points; `AddContactPoint`'s cut overload [0x62C2F0] copies them and turns the normals).
+For the sphere, `IntersectSegmentWithSphere(p0, p1, centre, radius, &a, &b)` [0x1C2C10] solves |p0 + t·d − c| = r
+(d = p1 − p0, a = d·d, b = (p0 − c)·d, disc = b² − ((p0 − c)² − r²)·a): no root → no cut; one root t in [0, 1] →
+[p0 + t·d, p1]; two roots t0 < t1: t0 > 1 → none; t0 < 0: t1 < 0 → none, else [p0, p0 + t1·d (or p1 when that is
+past it)]; else [p0 + t0·d, t1 > 1 ? p1 : p0 + t1·d].
+
+**Degenerate lines:** both `AddContactPoint`s drop a line whose p1 − p0 is within 0.0005 on every lane.
+
+**Defaults:** the component's constructor [0x3EEDB0] resets its `EdgeFilter` (`Reset` [0x450E20]):
+`SlopeCosAngle` = `DEFAULT_SLOPE_COS_ANGLE` 0.70703125 (≈ cos 45°), `WallAngle` = `DEFAULT_WALL_ANGLE` 0.3926991
+(22.5°), and **no filter bits**: a component accepts no edge until its data (FastLoad [0x3F00B0]) sets them.
+
 The port's stand-ins until now (`port/world.h`: every box's top edges as lines, "within the radius" tested by the
 port) differ from this in the strictness (`<` radius) and in having no EdgeFilter or subtype mask.
 
