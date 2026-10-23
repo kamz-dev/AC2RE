@@ -74,6 +74,76 @@ TEST(gap_list_finds_a_roof_edge_and_its_drop) {
     CHECK(!human.GetGapList(gaps, {0, 4.5f, 0.4f}, 0.75f, 0.45f, true));
 }
 
+TEST(rotate_vector_turns_right_handed) {
+    // +y turned -50 degrees about y x K (= +x) points 50 degrees below the horizon: the edge probe's ray.
+    const Vec3 r = scimitar::RotateVector({0, 2, 0}, scimitar::cross({0, 1, 0}, {0, 0, 1}), -0.87266463f);
+    CHECK_NEAR(r.y, std::cos(0.87266463f), 1e-5f);
+    CHECK_NEAR(r.z, -std::sin(0.87266463f), 1e-5f);
+    // A null axis leaves the (normalised) vector.
+    const Vec3 same = scimitar::RotateVector({0, 0, -3}, {}, 1.0f);
+    CHECK_NEAR(same.z, -1.0f, 1e-6f);
+}
+
+// GetDepthInFrontOfEdge on the 6 m roof's north edge (y = 5), as GetGapList calls it from 0.5 m back.
+float RoofEdgeDepth(const BoxWorld& world) {
+    scimitar::ac2::Human human;
+    human.SetPortWorld(&world);
+    return human.GetDepthInFrontOfEdge({0, 4.5f, 6}, {0, 5, 6}, {0, 1, 0}, 7.0f, 0.02f, 0.0f);
+}
+
+TEST(edge_depth_is_the_drop_to_the_floor) {
+    CHECK_NEAR(RoofEdgeDepth(Roof(6)), 6.0f, 1e-4f);
+    // Deeper than maxDepth: maxDepth.
+    BoxWorld high(false);
+    high.add({{-5, -5, 0}, {5, 5, 6}});
+    CHECK_NEAR(RoofEdgeDepth(high), 7.0f, 1e-6f);
+}
+
+TEST(edge_depth_an_obstacle_at_the_edge_is_no_drop) {
+    // A taller wall 0.01 m past the edge: the 50-degree probe hits it just above the edge's height.
+    BoxWorld world = Roof(6);
+    world.add({{-5, 5.01f, 0}, {5, 7, 6.5f}});
+    // It starts 0.07 * tan(50) above the edge and drops 0.06 * tan(50) before the wall.
+    CHECK_NEAR(RoofEdgeDepth(world), -0.01f * std::tan(0.87266463f), 1e-4f);
+}
+
+TEST(edge_depth_a_narrow_gap_lands_on_the_far_wall) {
+    // A building 0.4 m across: the 45-degree ray from 0.02 past the edge hits its wall 0.38 m down, with no slope
+    // test on the first ray.
+    BoxWorld world = Roof(6);
+    world.add({{-5, 5.4f, 0}, {5, 7, 8}});
+    CHECK_NEAR(RoofEdgeDepth(world), 0.38f, 1e-4f);
+}
+
+TEST(edge_depth_adds_the_deepest_gap_where_it_lands) {
+    // A 3 m ledge from y = 5 to 6.1: the 10-degree ray lands 0.14 m from its edge, inside the 0.2 m search, so the
+    // ledge's own 3 m drop is added.
+    BoxWorld world = Roof(6);
+    world.add({{-5, 5, 0}, {5, 6.1f, 3}});
+    CHECK_NEAR(RoofEdgeDepth(world), 6.0f, 1e-4f);
+    // A wider ledge: nothing within the search, the drop to the ledge.
+    BoxWorld wide = Roof(6);
+    wide.add({{-5, 5, 0}, {5, 6.5f, 3}});
+    CHECK_NEAR(RoofEdgeDepth(wide), 3.0f, 1e-4f);
+}
+
+TEST(edge_depth_slides_off_a_steep_contact) {
+    // A wall 1 m out: the 10-degree ray hits its face (90 degrees), slides 45 degrees back out from it, then casts on
+    // to the floor.
+    BoxWorld world = Roof(6);
+    world.add({{-5, 6, 0}, {5, 7, 8}});
+    CHECK_NEAR(RoofEdgeDepth(world), 6.0f, 1e-4f);
+}
+
+TEST(edge_depth_with_a_null_normal_is_the_drop_below) {
+    BoxWorld world;
+    scimitar::ac2::Human human;
+    human.SetPortWorld(&world);
+    CHECK_NEAR(human.GetDepthInFrontOfEdge({0, 0, 3}, {0, 0, 3}, {}, 7.0f, 0.02f, 0.0f), 3.0f, 1e-5f);
+    // Standing on the ground: the first ray lands at once.
+    CHECK_NEAR(human.GetDepthInFrontOfEdge({0, 0, 0}, {0, 0, 0}, {}, 7.0f, 0.02f, 0.0f), 0.0f, 1e-6f);
+}
+
 TEST(low_profile_walk_stops_at_a_deep_edge) {
     BoxWorld world = Roof(3);
     Sim sim(world, {.position = {0, 3, 3}});

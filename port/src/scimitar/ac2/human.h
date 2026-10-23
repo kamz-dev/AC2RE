@@ -116,12 +116,13 @@ public:
     float GetWaterLevel() const override { return -3.4028235e38f; }
     EdgeClampingSettings& GetEdgeClampingSettings() override { return m_EdgeClampingSettings; }
 
-    // Mac 0x12D0AD2, PC 0x9251D0 (outlined only). PORT: a stand-in: the ground just past the edge (`frontOffset`
-    // + 0.05 along the normal), or straight down from `edge` with a null normal; `maxDepth` when there is none. The
-    // game casts rays (layers 12 and 35) along the normal turned down 50 degrees and adds the deepest gap found where
-    // they land.
+    // PC 0x9251D0, Mac 0x12D0AD2. The drop in front of `edge` (out along `edgeNormal`, or under `edge` with a null
+    // normal), down to `maxDepth`: rays cast over the edge and down until they land, plus the deepest gap where they
+    // land (RE/11_ground.md 16). The parameter names are the port's.
     float GetDepthInFrontOfEdge(const Vec3& position, const Vec3& edge, const Vec3& edgeNormal, float maxDepth,
-                                float frontOffset) const;
+                                float frontOffset, float gapRadius) const;
+    // PC 0x91A2C0, Mac 0x12C6C0A. The gap with the greatest m_Depth.
+    bool GetDeepestGapInList(Gap& out, const std::vector<Gap>& gaps) const;
 
     // The edge-clamping flags (Revelations PDB names; PC offsets). The ground states that move freely set
     // m_IsEdgeClampingActive on Enter and clear it on Exit (Wait, MoveCycle, MoveStop, CrouchMove, EdgeStop,

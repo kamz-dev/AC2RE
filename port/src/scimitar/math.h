@@ -25,6 +25,22 @@ inline Vec3 normalized(Vec3 v) {
     return l > 1e-6f ? v * (1.0f / l) : Vec3{};
 }
 
+// scimitar::RotateVector(vec, axis, angle): PC 0xC6E90 (-> 0xC5530 the quaternion, 0xC5620 the rotation), Mac
+// 0x2126722 (thunk). The normalised `vec` turned by `angle` about `axis` (right-handed: a positive angle turns
+// counter-clockwise seen from the axis' tip), normalised again. A null axis is the identity quaternion.
+inline Vec3 RotateVector(const Vec3& vec, const Vec3& axis, float angle) {
+    const float axisLength = length(axis);
+    Vec3 q;  // the quaternion's vector part, w its scalar part
+    float w = 1;
+    if (axisLength != 0) {
+        q = axis * (std::sin(angle * 0.5f) / axisLength);
+        w = std::cos(angle * 0.5f);
+    }
+    const Vec3 v = vec * (1.0f / length(vec));
+    const Vec3 r = (q * dot(q, v) + cross(q, v) * w + v * (w * w - 0.5f)) * 2.0f;
+    return r * (1.0f / length(r));
+}
+
 // Yaw in radians, 0 = +Y (forward), counter-clockwise seen from above. PORT: the game's convention is not checked.
 inline Vec3 forwardFromYaw(float yaw) { return {-std::sin(yaw), std::cos(yaw), 0}; }
 inline float yawFromDirection(Vec3 d) { return std::atan2(-d.x, d.y); }

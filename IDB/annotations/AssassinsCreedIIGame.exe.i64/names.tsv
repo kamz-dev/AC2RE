@@ -279,6 +279,7 @@ C2100	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_6
 C2520	__RTC_NumErrors_101
 C4AE0	scimitar::Timer::GetProgressTime
 C6730	scimitar::Camera2::AddViewSurface
+C6E90	scimitar::RotateVector
 C8440	??8error_category@std@@QBE_NABV01@@Z
 CB5D0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_7
 CB660	__RTC_NumErrors_102
@@ -4453,6 +4454,7 @@ F90C0	??0_ReaderWriterLock@details@Concurrency@@QAE@XZ_12
 9183D0	scimitar::ac2::Human::GetFrontFoot
 91A160	def_91A133
 91A168	jpt_91A133
+91A2C0	scimitar::ac2::Human::GetDeepestGapInList
 91CB10	scimitar::ac2::Human::AddContextToMainAITrack
 91CCF8	def_91CB28
 91CD14	jpt_91CB28
@@ -9438,6 +9440,7 @@ F552D0	_DllMain@12_265
 F55310	_DllMain@12_266
 F5903C	def_F59012
 F59044	jpt_F59012
+F62310	scimitar::ac2::CheckClearanceRayCast
 F62700	__RTC_NumErrors_6709
 F63650	_DllMain@12_267
 F681A0	?_SetRuntimeOwnsLifetime@_UnrealizedChore@details@Concurrency@@QAEX_N@Z_21

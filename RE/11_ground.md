@@ -282,8 +282,9 @@ speeds come from `AssassinTask::UpdateGroundMovement` (`21_input.md` 8); the ang
 - [x] InAir's side of the landing hand-over (`HumanInAir::ExecMainToGroundMain`, section 11, 2026-10-21). Still open:
       EdgeLanding; `ComputeFallDamage`; the spring jump. (InAir's `m_LandingSpeedRatio`: `AssassinTask::UpdateInAir`,
       `21_input.md`.)
-- [x] Edges outside free-run: edge clamping (section 16, 2026-10-22), decoded and ported. Still open: the
-      high-profile case live (row 12), `GetDepthInFrontOfEdge` in full, the edge-jump decision.
+- [x] Edges outside free-run: edge clamping (section 16, 2026-10-22), decoded and ported. The high-profile case
+      is answered live (row 12) and `GetDepthInFrontOfEdge` decoded (2026-10-23; live row 14). Still open: the
+      edge-jump decision.
 - [x] Who sends the edge commands (LookDown, UnbalanceOnEdge, FallOffEdge, LedgePullDown) and the jump to target:
       the player's controller (section 17, `21_input.md`, 2026-10-22). Not ported yet.
 - [ ] Who sends the other jump / obstacle interface commands (the free-run / guidance system); `CanWallingVertical`,
@@ -667,8 +668,8 @@ to the right** of the sight. The port had the opposite sign until 2026-10-22, wh
 - **Kept lines:** `IsEdgeLeveled`, with the foot of `pos` on the line inside the segment
   (`IntersectSegmentWithInfinitePlane` PC 0x10FA690), within 0.3 m of `pos` in height, and with a non-null flat
   normal.
-- **Depth:** `GetDepthInFrontOfEdge(pos, foot, normal, 7.0, 0.02, 0)` (PC 0x9251D0; outlined only: rays down at 50°
-  past the edge, layers 12 and 35, plus the deepest gap where they land). Under `minDepth` the line is no gap.
+- **Depth:** `GetDepthInFrontOfEdge(pos, foot, normal, 7.0, 0.02, 0)` (PC 0x9251D0, below). Under `minDepth` the line
+  is no gap.
 - **Fields filled:**
   - `m_EdgePosition` = the foot;
   - `m_EdgeNormal`;
@@ -683,8 +684,38 @@ to the right** of the sight. The port had the opposite sign until 2026-10-22, wh
   `GetAngleAbsolute(dir, m_EdgeNormal)` not above the max angle.
 - **`GetClosestGapInList`** (Mac 0x12C6EFC): the smallest flat distance, strict.
 
+**`GetDepthInFrontOfEdge(pos, edge, normal, maxDepth, frontOffset, gapRadius)`** (PC 0x9251D0, Mac 0x12D0AD2;
+decoded 2026-10-23; the parameter names are the port's). GetGapList passes (pos, foot, flat normal, 7.0, 0.02, 0) per
+edge and (pos, pos, 0, 7.0, 0.02, 0) for the no-edge gap (PC 0x9284BB / 0x928603). Other callers, not decoded:
+PC 0x655EF0, 0x65C130, 0x69C9E0, 0x9261C0, 0x927E60, 0x9286D0, 0x934E50. K is (0, 0, 1). The casts are
+`CheckClearanceRayCast` (PC 0xF62310, Mac 0xD39510; true = clear, else the ContactPoint: +0 position, +0x10 normal) on
+layer `GetLayer(12)` (12, or 22 when the entity's +0xA8 & 7 is 1; inlined on PC) or 35 (Revelations:
+CharacterNoInteractive, MainCharacterNoInteractive, OcclusionHeightTest). `RotateVector(v, axis, angle)` (PC 0xC6E90)
+turns the normalised v by a quaternion, right-handed, and normalises; a null axis turns nothing.
+1. A normal null within 0.0005 is "no normal"; otherwise dir = the flat normal, normalised.
+2. **The edge itself** (not with no normal) [0x9252D9]: front = edge + dir·frontOffset. A ray from the plane 0.05 behind
+   the edge (normal dir) along dir turned −50° about dir×K (50° below the horizon) to front, layer 12. A hit returns
+   edge.z − contact.z at once. Then a ray from pos + K to front, layer 12; a hit returns the same.
+3. **The first ray down** [0x925584]: with a normal, from front along −K turned −45° about K×normal (45° out over the
+   drop) to the plane min(maxDepth, 0.5) below the edge. With no normal, from pos + 0.5 K straight down to pos − 0.5 K,
+   cast at once (layer 35): a contact on a slope of at most 45° lands (step 5) and returns, unless gaps are found and
+   none is the deepest (then on to the loop, which casts the same ray again); a steeper one slides (step 6).
+4. **The loop** [0x925A93]; the result starts at maxDepth. Cast the ray (layer 35):
+   - a hit lands (step 5) with no slope test; stop unless a slide is pending;
+   - clear: cast on from the ray's end along −K turned −10° about the last axis (straight down for the first one under
+     no normal) to maxDepth below the edge. Clear: stop. A contact within 45° (normal ±K within 0.001 counts as flat)
+     lands, and the loop stops unless a slide is pending; a steeper one slides and loops.
+5. **Landing** [0x925AEB]: drop = edge.z − contact.z; radius = (max(gapRadius, 0.2) − gapRadius)·clamp(drop / 3, 0, 1) +
+   gapRadius. Above 0.01, `GetGapList(contact, radius, 0.45, false)` (IHuman +0x98) and `GetDeepestGapInList` (PC
+   0x91A2C0: the greatest m_Depth, strict): the result is drop + that gap's depth. No gaps (or radius ≤ 0.01): the
+   drop. Gaps but no deepest: nothing changes.
+6. **Slope and slide** [0x92567D, 0x925DC4]: the slope is `Gear::GetAngle(K, n, K×flat)` with flat the contact
+   normal's XY normalised (0 when n is ±K). Above 45° (0.7853982): from contact + 0.01·flat, along −K turned −45°
+   about K×flat (out, away from the slope), to 0.5 m below the contact.
+So the first ray down hitting a wall (a narrow gap) gives a shallow depth; landing near another edge adds that
+edge's own drop (a recursive GetGapList), and 7 m caps it (live row 12 saw 7.0 on a ~12 m roof).
+
 **Open:**
-- `GetDepthInFrontOfEdge` in full. The port measures the ground 0.07 m past the edge.
 - `CastEntityInternal` (Mac 0x62CC70): which lines a zone catches. The port tests the line against the sphere / box.
 - Who reads `IsEdgeClampingZeroSpeed`.
 - Live (row 12, 2026-10-22): the rules hold on roofs of 1.2, 2.3 and 7+ m. A high-profile run over a deep edge goes
