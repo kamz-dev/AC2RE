@@ -152,11 +152,68 @@ PORT stand-ins:
 - `BoxWorld` makes each box an entity with one component: its four top edges, LedgeGrab, top face / side face,
   `EdgeFilter` WallGround (the game's data sets its own); the box zone's AABB is its corners' (not decoded).
 
+## 5. Anchor points (Mac; PC not mapped yet)
+**`scimitar::ac2::AnchorPoint`** (0x50, Revelations PDB): +0x00 `m_GlobalPosition`, +0x10 `m_GlobalNormal`, +0x20
+`m_LocalObjectPosition`, +0x30 `m_LocalObjectNormal` (in the object's frame), +0x40 `m_Object`
+(`EntityInWorldHandle`), +0x44 `m_AnchorPointType` (0 Ledge, 1 Surface, 2 Rope, 3 Pole, 4 ZipLine), +0x48 `m_RopeT`.
+`SetFromGlobal(position, normal, entity, type)` [0x1449F88] fills the locals through the entity's inverse matrix,
+then `SetupRopeAnchor`. A contact's anchor type: Rope → Rope, Pole → Pole, Surface → Surface, anything else → Ledge.
+
+**`GetFlatNormalFromGuidanceSubType(contact)`** [0x144A4E0]: `GetLineGlobalFlatNormal`, except a Ladder's: its
+bottom-most normal (`GetLineBottomMostNormal`, not decoded), flattened.
+
+**`ProjectPointOnSegmentWithMinDist(point, p0, p1, minDist)`** [0xD1AFFE]: the segment shortened by `minDist` at each
+end, and the point projected onto it (`PointSegmentProjection`); when |p1 − p0| ≤ 2·minDist + 0.0005, the middle.
+
+**`GetBestPointOnSegmentInPlane(out, planePoint, planeNormal, p0, p1, minDist)`** [0xD1B29A]: where the segment
+crosses the plane (`IntersectSegmentWithInfinitePlane`), moved in by `minDist` when it isn't 0; when it doesn't
+cross, the end nearer the plane (each projected along the normal), then `ProjectPointOnSegmentWithMinDist`.
+
+**`GetClosestPointInBoxWithOffset(anchor, workspace, report, position, Y, Z, hx, hy, hz, maxAngle, point, local,
+minDist, mask, …)`** [0xD1F156 → `…WithLimbOcclusion` 0xD1EA7A]:
+1. A `GuidanceZoneBox`: X = Y × Z, Y, Z, at `position`, bounds ±(hx, hy, hz).
+2. With a report: `GuidanceZone::RefineReport(report, cut, 8)` (not decoded); without: `CastWorld` in cut mode,
+   every subtype. Zero-length lines are dropped (`RemoveZeroLengthGuidancesFromReport` [0x8185F0]).
+3. The point is in the box's frame when `local`.
+4. For each contact in `mask` (1 takes all) whose flat normal (above) is at least π − `maxAngle` from Y (it faces back
+   along −Y): `ProjectPointOnSegmentWithMinDist(point, …, minDist)`; the nearest (squared distance, from 1000) wins.
+   A ladder's point is moved onto its step (`CorrectPositionOnLaddetStep` [0xD1D73A]).
+5. The anchor is that point with the flat normal and the contact's entity; none: a cleared anchor, false.
+`HumanLedge::EnterPullDown` [0x133E8DA] calls it at the gap's edge with Y = −edge normal, Z = K, 0.1 m half extents,
+45°, the box centre, minDist 0 and mask 0x2032 (LedgeGrab, Pole, Rope, HayStack).
+
+**`GetNextVerticalLimbPos(anchor, report, entity, position, up, normal, minZ, maxZ, width, lateral, occlusion, f, f,
+withSurfaces, …)`** [0xD206F8 → `…WithLimbOcclusion` 0xD1F226]: the next hold for a limb climbing.
+1. The frame: X = normalize(normal × K), Y = normal (facing the wall), Z = X × Y, at `position`.
+2. Up or down: when `up` · the entity's banking ≥ 0, the target is minZ − 0.1, else maxZ + 0.1.
+3. With `occlusion`, a `GuidanceZoneCapsule` cast (`CastReport`, cut type 2) and two cutting planes turned off the
+   frame's J axis limit the report (not decoded).
+4. For each line (Surface only with `withSurfaces`): cut to the frame's box x ∈ ±width/2, y ∈ ±0.52, z ∈
+   [minZ, maxZ] (`IntersectSegmentOOBBox`); its flat normal · Y < −0.5; the point on the cut in the plane through
+   `position + X·lateral` with normal X (`GetBestPointOnSegmentInPlane`, minDist 0); its local z's distance from the
+   target scores it. The highest score wins (the line farthest from the target: going up, the highest); scores within
+   0.01 go to the point nearer x = `lateral`.
+5. The anchor: that point, the flat normal, the contact's entity and type; none: cleared, false.
+`HumanLedge::UpdatePullDownMain` [0x132BBA8] calls it for the two hands with minZ −0.3, maxZ 0.3, width 0.7 on a
+report from **`CastPullDownGuidanceReport(report, offset)`** [0x132B7EA]: a `GuidanceZoneBox` in the sight frame
+(`MakeSightRotationMatrix(sight, K)`) at the entity's position plus `offset` turned into that frame, bounds (−1, −0.5,
+−0.5) to (1, 1, 0.5), cast in cut mode; ladders moved to their own report (`MoveGuidancesOfTypeToReport`, 8);
+non-level lines dropped (`RemoveNonLeveledGuidancesFromReport`); then `Human::CastGuidanceDepthDetector` (1.2, −1.0471976 = −60°,
+(0, 0.02, 0.02)) and `Human::CreateOccludedGuidanceReport(…, 154)` (not decoded), and the lines the ladders obstruct
+removed (`BuildLadderListFromGuidanceReport`, `RemoveGuidanceObstructedByLadders`).
+
+Ported (`port/src/scimitar/ac2/anchor_point.{h,cpp}`, 2026-10-23): `AnchorPoint`, the type mapping,
+`GetFlatNormalFromGuidanceSubType` (PORT: a ladder's bottom-most normal is the lower face's), the two projections,
+`GetClosestPointInBoxWithOffset` (PORT: a given report is used as it is; no ladder steps) and `GetNextVerticalLimbPos`
+(PORT: no occlusion). Not yet used by HumanLedge (its pull-down still moves between live positions).
+
 ## Open
 - The other zones (box: edge clamping's `GetEdgeSegmentNearCharacterPos`; capsule, plane, mesh), the cut mode,
   `GuidanceZone::Refine` / `RefineReport` / `CastReport`, `GuidanceSystem` (the partitioned version).
-- The report helpers the contexts use: `AnchorPoint`, `GetClosestPointInBoxWithOffset`, `GetNextVerticalLimbPos`,
-  `GuidanceDepthDetector`, `GuidanceBeamDetector`, `HumanGuidance`; jump targets (`FootHold`,
-  `GetBestEdgeJumpTargetIndex`).
+- `Human::CastGuidanceDepthDetector` / `GuidanceDepthDetector` (~15 KB), `CreateOccludedGuidanceReport`, the ladder
+  helpers, `RefineReport`, the limb-occlusion capsule; then `CastPullDownGuidanceReport` in full, the toes
+  (`Human::GetToesDestAnchors` [0x12DBE14]) and `ComputeHangWallEntityPosition` / `…Free…`, so the Ledge
+  pull-down can run on anchors; `GetNextHorizontalLimbPos` (shimmying); `GuidanceBeamDetector`, `HumanGuidance`;
+  jump targets (`FootHold`, `GetBestEdgeJumpTargetIndex`); PC addresses for section 5.
 - Which `EdgeFilter` values the game's data carries, and the subtype masks each caller passes.
 - Loading the components from the install (FastLoad [0x3F00B0]) and checking them live against the running game.

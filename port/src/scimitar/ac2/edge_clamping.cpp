@@ -35,18 +35,6 @@ Vec3 GetLineGlobalFlatNormal(const Vec3& p0, const Vec3& p1, const Vec3& faceNor
     return dot(f, normalized(Flat(wall))) >= 0.0f ? f : f * -1.0f;
 }
 
-Vec3 ProjectPointOnPlane(const Vec3& p, const Vec3& q, const Vec3& n, const Vec3& dir) {
-    const float d = dot(dir, n);
-    if (d == 0.0f) return {};
-    float f = 1.0f;
-    if (d > 1.0f)
-        f = -1.0f;
-    else if (d >= -1.0f)
-        f = -1.0f / d;
-    const Vec3 pq = p - q;
-    return pq + (dir * (f * dot(pq, n)) + q);
-}
-
 void FilterSegmentListWithNormalAngle(std::vector<Segment>& segments, const Vec3& direction, float rejectAngle) {
     if (!(std::fabs(rejectAngle) > 0.0005f)) return;
     for (size_t i = 0; i < segments.size();) {

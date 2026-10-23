@@ -130,17 +130,6 @@ bool IsNullWithEpsilon(const Vec3& v) {  // Gear::IsNullWithEpsilon, PC 0x2B3130
 bool NullWithEpsilon(const Vec3& v, float eps) {
     return std::fabs(v.x) <= eps && std::fabs(v.y) <= eps && std::fabs(v.z) <= eps;
 }
-
-// IntersectSegmentWithInfinitePlane (Mac 0x1C2E50, PC 0x10FA690).
-bool IntersectSegmentWithInfinitePlane(Vec3& hit, const Vec3& p0, const Vec3& p1, const Vec3& planePoint,
-                                       const Vec3& planeNormal) {
-    const float den = dot(p1 - p0, planeNormal);
-    if (den == 0.0f) return false;
-    const float t = dot(planePoint - p0, planeNormal) / den;
-    if (t < 0.0f || t > 1.0f) return false;
-    hit = p0 * (1.0f - t) + p1 * t;
-    return true;
-}
 }  // namespace
 
 namespace {

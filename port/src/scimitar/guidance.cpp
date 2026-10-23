@@ -234,6 +234,28 @@ bool GuidanceZoneBox::Cast(GuidanceReportAccumulator& accumulator, const Guidanc
 
 // --- Geometry ---
 
+Vec3 ProjectPointOnPlane(const Vec3& p, const Vec3& q, const Vec3& n, const Vec3& dir) {
+    const float d = dot(dir, n);
+    if (d == 0.0f) return {};
+    float f = 1.0f;
+    if (d > 1.0f)
+        f = -1.0f;
+    else if (d >= -1.0f)
+        f = -1.0f / d;
+    const Vec3 pq = p - q;
+    return pq + (dir * (f * dot(pq, n)) + q);
+}
+
+bool IntersectSegmentWithInfinitePlane(Vec3& hit, const Vec3& p0, const Vec3& p1, const Vec3& planePoint,
+                                       const Vec3& planeNormal) {
+    const float den = dot(p1 - p0, planeNormal);
+    if (den == 0.0f) return false;
+    const float t = dot(planePoint - p0, planeNormal) / den;
+    if (t < 0.0f || t > 1.0f) return false;
+    hit = p0 * (1.0f - t) + p1 * t;
+    return true;
+}
+
 Vec3 PointSegmentProjection(const Vec3& p, const Vec3& a, const Vec3& b) {
     const Vec3 ab = b - a;
     const float t = dot(p - a, ab);

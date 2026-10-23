@@ -157,6 +157,11 @@ struct GuidanceZoneBox final : GuidanceZone {
 };
 
 // Geometry the casts use (Mac addresses).
+// p moved along `dir` onto the plane (q, n), the cosine clamped to [-1, 1] (Mac 0x212850, PC 0x10EA7E0).
+Vec3 ProjectPointOnPlane(const Vec3& p, const Vec3& q, const Vec3& n, const Vec3& dir);
+// Where p0-p1 crosses the plane (point, normal), when it does within the segment (Mac 0x1C2E50, PC 0x10FA690).
+bool IntersectSegmentWithInfinitePlane(Vec3& hit, const Vec3& p0, const Vec3& p1, const Vec3& planePoint,
+                                       const Vec3& planeNormal);
 // The closest point of the segment a-b to p (Mac 0x213630, PC 0x10E8F90).
 Vec3 PointSegmentProjection(const Vec3& p, const Vec3& a, const Vec3& b);
 bool IntersectSegmentWithSphere(const Vec3& p0, const Vec3& p1, const Vec3& centre, float radius);  // 0x1C16D0
