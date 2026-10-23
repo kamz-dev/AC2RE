@@ -4180,6 +4180,8 @@ C68DA	c	float
 C68E7	c	float
 C68EA	c	int
 C68EB	c	int
+C6E90	F	Mac 0x2126722 (thunk) scimitar::RotateVector(vec, axis, angle): vec normalised, turned by a quaternion about axis (right-handed; null axis = identity), normalised. Matched by GetDepthInFrontOfEdge's call order (RE/11_ground.md 16).
+C6E90	c	Mac 0x2126722 (thunk) scimitar::RotateVector(vec, axis, angle): vec normalised, turned by a quaternion about axis (right-handed; null axis = identity), normalised. Matched by GetDepthInFrontOfEdge's call order (RE/11_ground.md 16).
 C87C1	c	Block
 C8881	c	Block
 C8E82	c	float
@@ -26712,6 +26714,8 @@ FFF84	c	char *
 91A151	r	jumptable 0091A133 case 3
 91A160	r	jumptable 0091A133 default case
 91A168	c	jump table for switch statement
+91A2C0	F	Mac 0x12C6C0A scimitar::ac2::Human::GetDeepestGapInList(Gap&, const Array<Gap>&): the gap with the greatest m_Depth (+0x30, strict >, from -FLT_MAX); false when none.
+91A2C0	c	Mac 0x12C6C0A scimitar::ac2::Human::GetDeepestGapInList(Gap&, const Array<Gap>&): the gap with the greatest m_Depth (+0x30, strict >, from -FLT_MAX); false when none.
 91A8C8	c	int
 91A8C9	c	int
 91A8CB	c	int
@@ -26826,8 +26830,8 @@ FFF84	c	char *
 924FBA	c	int
 924FBB	c	int
 924FBC	c	int
-9251D0	F	Mac 0x12D0AD2 Human::GetDepthInFrontOfEdge (outlined only)
-9251D0	c	Mac 0x12D0AD2 Human::GetDepthInFrontOfEdge (outlined only)
+9251D0	F	Mac 0x12D0AD2 Human::GetDepthInFrontOfEdge(pos, edge, normal, maxDepth, frontOffset, gapRadius). Decoded in full 2026-10-23: RE/11_ground.md 16 'GetDepthInFrontOfEdge'.
+9251D0	c	Mac 0x12D0AD2 Human::GetDepthInFrontOfEdge(pos, edge, normal, maxDepth, frontOffset, gapRadius). Decoded in full 2026-10-23: RE/11_ground.md 16 'GetDepthInFrontOfEdge'.
 9271D0	c	void *
 927D39	c	void *
 9282B0	F	Mac 0x12D4BD6 Human::GetGapList (IHuman vtable 0x19E69B0 +0x98)
@@ -39050,6 +39054,8 @@ F620E8	c	float
 F62100	c	int
 F6210D	c	int
 F621C4	c	void *
+F62310	F	Mac 0xD39510 scimitar::ac2::CheckClearanceRayCast(PhysicWorkspace*, ContactPoint*, Entity*, origin, dir, length, Layer, bool, bool, bool, World*): true = clear; false = hit, ContactPoint filled (+0 position, +0x10 normal). Matched by GetDepthInFrontOfEdge's 11-arg calls.
+F62310	c	Mac 0xD39510 scimitar::ac2::CheckClearanceRayCast(PhysicWorkspace*, ContactPoint*, Entity*, origin, dir, length, Layer, bool, bool, bool, World*): true = clear; false = hit, ContactPoint filled (+0 position, +0x10 normal). Matched by GetDepthInFrontOfEdge's 11-arg calls.
 F632BF	c	float
 F632C2	c	int
 F632C5	c	int

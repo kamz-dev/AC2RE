@@ -140,16 +140,170 @@ bool IntersectSegmentWithInfinitePlane(Vec3& hit, const Vec3& p0, const Vec3& p1
 }
 }  // namespace
 
+namespace {
+// CollisionFilterInfo::Layer values the depth casts use (Revelations names). Human::GetLayer (Mac 0x12C3898; inlined
+// on PC) turns 12 into 22 when the entity's +0xA8 & 7 is 1 (the player, hypothesis).
+constexpr int kLayerCharacterNoInteractive = 12;
+constexpr int kLayerOcclusionHeightTest = 35;
+
+// GetDepthInFrontOfEdge's slope test of a ray's contact (PC 0x92567D / 0x925DC4): 0 when the normal is +-K within
+// `eps`, else Gear::GetAngle(K, normal, K x flat), the slope rising away from `flat` (the flat normal, normalised).
+float SlopeAngle(const Vec3& normal, float eps, Vec3& flat, Vec3& axis) {
+    const Vec3 k = Gear::kBaseK;
+    if (NullWithEpsilon(normal - k, eps) || NullWithEpsilon(normal + k, eps)) return 0.0f;
+    flat = normalized(Vec3{normal.x, normal.y, 0});
+    axis = cross(k, flat);
+    return Gear::GetAngle(k, normal, axis);
+}
+}  // namespace
+
 float Human::GetDepthInFrontOfEdge(const Vec3& position, const Vec3& edge, const Vec3& edgeNormal, float maxDepth,
-                                   float frontOffset) const {
-    (void)position;
-    if (!m_PortWorld) return maxDepth;
-    const Vec3 n = normalized(Vec3{edgeNormal.x, edgeNormal.y, 0});
-    const Vec3 probe = edge + n * (frontOffset + 0.05f);
-    const std::optional<float> ground = m_PortWorld->groundBelow(probe.x, probe.y, edge.z);
-    if (!ground) return maxDepth;
-    const float depth = edge.z - *ground;
-    return depth < maxDepth ? depth : maxDepth;
+                                   float frontOffset, float gapRadius) const {
+    if (!m_PortWorld) return maxDepth;  // PORT: no world, nothing to cast against
+    const port::World& world = *m_PortWorld;
+    const Vec3 k = Gear::kBaseK;
+    const Vec3 down = k * -1.0f;
+    // The radius of the gap search where a ray lands grows from gapRadius to at least 0.2 over the first 3 m.
+    const float maxGapRadius = gapRadius < 0.2f ? 0.2f : gapRadius;
+    const bool nullNormal = NullWithEpsilon(edgeNormal, 0.0005f);
+    Vec3 dir = edgeNormal;
+    if (!nullNormal) dir = normalized(Vec3{edgeNormal.x, edgeNormal.y, 0});
+
+    // 1. The edge itself (PC 0x9252D9): a ray from 0.05 behind the edge, turned 50 degrees down, to `frontOffset` past
+    //    it at the edge's height; then one from 1 m above `position` to that point. Something in the way is the depth.
+    if (!nullNormal) {
+        const Vec3 front = edge + dir * frontOffset;
+        const Vec3 back = front - dir * (frontOffset + 0.05f);
+        const Vec3 ray = RotateVector(dir, cross(dir, k), -0.87266463f);
+        const Vec3 origin = ProjectPointOnPlane(front, back, dir, ray);
+        if (const auto c = world.rayCast(origin, ray, length(front - origin), kLayerCharacterNoInteractive))
+            return edge.z - c->position.z;
+        const Vec3 head = position + k;
+        const float headLength = length(front - head);
+        if (const auto c = world.rayCast(head, (front - head) * (1.0f / headLength), headLength,
+                                         kLayerCharacterNoInteractive))
+            return edge.z - c->position.z;
+    }
+
+    // Where a ray lands (PC 0x925AEB): the drop to it, plus the deepest gap within the search radius around it.
+    // Returns false (the result and the retry flag unchanged) when gaps are found but none is the deepest.
+    float result = maxDepth;
+    bool retry = false;
+    auto searchRadius = [&](float drop) {
+        float t = drop / 3.0f;
+        if (t <= 0.0f) t = 0.0f;
+        if (t >= 1.0f) t = 1.0f;
+        return (maxGapRadius - gapRadius) * t + gapRadius;
+    };
+    auto land = [&](const port::World::ContactPoint& c) {
+        const float drop = edge.z - c.position.z;
+        const float radius = searchRadius(drop);
+        std::vector<Gap> gaps;
+        float depth = drop;
+        if (radius > 0.01f && GetGapList(gaps, c.position, radius, 0.45f, false)) {
+            Gap deepest;
+            if (!GetDeepestGapInList(deepest, gaps)) return;
+            depth = deepest.m_Depth + drop;
+        }
+        retry = false;
+        result = depth;
+    };
+
+    // 2. The first ray down (PC 0x925584).
+    Vec3 axis;  // the turn axis of the rays down
+    Vec3 origin, ray, end;
+    float rayLength;
+    if (!nullNormal) {
+        // From `frontOffset` past the edge, down turned 45 degrees out over the drop, to 0.5 m (at most maxDepth)
+        // below the edge.
+        axis = cross(k, edgeNormal);
+        ray = RotateVector(down, axis, -0.78539819f);
+        origin = edge + dir * frontOffset;
+        Vec3 plane = edge;
+        plane.z -= maxDepth <= 0.5f ? maxDepth : 0.5f;
+        end = ProjectPointOnPlane(origin, plane, k, ray);
+        rayLength = length(origin - end);
+    } else {
+        // Straight down from 0.5 m above `position` to 0.5 m below it.
+        origin = position + k * 0.5f;
+        ray = down;
+        end = position + down * 0.5f;
+        rayLength = length(origin - end);
+        if (const auto c = world.rayCast(origin, ray, rayLength, kLayerOcclusionHeightTest)) {
+            Vec3 flat;
+            Vec3 slopeAxis;
+            if (SlopeAngle(c->normal, 0.0005f, flat, slopeAxis) <= 0.78539819f) {
+                const float drop = edge.z - c->position.z;
+                const float radius = searchRadius(drop);
+                std::vector<Gap> gaps;
+                if (radius <= 0.01f || !GetGapList(gaps, c->position, radius, 0.45f, false)) return drop;
+                Gap deepest;
+                if (GetDeepestGapInList(deepest, gaps)) return deepest.m_Depth + drop;
+                // No deepest gap: on to the loop, which casts the same ray again.
+            } else {
+                // Too steep: slide off it, 0.01 out from the contact, down turned 45 degrees away from the slope, to
+                // 0.5 m below the contact.
+                axis = slopeAxis;
+                origin = c->position + flat * 0.01f;
+                ray = RotateVector(down, axis, -0.78539819f);
+                Vec3 plane = c->position;
+                plane.z -= 0.5f;
+                end = ProjectPointOnPlane(origin, plane, k, ray);
+                rayLength = length(origin - end);
+            }
+        }
+    }
+
+    // 3. The loop (PC 0x925A93): cast the ray; when it is clear, cast on from its end, turned 10 degrees out (straight
+    //    down for the first one under a null normal), to maxDepth below the edge. A contact on a slope steeper than 45
+    //    degrees slides off it as above and casts again; any other contact lands. Clear all the way: maxDepth.
+    bool straightDown = nullNormal;
+    for (;;) {
+        if (const auto c = world.rayCast(origin, ray, rayLength, kLayerOcclusionHeightTest)) {
+            land(*c);
+            if (!retry) break;
+            continue;
+        }
+        origin = end;
+        ray = straightDown ? down : RotateVector(down, axis, -0.17453292f);
+        Vec3 plane = edge;
+        plane.z -= maxDepth;
+        end = ProjectPointOnPlane(origin, plane, k, ray);
+        rayLength = length(origin - end);
+        straightDown = false;
+        const auto c = world.rayCast(origin, ray, rayLength, kLayerOcclusionHeightTest);
+        if (!c) break;
+        Vec3 flat;
+        Vec3 slopeAxis;
+        if (SlopeAngle(c->normal, 0.001f, flat, slopeAxis) <= 0.78539819f) {
+            land(*c);
+            if (!retry) break;
+        } else {
+            axis = slopeAxis;
+            origin = c->position + flat * 0.01f;
+            ray = RotateVector(down, axis, -0.78539819f);
+            Vec3 slidePlane = c->position;
+            slidePlane.z -= 0.5f;
+            end = ProjectPointOnPlane(origin, slidePlane, k, ray);
+            rayLength = length(origin - end);
+            retry = true;
+        }
+    }
+    return result;
+}
+
+bool Human::GetDeepestGapInList(Gap& out, const std::vector<Gap>& gaps) const {
+    float deepest = -3.4028235e38f;
+    int index = -1;
+    for (size_t i = 0; i < gaps.size(); ++i) {
+        if (gaps[i].m_Depth > deepest) {
+            deepest = gaps[i].m_Depth;
+            index = static_cast<int>(i);
+        }
+    }
+    if (index == -1) return false;
+    out = gaps[static_cast<size_t>(index)];
+    return true;
 }
 
 bool Human::GetGapList(std::vector<Gap>& gaps, const Vec3& position, float radius, float minDepth,
@@ -167,7 +321,7 @@ bool Human::GetGapList(std::vector<Gap>& gaps, const Vec3& position, float radiu
         if (!(std::fabs(position.z - hit.z) < 0.3f)) continue;
         const Vec3 fn = GetLineGlobalFlatNormal(c.p0, c.p1, c.faceNormal0, c.faceNormal1);
         if (NullWithEpsilon(fn, 0.0005f)) continue;
-        const float depth = GetDepthInFrontOfEdge(position, hit, fn, 7.0f, 0.02f);
+        const float depth = GetDepthInFrontOfEdge(position, hit, fn, 7.0f, 0.02f, 0.0f);
         if (minDepth > depth) {
             shallowSeen = true;
             continue;
@@ -185,7 +339,7 @@ bool Human::GetGapList(std::vector<Gap>& gaps, const Vec3& position, float radiu
     if (!gaps.empty()) return true;
     if (!allowNoEdge || shallowSeen) return false;
     // No edge: the drop under `position` itself.
-    const float depth = GetDepthInFrontOfEdge(position, position, Vec3{}, 7.0f, 0.02f);
+    const float depth = GetDepthInFrontOfEdge(position, position, Vec3{}, 7.0f, 0.02f, 0.0f);
     if (minDepth > depth) return false;
     Gap g;
     g.m_EdgePosition = position;

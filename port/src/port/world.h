@@ -42,6 +42,20 @@ public:
         (void)a, (void)b, (void)radius;
         return true;
     }
+    // scimitar::ContactPoint as a ray cast fills it: +0 the position, +0x10 the surface normal.
+    struct ContactPoint {
+        scimitar::Vec3 position, normal;
+    };
+    // The first surface on the segment origin + dir * [0, length], or none when it is clear: stands in for
+    // scimitar::ac2::CheckClearanceRayCast (PC 0xF62310, Mac 0xD39510), which returns true when clear. `layer` is the
+    // CollisionFilterInfo::Layer (Revelations names: 12 CharacterNoInteractive, 22 MainCharacterNoInteractive, 35
+    // OcclusionHeightTest). PORT: the port's worlds are static geometry, which every layer hits. A world without
+    // collision is always clear.
+    virtual std::optional<ContactPoint> rayCast(const scimitar::Vec3& origin, const scimitar::Vec3& dir, float length,
+                                                int layer) const {
+        (void)origin, (void)dir, (void)length, (void)layer;
+        return std::nullopt;
+    }
 };
 
 // Axis-aligned boxes standing on an infinite floor (or a void when `hasFloor` is false).
@@ -77,6 +91,54 @@ public:
             }
         }
         return true;
+    }
+
+    // The floor and the boxes. PORT: a box the ray starts inside is not hit (as a convex shape's ray cast).
+    std::optional<ContactPoint> rayCast(const scimitar::Vec3& origin, const scimitar::Vec3& dir, float length,
+                                        int layer) const override {
+        (void)layer;
+        std::optional<ContactPoint> best;
+        float bestT = length;
+        if (hasFloor_ && dir.z < 0 && origin.z >= floorZ_) {
+            const float t = (floorZ_ - origin.z) / dir.z;
+            if (t <= bestT) {
+                bestT = t;
+                best = ContactPoint{origin + dir * t, {0, 0, 1}};
+            }
+        }
+        for (const Box& b : boxes_) {
+            const float o[3] = {origin.x, origin.y, origin.z}, d[3] = {dir.x, dir.y, dir.z};
+            const float lo[3] = {b.min.x, b.min.y, b.min.z}, hi[3] = {b.max.x, b.max.y, b.max.z};
+            float t0 = -3.4028235e38f, t1 = 3.4028235e38f;
+            int axis = -1;
+            float sign = 0;
+            bool miss = false;
+            for (int i = 0; i < 3 && !miss; ++i) {
+                if (std::fabs(d[i]) < 1e-9f) {
+                    miss = o[i] < lo[i] || o[i] > hi[i];
+                    continue;
+                }
+                float ta = (lo[i] - o[i]) / d[i], tb = (hi[i] - o[i]) / d[i];
+                float s = -1;  // entering through the low face
+                if (ta > tb) {
+                    std::swap(ta, tb);
+                    s = 1;
+                }
+                if (ta > t0) {
+                    t0 = ta;
+                    axis = i;
+                    sign = s;
+                }
+                t1 = std::min(t1, tb);
+                miss = t0 > t1;
+            }
+            if (miss || axis < 0 || t0 < 0 || t0 > bestT) continue;
+            bestT = t0;
+            scimitar::Vec3 n;
+            (axis == 0 ? n.x : axis == 1 ? n.y : n.z) = sign;
+            best = ContactPoint{origin + dir * t0, n};
+        }
+        return best;
     }
 
     // PORT: every box's four top edges are guidance lines, with the top face's normal (0, 0, 1) and the side face's

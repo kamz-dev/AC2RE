@@ -2,6 +2,7 @@
 
 Usage: py livelab/record_edges.py <seconds> <out.jsonl>   (recordings stay out of git)
        py livelab/record_edges.py --summary <out.jsonl>
+       py livelab/record_edges.py --depths <out.jsonl>    (row 14: the gap depths against the real drops)
 
 Per sample: the position, the current context, the Human's edge-clamping flags (+0x991..+0x996), its
 EdgeClampingSettings (+0x9F0), its gap (m_Gap +0x8E0, m_IsGapValid +0x920; RE/11_ground.md 16), and the player's
@@ -119,8 +120,59 @@ def summary(path):
             prev = key
 
 
+def depths(path):
+    """Row 14: each edge the gap held (with its depth), then each drop off the ground (Ground -> Ledge / InAir ->
+    Ground) with the real drop from the nearest of those edges to the landing, against that edge's depth."""
+    samples = [json.loads(line) for line in open(path)]
+    edges = {}  # one per guidance line: the gap's edge point slides along it with the character
+    for s in samples:
+        if not s["gapValid"]:
+            continue
+        g = s["gap"]
+        offset = g["edge"][0] * g["n"][0] + g["edge"][1] * g["n"][1]  # the line's distance along its normal
+        key = (tuple(round(v, 1) for v in g["n"]), round(offset, 1), round(g["edge"][2], 1), g["noEdge"])
+        e = edges.setdefault(key, {"edge": g["edge"], "n": g["n"], "noEdge": g["noEdge"], "depths": [],
+                                   "t0": s["t"], "t1": s["t"]})
+        e["depths"].append(g["depth"])
+        e["t1"] = s["t"]
+    print("Edges (the gap the controller held):")
+    for e in edges.values():
+        d = e["depths"]
+        print(f"  {e['t0']:7.2f}-{e['t1']:7.2f}s edge {e['edge']} n {e['n']} noEdge {e['noEdge']} "
+              f"depth {min(d):.3f}..{max(d):.3f} ({len(d)} samples)")
+    print("Drops:")
+    last_ground = None
+    off = None  # the last Ground sample before leaving it
+    hang_z = None
+    for s in samples:
+        if s["ctx"] == "Ground":
+            if off is not None:
+                land = s["pos"]
+                near = min(edges.values(), default=None,
+                           key=lambda e: (e["edge"][0] - off["pos"][0]) ** 2 + (e["edge"][1] - off["pos"][1]) ** 2)
+                line = (f"  {off['t']:7.2f}s off {off['pos']}" + (f" hang z {hang_z:.2f}" if hang_z is not None else "")
+                        + f" landed {s['t']:7.2f}s {land}")
+                if land[2] > off["pos"][2] - 0.3:
+                    line += " | no drop (back up or climbed)"
+                elif near:
+                    drop = near["edge"][2] - land[2]
+                    out = (land[0] - near["edge"][0]) * near["n"][0] + (land[1] - near["edge"][1]) * near["n"][1]
+                    line += (f" | nearest edge {near['edge']} n {near['n']}: real drop {drop:.3f} {out:.2f} m out, "
+                             f"depth {min(near['depths']):.3f}..{max(near['depths']):.3f}")
+                print(line)
+                off, hang_z = None, None
+            last_ground = s
+        elif s["ctx"] in ("Ledge", "InAir"):
+            if off is None and last_ground is not None:
+                off = last_ground
+            if s["ctx"] == "Ledge":
+                hang_z = s["pos"][2]
+
+
 if __name__ == "__main__":
     if sys.argv[1] == "--summary":
         summary(sys.argv[2])
+    elif sys.argv[1] == "--depths":
+        depths(sys.argv[2])
     else:
         record(float(sys.argv[1]), sys.argv[2])
