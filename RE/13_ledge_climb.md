@@ -201,7 +201,7 @@ same tracker as HumanGround's); `DoX` packs the parameters and runs `_ExecInterf
   `ExecMovementToInAirOnInterfaceCommand_Release` [0x13407A2] → `ReleaseToInAir` [0x13402EA].
 - **Pullup** (command 0; `CanPullup` [0x134308C], `DoPullup` [0x134754A]): from Movement, 3 at a water well, else
   `EvaluatePullupFromMovement(1, 0, 1)` [0x132EDCA] (`TestMovementToPullupOnInterfaceCommand_Pullup` [0x132FB72]).
-- Live (row 15): the pull-up takes 0.73 s from a wall hang and 1.54 s from a free hang, then goes through
+- Live (row 15): the release goes Wait → InAir at once, from the hang position. The pull-up takes 0.73 s from a wall hang and 1.54 s from a free hang, then goes through
   **NarrowObject** (`ExecPullupToNarrowObjectMain`) for 0.27 s before Ground, standing 0.05–0.08 m back from the edge.
 - The player's controller sends them from `AssassinTask::UpdateLedge` [0x1076B30] (0x1E74 bytes, not read yet).
 

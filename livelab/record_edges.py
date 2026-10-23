@@ -35,8 +35,10 @@ def state_name(i):
     return STATES.get(i, str(i))
 
 
+# Context vftables (PC). Debug (the ghost mode) and HayStack seen live (session 7); Climb is a hypothesis (entered from
+# Ledge's ParrallelJumpPreparation while going up a wall; its vftable sits next to Ledge's).
 CONTEXTS = {0x19BFCD8: "Ground", 0x19C05B0: "InAir", 0x19C0010: "Ledge", 0x1A2EC08: "Walling",
-            0x1A30588: "NarrowObject"}
+            0x1A30588: "NarrowObject", 0x1A2FC70: "Debug", 0x1A2FA20: "HayStack", 0x19C02A8: "Climb?"}
 
 
 def gap(b):
@@ -182,7 +184,7 @@ def depths(path):
                 hang_z = s["pos"][2]
 
 
-LEDGE_STATES = {1: "Movement", 2: "Wait", 3: "HandPlacement", 6: "PullDown", 7: "HangEntry", 10: "Pullup",
+LEDGE_STATES = {1: "Movement", 2: "Wait", 3: "HandPlacement", 4: "ParrallelJumpPreparation", 6: "PullDown", 7: "HangEntry", 10: "Pullup",
                 11: "HandPassOver", 13: "HangWallReception", 14: "HangFreeReception", 19: "GraspEntry"}
 
 
