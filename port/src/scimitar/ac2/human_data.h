@@ -6,6 +6,7 @@
 
 #include <cstdint>
 
+#include "scimitar/ac2/edge_clamping.h"
 #include "scimitar/math.h"
 
 namespace scimitar::ac2 {
@@ -202,6 +203,93 @@ struct PortActionLengths {
     // after EdgeStop began; with the stick released, EdgeStop went back to Move after 0.94 s (one sample).
     float edgeStopUnbalance = 0.27f;
     float edgeStop = 0.94f;
+};
+
+// Reflected class HumanLedgeData (descriptor PC 0x1D1AF70, size 0x1B0, parent HumanLedgeDatav2; RE/13_ledge_climb.md
+// 3). Enum names from the Revelations PDB; AC2's LedgeSubState lacks Revelations' 14 (HookBladeGrasp), so 14-18 are
+// Revelations' 15-19 (hypothesis: every case of EnterHumanLedge's switch fits).
+struct HumanLedgeData {
+    enum PullDownType : int {
+        PullDownType_Ground_Soft_EdgeStop = 0,  // HumanGround's Exec from EdgeStop (live: the run)
+        PullDownType_Ground_Soft_Wait = 1,      // from Move (live: the standing grasp)
+        PullDownType_Ground_Hard = 2,
+        PullDownType_Beam_Soft = 3,
+        PullDownType_HandPassOver = 4,
+        PullDownType_WaterWellSoft = 5,
+        PullDownType_Ground_Fast = 6,
+    };
+    enum PullDownSide : int { PullDownSide_Front = 0, PullDownSide_Back = 1, PullDownSide_Left = 2, PullDownSide_Right = 3 };
+    enum LedgeSubState : int {
+        SubState_Entry = 0,
+        SubState_Movement = 1,
+        SubState_TurnCorner = 2,
+        SubState_HandPlacement = 3,
+        SubState_Pullup = 4,
+        SubState_ReboundTransition = 5,
+        SubState_HangWallReception = 6,
+        SubState_HangFreeReception = 7,
+        SubState_SwingReception = 8,
+        SubState_TransitionInFromClimb = 9,
+        SubState_TransitionInFromLadder = 10,
+        SubState_PullDown = 11,
+        SubState_HandPassOver = 12,
+        SubState_Grasp = 13,
+        SubState_ParallelJump = 14,
+        SubState_SwimEntry = 15,
+        SubState_PullupToActorGrab = 16,
+        SubState_PullupToActorAssassinate = 17,
+        SubState_JumpToActorAssassinate = 18,
+    };
+    enum PullDownSubState : int {
+        PullDownSubState_None = 0,
+        PullDownSubState_Orientation = 1,
+        PullDownSubState_Descent = 2,
+        PullDownSubState_Reception = 3,
+        PullDownSubState_ReleaseToInAir = 4,
+    };
+    enum LedgeHangType : int { LedgeHangType_Wall = 0, LedgeHangType_Free = 1, LedgeHangType_WallFree = 2 };
+
+    Vec3 m_CurDirection;                          // +0x10 IHumanLedge::SetDirection
+    Vec3 m_CurRelativeDirection;                  // +0x20 IHumanLedge::SetRelativeDirection
+    PullDownType m_PullDownType = PullDownType_Ground_Soft_EdgeStop;  // +0x40
+    PullDownSide m_PullDownSide = PullDownSide_Front;                 // +0x44
+    LedgeSubState m_SubState = SubState_Entry;                        // +0x4C the state the context enters in
+    PullDownSubState m_PullDownSubState = PullDownSubState_None;      // +0x54
+    std::uint32_t m_DirectionType = 0;            // +0x58 IHumanLedge::SetDirectionType
+    float m_CurSpeedRatio = 0;                    // +0x5C IHumanLedge::SetSpeedRatio
+    LedgeHangType m_LedgeHangType = LedgeHangType_Wall;  // +0x68
+    Gap m_PullDownGap;                            // +0xF0 (Revelations m_PullDownGap) the gap a pull-down starts from
+};
+
+// PORT: the Ledge context's animation-driven moves. The game moves the body along each step's action
+// (DisplacementManager / SetupInterpolatorForHumanLedgeMove) towards targets from the hands' anchor points
+// (RE/13_ledge_climb.md 5), over the action's length. Until the anchors, the interpolator and the animations are
+// ported, the port moves the entity root linearly between the positions measured live, over the measured durations
+// (RE/20_live_checks.md row 15, 2026-10-23). Offsets are from the gap's edge: `out` along its flat normal, `up`.
+struct PortLedgeMoves {
+    struct Offset {
+        float out, up;
+    };
+    // The pull-down's steps (PullDownSubState 1-3).
+    float orientation[2] = {0.40f, 0.53f};  // by PullDownType: 0 (from EdgeStop), 1 (from Move)
+    float descent = 0.13f;
+    float receptionWall = 0.13f;
+    float receptionFree = 0.33f;
+    Offset orientationEnd{0.53f, -0.05f};
+    Offset descentEnd{0.97f, -0.80f};
+    Offset hangWall{0.539f, -1.082f};
+    Offset hangFree{0.0f, -2.400f};
+    // The pull-up (Pullup, then NarrowObject for 0.27 s, then Ground; the port has no NarrowObject context and stays
+    // in Pullup for that time), and where the root ends, on the roof.
+    float pullupWall = 0.73f;
+    float pullupFree = 1.54f;
+    float pullupNarrowObject = 0.27f;
+    Offset standWall{-0.081f, 0.0f};
+    Offset standFree{-0.050f, 0.0f};
+    // PORT: Human::GetToesDestAnchors (Mac 0x12DBE14) looks for the toes' anchors on the wall 1.2 m under the hands
+    // (0.65); the port casts a ray at the wall from this far out, at that depth.
+    float toesDepth = 1.2f;
+    float toesReach = 0.65f;
 };
 
 struct HumanInAirData {

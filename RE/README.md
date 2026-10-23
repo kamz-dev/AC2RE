@@ -9,6 +9,7 @@ Every claim cites its address (PC first). Guesses are marked **(hypothesis)**. A
 | [01_triage.md](01_triage.md) | The pinned PC build: hashes, sections, imports, RTTI, the IDB's state | started 2026-10-21 |
 | [02_symbol_sources.md](02_symbol_sources.md) | Getting names from the Mac and Revelations builds onto the PC build | started 2026-10-21 |
 | [11_ground.md](11_ground.md) | HumanGround: class, vftable, FSM tree, MoveCycle speed model, Wait / MoveCycle transitions, turning | partial 2026-10-21 |
+| [13_ledge_climb.md](13_ledge_climb.md) | HumanLedge: class, FSM (29 states, Mac → PC), data, entry, the pull-down | started 2026-10-23 |
 | [21_input.md](21_input.md) | The player controller (`AssassinTask`) and its interface to HumanGround | ground controller decoded and ported 2026-10-21 |
 | [22_reflection.md](22_reflection.md) | Reflection: class / property / enum descriptors, `refl.py`, the hash list | started 2026-10-21 |
 | [20_live_checks.md](20_live_checks.md) | Numbered questions only the running game can answer | 6 open (2 half answered) |

@@ -16,6 +16,7 @@
 namespace scimitar::ac2 {
 
 class HumanGround;
+class HumanLedge;
 class HumanInAir;
 
 // scimitar::ac2::IHuman: the interface others use to reach the Human. In the game it is a secondary base at
@@ -56,7 +57,8 @@ public:
 
     HumanGround& GetGround();  // Mac 0x12C4950
     HumanInAir& GetInAir();    // Mac 0x12C490C
-    // Not implemented yet: GetLedge 0x12C48EA, GetClimb 0x12C48C8, GetWalling 0x12C48A6, GetLadder 0x12C492E,
+    HumanLedge& GetLedge();    // Mac 0x12C48EA
+    // Not implemented yet: GetClimb 0x12C48C8, GetWalling 0x12C48A6, GetLadder 0x12C492E,
     // GetNarrowObject 0x12C46A8, GetHayStack 0x12C4774, GetKiosk 0x12C47B8, GetSwim 0x12C4686.
 
     ActorContext* Get(HumanContextId id);  // PORT: by id (Human::GetContextByID's lookup); null when not ported
@@ -151,6 +153,9 @@ public:
     const HumanGroundData& GetGroundData() const { return m_GroundData; }
     const HumanInAirData& GetInAirData() const { return m_InAirData; }
     HumanInAirData& GetInAirData() { return m_InAirData; }
+    HumanLedgeData& GetLedgeData() { return m_LedgeData; }  // HumanData::GetLedgeData (Mac 0xE39528)
+    const HumanLedgeData& GetLedgeData() const { return m_LedgeData; }
+    const PortLedgeMoves& GetPortLedgeMoves() const { return m_PortLedgeMoves; }
     const PortGroundSpeeds& GetPortGroundSpeeds() const { return m_PortGroundSpeeds; }
     const PortActionLengths& GetPortActionLengths() const { return m_PortActionLengths; }
 
@@ -184,6 +189,8 @@ private:
     const ActorContext* m_PortTimedContext = nullptr;
     HumanGroundData m_GroundData;
     HumanInAirData m_InAirData;
+    HumanLedgeData m_LedgeData;
+    PortLedgeMoves m_PortLedgeMoves;
     PortGroundSpeeds m_PortGroundSpeeds;
     PortActionLengths m_PortActionLengths;
 };

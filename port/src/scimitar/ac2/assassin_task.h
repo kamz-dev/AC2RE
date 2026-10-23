@@ -18,6 +18,7 @@ namespace scimitar::ac2 {
 
 class Human;
 class HumanInAir;
+class IHumanLedge;
 class IHuman;
 class IHumanGround;
 
@@ -54,6 +55,12 @@ public:
     // side-step landing requests go to parts of InAir the port doesn't have.
     void UpdateInAir(HumanInAir& inAir, const Vec3& sight);
 
+    // Mac 0x1076B30 (PC not located yet): the Ledge context's update (RE/13_ledge_climb.md 8). The decoded part the
+    // port uses: the direction and speed setters, the release on the buffered empty-hand press and the pull-up on the
+    // stick pushed up. The assassinations, the climb leap, the rebound (back eject), the hand-pass-over jump, the
+    // pass-over, the turn-around and the swings go to parts of Ledge the port doesn't have.
+    void UpdateLedge(IHumanLedge& ledge, const Vec3& sight);
+
     // PORT: the ability set's answers (the game reads the mission's AssassinAbilitySet). Defaults: everything allowed.
     bool m_PortAllActions = true;   // AssassinAbilitySet::GetAllActions (PC 0x6CC7C0)
     bool m_PortHighProfile = true;  // AssassinAbilitySet::GetHighProfile
@@ -66,6 +73,10 @@ public:
     int m_RotationDirection = 0;       // +0x8C0 IHumanGround::RotationDirection (always 0 after UpdateGroundMovement)
     bool m_IsHighProfile = false;      // +0x94C (Revelations name) the high-profile button, from UpdateGlobal
     bool m_ForceTurnAround = false;    // +0x94E
+    // +0x94A: the empty hand (pad button 3) was just pressed; set by UpdateGlobal (Mac 0x106C1B0), cleared the next
+    // frame (unless ButtonJustPressedWithDelay(0, 0.3)), by a timer (+0xA64; PORT: not ported) and on entering the
+    // Ledge, Climb, Ladder and Main states (EnterLedge Mac 0x1058601 ...). The ledge release reads it.
+    bool m_EmptyHandJustPressed = false;
     float m_LastInputLength = 0;       // +0xEC0 the stick length
     float m_LastInputAngle = 0;        // +0xEC4 sight -> m_LastRelativeDirection, kept while the stick is in the dead zone
     Vec3 m_LastRelativeDirection;      // +0xED0 the camera-relative stick, normalised
@@ -97,6 +108,12 @@ private:
 
     // PORT: the stick band (AssassinTask +0x7D4) and last frame's (+0x7D6), and the pad buttons the port has.
     int m_PortStickBand = 0;
+    // PORT: the pad stick (stick space: +y is the pad's up), which UpdateLedge measures its angle on (Mac reads
+    // AssassinTask +0x1030; what it holds is a hypothesis).
+    Vec3 m_PortPadStick;
+    // PORT: the Human context the task's FSM was in last frame (the game switches the task's state through
+    // GoAssInterfaceCommand_SetCurrentContext and runs its Enter).
+    int m_PortTaskContext = -1;
     int m_PortPreviousStickBand = 0;
     bool m_PortButton0 = false;  // Pad button 0
     bool m_PortButton3 = false;  // Pad button 3 (the empty hand, Shift)

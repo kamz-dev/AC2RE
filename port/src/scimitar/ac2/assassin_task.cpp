@@ -6,6 +6,7 @@
 #include "scimitar/ac2/human.h"
 #include "scimitar/ac2/human_ground.h"
 #include "scimitar/ac2/human_in_air.h"
+#include "scimitar/ac2/human_ledge.h"
 
 namespace scimitar::ac2 {
 
@@ -80,6 +81,18 @@ void AssassinTask::Update(const port::MoveInput& input, Human& human, float dt) 
     m_PortButton0 = input.held(port::kLegs);
     m_PortButton3Before = m_PortButton3;
     m_PortButton3 = input.held(port::kHand);
+    m_PortPadStick = stick;
+    // +0x94A (Mac 0x106C1E5): set on ButtonJustPressed(3), else cleared unless ButtonJustPressedWithDelay(0, 0.3).
+    if (m_PortButton3 && !m_PortButton3Before)
+        m_EmptyHandJustPressed = true;
+    else if (!PortButtonJustPressedWithDelay(0, 0.3f))
+        m_EmptyHandJustPressed = false;
+    // The task's FSM follows the Human's context; entering its Ledge state clears +0x94A (EnterLedge Mac 0x1058601),
+    // so the press that pulled down doesn't also drop.
+    const int context = static_cast<int>(human.GetCurrentContextID());
+    if (context != m_PortTaskContext && human.GetCurrentContextID() == HumanContextId::Ledge)
+        m_EmptyHandJustPressed = false;
+    m_PortTaskContext = context;
 
     // PORT: the task's FSM runs the current context's update; the port has the ground one. The game's UpdateGround
     // (PC 0xE049A0) first runs a chain of handlers (mission interaction, rest, loot, formations, weapons, fight,
@@ -89,6 +102,50 @@ void AssassinTask::Update(const port::MoveInput& input, Human& human, float dt) 
         UpdateGroundMovement(human, human.GetContextBundle().GetGround(), human.m_Position, sight, dt);
     else if (human.GetCurrentContextID() == HumanContextId::InAir)
         UpdateInAir(human.GetContextBundle().GetInAir(), sight);
+    else if (human.GetCurrentContextID() == HumanContextId::Ledge)
+        UpdateLedge(human.GetContextBundle().GetLedge(), sight);
+}
+
+void AssassinTask::UpdateLedge(IHumanLedge& ledge, const Vec3& sight) {
+    const Vec3 flatSight = normalized(Vec3{sight.x, sight.y, 0});
+    // The stick's angle from the pad's up (GetAngle(+0x1030, BaseJ, BaseK)), above the 0.35 dead zone, picks the move
+    // direction: up the wall (the sight) within 45 degrees, along the ledge to 135, else down.
+    float angle = 0;
+    Vec3 dir;
+    if (!(m_LastInputLength < 0.35f)) {
+        angle = Gear::GetAngle(m_PortPadStick, Vec3{0, 1, 0}, Gear::kBaseK);
+        const float a = std::fabs(angle);
+        if (a < 0.78539819f) {
+            dir = flatSight;
+        } else if (a <= 2.3561945f) {
+            // BaseEntity::GetHorizon. PORT: taken as the sight's right (sight x K), the other way for a negative angle.
+            const Vec3 horizon = cross(flatSight, Gear::kBaseK);
+            dir = angle >= 0.0f ? horizon : horizon * -1.0f;
+        } else {
+            dir = flatSight * -1.0f;
+        }
+        dir = normalized(dir);
+    }
+    if (m_LastInputLength <= 0.35f) {
+        ledge.SetSpeedRatio(0);
+        ledge.SetRelativeDirection(flatSight);
+    } else {
+        ledge.SetDirection(dir);
+        ledge.SetDirectionType(0);
+        ledge.SetRelativeDirection(m_LastRelativeDirection);
+        ledge.SetSpeedRatio(m_LastInputLength);
+    }
+    // PORT: the ledge-top assassination, the climb leap, the air assassination / tackle and the rebound come here.
+
+    // The release (Mac 0x10777A6..): CanRelease and the buffered empty hand -> DoRelease (a leap of faith below when
+    // there is one; PORT: none).
+    if (ledge.CanRelease() && m_EmptyHandJustPressed) {
+        ledge.DoRelease();
+        return;
+    }
+    // The pull-up: the stick above the dead zone and within 45 degrees of up. PORT: the hand-pass-over jump,
+    // SetHangAfterPassover, the pass-over, the turn-around and the swings aren't ported.
+    if (m_LastInputLength > 0.35f && std::fabs(angle) < 0.78539819f && ledge.CanPullup()) ledge.DoPullup();
 }
 
 void AssassinTask::UpdateInAir(HumanInAir& inAir, const Vec3& sight) {
