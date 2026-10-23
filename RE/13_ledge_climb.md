@@ -178,6 +178,10 @@ frame (`LegacyUpdate`); a step ends when `GetProgressionRatio` reaches 1.
 So the hang's position is geometry (the hand anchors on the guidance line and the wall), while each step's duration
 is its animation's length: the port needs the former decoded and the latter measured live.
 
+**Live (row 15, 2026-10-23):** Orientation 0.53 s (PullDownType 1) / 0.40 s (type 0), Descent 0.13 s, Reception
+0.13 s (wall) / 0.33 s (free). The root ends the Orientation 0.53 m out from the edge, the Descent 0.8 m lower, and
+the hang at **0.539 out, 1.082 down** against a wall or **on the edge line, 2.400 down** hanging free.
+
 ## 6. HangEntry (id 7) and the hang
 - `UpdateHangEntryMain` [0x133DB24]: waits for the reception action to finish (`HasActionFinished`), forces the move
   to its end (progression 1), initialises the limbs' IK (unless the entry was a pull-down, `SubState` 11), then plays
@@ -197,6 +201,8 @@ same tracker as HumanGround's); `DoX` packs the parameters and runs `_ExecInterf
   `ExecMovementToInAirOnInterfaceCommand_Release` [0x13407A2] → `ReleaseToInAir` [0x13402EA].
 - **Pullup** (command 0; `CanPullup` [0x134308C], `DoPullup` [0x134754A]): from Movement, 3 at a water well, else
   `EvaluatePullupFromMovement(1, 0, 1)` [0x132EDCA] (`TestMovementToPullupOnInterfaceCommand_Pullup` [0x132FB72]).
+- Live (row 15): the pull-up takes 0.73 s from a wall hang and 1.54 s from a free hang, then goes through
+  **NarrowObject** (`ExecPullupToNarrowObjectMain`) for 0.27 s before Ground, standing 0.05–0.08 m back from the edge.
 - The player's controller sends them from `AssassinTask::UpdateLedge` [0x1076B30] (0x1E74 bytes, not read yet).
 
 ## Open
