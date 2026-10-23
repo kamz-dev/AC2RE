@@ -19,6 +19,7 @@ PDB = os.path.join(HERE, "..", "..", "IDB", "scimitar_final_ltcg.pdb")
 LF_FIELDLIST, LF_CLASS, LF_STRUCTURE, LF_ENUM = 0x1203, 0x1504, 0x1505, 0x1507
 LF_MEMBER, LF_ENUMERATE, LF_BCLASS, LF_NESTTYPE, LF_ONEMETHOD, LF_METHOD = 0x150D, 0x1502, 0x1400, 0x1510, 0x1511, 0x150F
 LF_INDEX = 0x1404
+LF_BITFIELD = 0x1205
 LF_STMEMBER, LF_VFUNCTAB, LF_VBCLASS, LF_IVBCLASS, LF_POINTER, LF_ARRAY, LF_MODIFIER = 0x150E, 0x1409, 0x1401, 0x1402, 0x1002, 0x1503, 0x1001
 SIMPLE = {0x03: "void", 0x10: "char", 0x20: "uchar", 0x11: "short", 0x21: "ushort", 0x12: "long", 0x22: "ulong",
           0x74: "int", 0x75: "uint", 0x40: "float", 0x41: "double", 0x30: "bool", 0x68: "int8", 0x69: "uint8",
@@ -122,6 +123,9 @@ class TPI:
             elem, _ = struct.unpack_from("<II", b)
             size, _ = numeric(b, 8)
             return f"{self.type_name(elem)}[{size} bytes]"
+        if kind == LF_BITFIELD:  # {type, length, position}
+            base, length, position = struct.unpack_from("<IBB", b)
+            return f"{self.type_name(base)} : bits {position}..{position + length - 1}"
         return f"type{ti:#x}"
 
     def fields(self, flist):
