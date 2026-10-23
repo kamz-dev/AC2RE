@@ -161,4 +161,43 @@ bool GetNextVerticalLimbPos(AnchorPoint& anchor, const std::vector<GuidanceConta
     return true;
 }
 
+HangEntityPose ComputeHangWallEntityPosition(const Vec3& hand0, const Vec3& hand1, const Vec3& normal0,
+                                             const Vec3& normal1, const Vec3& toe0, const Vec3& toe1,
+                                             bool useHigherHand) {
+    // The sight against the two normals; when they are nearly opposite (cos < -0.98480773, 170 degrees), the first.
+    Vec3 sight = normal0 * -1.0f + normal1 * -1.0f;
+    if (dot(normal0, normal1) < -0.98480773f) sight = normal0;
+    sight = sight * (1.0f / length(sight));
+    const Vec3 handsMid = (hand1 + hand0) * 0.5f;
+    const Vec3 toesMid = (toe0 + toe1) * 0.5f;
+    Vec3 side = cross(sight, Gear::kBaseK);
+    side = side * (1.0f / length(side));
+    const Vec3 toesInPlane = ProjectPointOnPlane(toesMid, handsMid, side, side);
+    Vec3 up = handsMid - toesInPlane;
+    up = up * (1.0f / length(up));
+    Vec3 sightOut = cross(up, side);
+    sightOut = sightOut * (1.0f / length(sightOut));
+    HangEntityPose pose;
+    pose.sight = sightOut;
+    pose.up = up;
+    pose.position = handsMid;
+    const bool takeHand1 = useHigherHand ? hand0.z < hand1.z : hand1.z < hand0.z;
+    pose.position.z = takeHand1 ? hand1.z : hand0.z;
+    pose.position = pose.position - up * 1.1f - sightOut * 0.5f;
+    return pose;
+}
+
+HangEntityPose ComputeHangFreeEntityPosition(const Vec3& hand0, const Vec3& hand1, const Vec3& normal0,
+                                             const Vec3& normal1) {
+    HangEntityPose pose;
+    pose.position = (hand0 + hand1) * 0.5f;
+    pose.position.z = hand0.z <= hand1.z ? hand1.z : hand0.z;
+    pose.up = Gear::kBaseK;
+    Vec3 n = normal0 + normal1;
+    n.z = 0;
+    pose.sight = n * (-1.0f / length(n));
+    pose.position = pose.position - pose.up * 2.4f;
+    return pose;
+}
+
 }  // namespace scimitar::ac2

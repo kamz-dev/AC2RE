@@ -78,4 +78,22 @@ bool GetNextVerticalLimbPos(AnchorPoint& anchor, const std::vector<GuidanceConta
                             const Vec3& entityBanking, const Vec3& position, const Vec3& up, const Vec3& normal,
                             float minZ, float maxZ, float width, float lateral, bool withSurfaces);
 
+// Where the entity hangs from two hand holds (Human members in the game, no state used).
+struct HangEntityPose {
+    Vec3 position;
+    Vec3 sight;
+    Vec3 up;
+};
+// Human::ComputeHangWallEntityPosition (PC 0x91FDE0, Mac 0x12D61CE): feet against a wall. Up runs from the toes'
+// middle (brought into the vertical plane through the hands' middle, across the sight) to the hands' middle; the
+// sight is up x side; the position is the hands' middle (at the higher hand with `useHigherHand`, else the lower)
+// minus 1.1 up and 0.5 sight.
+HangEntityPose ComputeHangWallEntityPosition(const Vec3& hand0, const Vec3& hand1, const Vec3& normal0,
+                                             const Vec3& normal1, const Vec3& toe0, const Vec3& toe1,
+                                             bool useHigherHand);
+// Human::ComputeHangFreeEntityPosition (PC 0x9200A0, Mac 0x12CDE14): hanging free. The hands' middle at the higher
+// hand, 2.4 m down; the sight against the hands' normals (flat); up = K.
+HangEntityPose ComputeHangFreeEntityPosition(const Vec3& hand0, const Vec3& hand1, const Vec3& normal0,
+                                             const Vec3& normal1);
+
 }  // namespace scimitar::ac2

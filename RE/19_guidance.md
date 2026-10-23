@@ -202,10 +202,29 @@ non-level lines dropped (`RemoveNonLeveledGuidancesFromReport`); then `Human::Ca
 (0, 0.02, 0.02)) and `Human::CreateOccludedGuidanceReport(…, 154)` (not decoded), and the lines the ladders obstruct
 removed (`BuildLadderListFromGuidanceReport`, `RemoveGuidanceObstructedByLadders`).
 
+**Where the body hangs** (PC names by the pull-down's call order and their bodies; Mac `HumanLedge::UpdatePullDownMain`
+[0x132BBA8] calls them with the two hand anchors, their flattened normals and, for the wall, the toes):
+- `Human::ComputeHangFreeEntityPosition(pos, sight, up, h0, h1, n0, n1)` (PC 0x9200A0 [0x12CDE14]): pos = the hands'
+  middle, at the higher hand's z, minus **2.4**·K; sight = −normalize(flat(n0 + n1)); up = K. Live (`13` row 15): the
+  free hang on the edge line, 2.400 m down — exactly this.
+- `Human::ComputeHangWallEntityPosition(pos, sight, up, h0, h1, n0, n1, t0, t1, higher)` (PC 0x91FDE0 [0x12D61CE]):
+  sight₀ = normalize(−n0 − n1) (n0 when n0·n1 < −0.98480773); side = normalize(sight₀ × K); the toes' middle projected
+  onto the plane through the hands' middle with normal `side`; up = normalize(hands − that); sight = normalize(up ×
+  side); pos = the hands' middle (z of the higher hand, or the lower without `higher`) − **1.1**·up − **0.5**·sight.
+  Live: 0.539 out, 1.082 down = this formula with up tilted 2° off the wall, i.e. the toes about 4 cm in front of the
+  hands' line.
+- `Human::GetToesDestAnchors(t0, t1, pos, normal, f, b)` (PC 0x9212B0 [0x12DBE14]; the pull-down passes f = 0.65):
+  two probes (PC 0xEC9A50, Mac name not matched) around pos − 1.0·K + normal·(f/2 + 0.25 − 0.5) ∓ 0.2·side with a
+  0.25 × (f/2 + 0.25) × 0.15 box, a 0.07 step and offsets (0, 0, ±0.1); each first casts a ray along the normal, else
+  slices the collision with horizontal planes every 0.07 m (a `GuidanceWorkspace` plane cast making Surface lines)
+  and takes the nearest line facing back (flat normal · normal < −0.707, point within 0.05). With both found and Human
+  +0x972 set, two toes closer than 0.04 m in the side plane are kept, else the one farther from the centre is
+  dropped (hypothesis on the last step).
+
 Ported (`port/src/scimitar/ac2/anchor_point.{h,cpp}`, 2026-10-23): `AnchorPoint`, the type mapping,
 `GetFlatNormalFromGuidanceSubType` (PORT: a ladder's bottom-most normal is the lower face's), the two projections,
 `GetClosestPointInBoxWithOffset` (PORT: a given report is used as it is; no ladder steps) and `GetNextVerticalLimbPos`
-(PORT: no occlusion). Not yet used by HumanLedge (its pull-down still moves between live positions).
+(PORT: no occlusion), `ComputeHangWallEntityPosition` and `ComputeHangFreeEntityPosition`. Not yet used by HumanLedge (its pull-down still moves between live positions).
 
 ## Open
 - The other zones (box: edge clamping's `GetEdgeSegmentNearCharacterPos`; capsule, plane, mesh), the cut mode,

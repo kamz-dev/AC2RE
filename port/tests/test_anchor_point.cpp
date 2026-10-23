@@ -102,3 +102,27 @@ TEST(next_vertical_limb_pos_takes_the_highest_line_going_up) {
                                  false));
     CHECK_NEAR(hand.m_GlobalPosition.z, 7.8f, 1e-3f);
 }
+
+TEST(hang_wall_position_reproduces_the_live_offsets) {
+    // Hands on the north edge (y = 5, z = 8) with the edge's normal (0, 1, 0); toes 1.2 m lower and 0.042 m out (up
+    // tilted 2 degrees off the wall). Live (RE/20 row 15): the root 0.539 out, 1.082 down.
+    const float out = 1.2f * std::tan(2.0f * 3.1415927f / 180.0f);
+    const HangEntityPose pose = ComputeHangWallEntityPosition({-0.25f, 5, 8}, {0.25f, 5, 8}, {0, 1, 0}, {0, 1, 0},
+                                                              {-0.2f, 5 + out, 6.8f}, {0.2f, 5 + out, 6.8f}, true);
+    CHECK_NEAR(pose.position.y - 5.0f, 0.538f, 2e-3f);
+    CHECK_NEAR(pose.position.z - 8.0f, -1.082f, 2e-3f);
+    CHECK_NEAR(pose.sight.y, -std::cos(2.0f * 3.1415927f / 180.0f), 1e-4f);  // into the wall
+    // Toes straight below: exactly 0.5 out, 1.1 down.
+    const HangEntityPose flat = ComputeHangWallEntityPosition({-0.25f, 5, 8}, {0.25f, 5, 8}, {0, 1, 0}, {0, 1, 0},
+                                                              {-0.2f, 5, 6.8f}, {0.2f, 5, 6.8f}, true);
+    CHECK_NEAR(flat.position.y, 5.5f, 1e-5f);
+    CHECK_NEAR(flat.position.z, 6.9f, 1e-5f);
+}
+
+TEST(hang_free_position_is_2_4_m_under_the_hands) {
+    // Live (row 15): the free hang on the edge line, 2.400 m down.
+    const HangEntityPose pose = ComputeHangFreeEntityPosition({-0.25f, 5, 8}, {0.25f, 5, 8.1f}, {0, 1, 0}, {0, 1, 0});
+    CHECK_NEAR(pose.position.y, 5.0f, 1e-6f);
+    CHECK_NEAR(pose.position.z, 8.1f - 2.4f, 1e-5f);  // the higher hand
+    CHECK_NEAR(pose.sight.y, -1.0f, 1e-6f);
+}
