@@ -205,8 +205,7 @@ using GroundState = scimitar::ac2::HumanGround::State;
 TEST(high_profile_run_at_a_deep_edge_unbalances_into_edge_stop) {
     // Above 5 m the clamp is on, but edges whose normal is within 60 degrees of the stick are filtered out
     // (FilterSegmentListWithNormalAngle), so the run reaches the edge; within 0.15 m it unbalances (EdgeStop). Live
-    // (RE/11_ground.md 17): EdgeStop at square distance 0.0224, then the pull-down to Ledge. PORT: no Ledge context,
-    // so the port stays on the ground, wobbling.
+    // (RE/11_ground.md 17): EdgeStop at square distance 0.0224, then the pull-down to Ledge (test_ledge.cpp).
     BoxWorld world = Roof(8);
     Sim sim(world, {.position = {0, 2, 8}}, kFineDt);
     bool sawEdgeStop = false;
@@ -223,7 +222,6 @@ TEST(high_profile_run_at_a_deep_edge_unbalances_into_edge_stop) {
     CHECK(edgeStopY > 5.0f - 0.15f - 1e-3f);
     CHECK(edgeStopY <= 5.0f);
     CHECK(!SawInAir(sim));
-    CHECK_NEAR(sim.human().m_Position.z, 8.0f, 1e-6f);
 }
 
 TEST(high_profile_run_off_a_mid_drop_falls_off_the_edge) {
@@ -288,17 +286,17 @@ TEST(released_stick_in_edge_stop_goes_back_to_move) {
 
 TEST(grasp_at_the_look_down_pulls_down_to_ledge) {
     // Live (RE/20 row 13, session 6): Shift (the empty hand, pad button 3) at the look-down goes Ground -> Ledge
-    // directly (ButtonJustPressedWithDelay(3) -> DoPullDownOnEdge, PC 0xDFA6CA). PORT: no Ledge context, so the
-    // switch is refused and Ezio stays.
+    // directly (ButtonJustPressedWithDelay(3) -> DoPullDownOnEdge, PC 0xDFA6CA); the pull-down itself is in
+    // test_ledge.cpp.
     BoxWorld world = Roof(8);
     Sim sim(world, {.position = {0, 2, 8}}, kFineDt);
     sim.run(6.0f, [](float) { return Toward({0, 1, 0}); });
     const auto& ground = sim.human().GetContextBundle().GetGround();
     CHECK(ground.GetWaitState() == GroundState::LookDown);
-    CHECK(sim.human().GetPortRefusedContextID() == HumanContextId::None);
     MoveInput press = Toward({0, 1, 0});
     press.buttons = kHand;
     sim.step(press);
-    CHECK(sim.human().GetPortRefusedContextID() == HumanContextId::Ledge);
+    CHECK(sim.human().GetCurrentContextID() == HumanContextId::Ledge);
     CHECK(!ground.IsInEdgeStop());  // the direct path, not the wobble
+    CHECK(sim.human().GetPortRefusedContextID() == HumanContextId::None);
 }

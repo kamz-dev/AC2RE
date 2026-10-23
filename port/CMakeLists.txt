@@ -12,6 +12,7 @@ add_library(ac2_movement STATIC
   src/scimitar/ac2/human.cpp
   src/scimitar/ac2/human_ground.cpp
   src/scimitar/ac2/human_in_air.cpp
+  src/scimitar/ac2/human_ledge.cpp
   src/port/game_dir.cpp
   src/port/sim.cpp
 )
@@ -30,6 +31,7 @@ add_executable(ac2_tests
   tests/test_ground_landing.cpp
   tests/test_ground_crouch.cpp
   tests/test_edge_clamping.cpp
+  tests/test_ledge.cpp
   tests/test_context_switch.cpp
   tests/test_movement.cpp
   tests/test_sim.cpp

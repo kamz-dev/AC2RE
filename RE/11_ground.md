@@ -719,7 +719,8 @@ edge's own drop (a recursive GetGapList), and 7 m caps it (live row 12 saw 7.0 o
 - `CastEntityInternal` (Mac 0x62CC70): which lines a zone catches. The port tests the line against the sphere / box.
 - Who reads `IsEdgeClampingZeroSpeed`.
 - Live (row 12, 2026-10-22): the rules hold on roofs of 1.2, 2.3 and 7+ m. A high-profile run over a deep edge goes
-  from Ground **straight to Ledge** (a hang); that hand-over isn't decoded (the port falls into InAir instead). After
+  from Ground to Ledge (a hang): through EdgeStop and the LedgePullDown command (section 17, live row 13; ported
+  with the Ledge context, `13_ledge_climb.md`, 2026-10-23). After
   a low-profile stop at an edge the ground leaves the clamping states (+0x991 = 0); which state isn't known.
 - Who clears `m_GapCalculated` each frame; `m_IsGapValid` flickers between frames live while standing at an edge
   (another writer, hypothesis).
@@ -793,8 +794,7 @@ parameter. Mac symbols; the PC Can / Do entries are named (PC addresses in `21_i
   - the two clearance tests pass;
   - no upper body (LookDown's +0x24 taken as 1);
   - EdgeStop's unbalance lasts the measured 0.27 s and goes back to Wait;
-  - the pull-down requests the Ledge context, which the port doesn't have yet, so a run at a deep edge wobbles in
-    EdgeStop instead of hanging;
+  - the pull-down hands over to the Ledge context (`13_ledge_climb.md`; since 2026-10-23), which hangs;
   - the jumps and the grasp button aren't ported;
   - the ground holds while any point within 0.38 m of the centre has ground (the stand-up capsule's radius), so
     FallOffEdge (0.1 m past) comes first, as in the game.

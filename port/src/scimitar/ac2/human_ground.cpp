@@ -1064,11 +1064,19 @@ bool HumanGround::CanPullDownOnEdge(const Gap& gap) {
 }
 
 void HumanGround::DoPullDownOnEdge(const Gap& gap) {
-    // _TransitFrom{Move,EdgeStop}ToLedge...LedgePullDown (Mac 0xF99D34 / 0xF9A45A): TransitToContext(Ledge) at once;
-    // the Exec (Mac 0xF98DA6 / 0xF9B884) copies the gap into the Ledge data. PORT: the port has no Ledge context yet,
-    // so TransitToContext does nothing and the Human stays on the ground.
+    // _TransitFrom{Move,EdgeStop}ToLedge...LedgePullDown (Mac 0xF99D34 / 0xF9A45A): TransitToContext(Ledge) at once,
+    // with the Exec (Mac 0xF98DA6 from Move / 0xF9B884 from EdgeStop): the gap into HumanLedgeData +0xF0,
+    // PullDownType 1 from Move (0 from EdgeStop), PullDownSide Front, SubState 11 (PullDown; RE/13_ledge_climb.md 4).
     if (!CanPullDownOnEdge(gap)) return;
-    m_Human.TransitToContext(HumanContextId::Ledge);
+    const bool fromEdgeStop = m_MoveState == State::EdgeStop;
+    m_Human.TransitToContext(HumanContextId::Ledge, [this, gap, fromEdgeStop] {
+        HumanLedgeData& ledge = m_Human.GetLedgeData();
+        ledge.m_PullDownGap = gap;
+        ledge.m_PullDownType = fromEdgeStop ? HumanLedgeData::PullDownType_Ground_Soft_EdgeStop
+                                            : HumanLedgeData::PullDownType_Ground_Soft_Wait;
+        ledge.m_PullDownSide = HumanLedgeData::PullDownSide_Front;
+        ledge.m_SubState = HumanLedgeData::SubState_PullDown;
+    });
 }
 
 bool HumanGround::TestIsEdgeValidForFall(const Gap& gap) const {

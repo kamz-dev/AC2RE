@@ -1,9 +1,10 @@
 # 13: HumanLedge (hanging from a ledge) and HumanClimb
 
-Status 2026-10-23: started. The class, its vftable, the FSM (all 29 states named and mapped Mac → PC), the
-reflected data, how the context picks its entry state, and the pull-down's three phases are decoded. Next: HangEntry,
-Wait, the release to InAir and the pull-up to Ground; then the hand placement / movement along the ledge (anchor
-points, `19_guidance.md`). HumanClimb is not started.
+Status 2026-10-23: the class, its vftable, the FSM (all 29 states named and mapped Mac → PC), the reflected data,
+how the context picks its entry state, the pull-down, HangEntry, the release, the pull-up and the player's ledge
+controller are decoded, and ported with live timings and positions (`port/src/scimitar/ac2/human_ledge.cpp`, live
+row 15). Next: moving along the ledge (Wait / HandPlacement, the anchor points, `19_guidance.md`), the hang positions'
+geometry (`ComputeHangWallEntityPosition`), the other states. HumanClimb is not started.
 
 Addresses: **PC** first (IDB rebased to 0), Mac (`IDB/scimitar_sf.i64`) in brackets. The Mac build has full symbols
 for this class (828 functions: every state's Enter / Exit / Update, every transition's Test / Exec / Transit).

@@ -5,6 +5,7 @@
 #include "port/sim.h"
 #include "scimitar/ac2/human_ground.h"
 #include "scimitar/ac2/human_in_air.h"
+#include "scimitar/ac2/human_ledge.h"
 
 using namespace port;
 
@@ -68,7 +69,8 @@ TEST(context_bundle_creates_on_demand) {
     CHECK(&bundle.GetGround() == &bundle.GetGround());
     CHECK(bundle.Get(HumanContextId::Ground) == &bundle.GetGround());
     CHECK(bundle.Get(HumanContextId::InAir)->GetID() == HumanContextId::InAir);
-    CHECK(bundle.Get(HumanContextId::Ledge) == nullptr);  // not implemented yet
+    CHECK(bundle.Get(HumanContextId::Ledge) == &bundle.GetLedge());
+    CHECK(bundle.Get(HumanContextId::Climb) == nullptr);  // not implemented yet
 }
 
 TEST(context_names_cover_every_id) {

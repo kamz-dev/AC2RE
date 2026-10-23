@@ -7,6 +7,7 @@
 #include "port/world.h"
 #include "scimitar/ac2/human_ground.h"
 #include "scimitar/ac2/human_in_air.h"
+#include "scimitar/ac2/human_ledge.h"
 
 namespace scimitar::ac2 {
 
@@ -51,11 +52,13 @@ T& HumanContextBundle::CreateContextOnDemand(HumanContextId id) {
 
 HumanGround& HumanContextBundle::GetGround() { return CreateContextOnDemand<HumanGround>(HumanContextId::Ground); }
 HumanInAir& HumanContextBundle::GetInAir() { return CreateContextOnDemand<HumanInAir>(HumanContextId::InAir); }
+HumanLedge& HumanContextBundle::GetLedge() { return CreateContextOnDemand<HumanLedge>(HumanContextId::Ledge); }
 
 ActorContext* HumanContextBundle::Get(HumanContextId id) {
     switch (id) {
         case HumanContextId::Ground: return &GetGround();
         case HumanContextId::InAir: return &GetInAir();
+        case HumanContextId::Ledge: return &GetLedge();
         default: return nullptr;  // not implemented yet
     }
 }

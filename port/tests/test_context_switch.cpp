@@ -47,7 +47,7 @@ struct TestActor : AIActor {
         if (track != kMainTrack) return nullptr;
         if (id == HumanContextId::Ground) return &ground;
         if (id == HumanContextId::InAir) return &inAir;
-        return nullptr;  // e.g. Ledge: not there
+        return nullptr;  // e.g. Climb: not there
     }
     LogContext ground, inAir;
 };
@@ -84,7 +84,7 @@ TEST(context_switch_to_a_missing_context_changes_nothing) {
     actor.SetInitialContext(AIActor::kMainTrack, HumanContextId::Ground);
     actor.Enter();
     log.clear();
-    CHECK(!actor.TransitToContext(HumanContextId::Ledge));  // PORT: the port has no Ledge context yet
+    CHECK(!actor.TransitToContext(HumanContextId::Climb));  // PORT: the port has no Climb context yet
     CHECK(log.empty());
     CHECK(actor.GetCurrentContextID() == HumanContextId::Ground);
     CHECK(!actor.HasContextChanged());
