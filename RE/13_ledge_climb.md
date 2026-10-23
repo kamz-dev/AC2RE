@@ -178,11 +178,32 @@ frame (`LegacyUpdate`); a step ends when `GetProgressionRatio` reaches 1.
 So the hang's position is geometry (the hand anchors on the guidance line and the wall), while each step's duration
 is its animation's length: the port needs the former decoded and the latter measured live.
 
+## 6. HangEntry (id 7) and the hang
+- `UpdateHangEntryMain` [0x133DB24]: waits for the reception action to finish (`HasActionFinished`), forces the move
+  to its end (progression 1), initialises the limbs' IK (unless the entry was a pull-down, `SubState` 11), then plays
+  the hang's idle by `LedgeHangType` (data +0x68): Wall → 0x106F2E8 (unless a parallel jump is found on the way in),
+  Free → 0x12719F1 (blended by data +0x70 for grasp types 2 / 3), WallFree → 0x106F2E9; and sets `SubState` = 1.
+- `_UpdateHangEntry` [0x133DE52]: → Climb when HumanLedge +0xA75 & 2 (Mac), else → Movement once `SubState` is 1
+  (`TestHangEntryToMovementMain` [0x131907E]). Movement enters its initial child, Wait.
+- Wait → InAir by itself only when hanging from a broken rope (`TestWaitToInAirMain` [0x1318CD4]); otherwise the
+  hang ends through interface commands.
+
+## 7. Interface commands while hanging
+Each `CanX` asks `_TestInterfaceTransitionsHumanLedge(command)` [0x1342A74] and is true when the answer is 2 (the
+same tracker as HumanGround's); `DoX` packs the parameters and runs `_ExecInterfaceTransitionHumanLedge(command)`.
+- **Release** (command 3; `CanRelease` [0x1342EE4], `DoRelease(FootHold*, LandingIntention)` [0x134731A]): from
+  Movement, `TestMovementToInAirOnInterfaceCommand_Release` [0x1324584] answers 2 at a water well or when the current
+  action can be interrupted by a release (`IsActionInterruptibleByRelease` [0x13244B6]), else 1;
+  `ExecMovementToInAirOnInterfaceCommand_Release` [0x13407A2] → `ReleaseToInAir` [0x13402EA].
+- **Pullup** (command 0; `CanPullup` [0x134308C], `DoPullup` [0x134754A]): from Movement, 3 at a water well, else
+  `EvaluatePullupFromMovement(1, 0, 1)` [0x132EDCA] (`TestMovementToPullupOnInterfaceCommand_Pullup` [0x132FB72]).
+- The player's controller sends them from `AssassinTask::UpdateLedge` [0x1076B30] (0x1E74 bytes, not read yet).
+
 ## Open
 - PC addresses of the Enter / Exit / Test / Exec functions (only the `_Update`s are named).
 - `ComputeHangWallEntityPosition`, `ComputeHangFreeEntityPosition`, `GetNextVerticalLimbPos`, the anchor points
   (`AnchorPoint`, `19_guidance.md`), `SetupInterpolatorForHumanLedgeMove` / `DisplacementManager`.
-- HangEntry, Wait, Release → InAir, Pullup → Ground; the controller's ledge update
-  (`GroundNavigationTask::UpdateLedgeContext` [0xE30D5C] is the AI's; the player's is in `AssassinTask`).
+- `UpdateWaitMain` [0x133B696], `ReleaseToInAir`, `EvaluatePullupFromMovement`, Pullup → Ground, and
+  `AssassinTask::UpdateLedge` [0x1076B30] (the AI's is `GroundNavigationTask::UpdateLedgeContext` [0xE30D5C]).
 - Live: the pull-down's three step durations, the hang position against the edge (wall and free), and how a
   high-profile run hands Ground over to Ledge (`11_ground.md` 16 Open).

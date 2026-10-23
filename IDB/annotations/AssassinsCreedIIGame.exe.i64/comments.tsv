@@ -18873,6 +18873,8 @@ FFF84	c	char *
 65CC96	c	void *
 65CCA8	c	void *
 65CCB7	c	void *
+65D2E0	F	Mac 0x131E966 HumanLedge::LinkFSM: ids 1..29 at +0xE2C step 3; root initial +0xDE1 = 1 (Movement); Movement initial Wait (2); PullupToActorInterraction initial PullupToActor (25); tracker +0xDE4 reserved 29.
+65D2E0	c	Mac 0x131E966 HumanLedge::LinkFSM: ids 1..29 at +0xE2C step 3; root initial +0xDE1 = 1 (Movement); Movement initial Wait (2); PullupToActorInterraction initial PullupToActor (25); tracker +0xDE4 reserved 29.
 65DC98	c	Source
 65EC68	c	float
 65EC6B	c	int
@@ -18955,6 +18957,8 @@ FFF84	c	char *
 663B51	c	int
 663B53	c	unsigned int
 663B5B	c	void *
+663D60	F	Mac 0x16381FC HumanLedge::Exit (slot 13)
+663D60	c	Mac 0x16381FC HumanLedge::Exit (slot 13)
 663E76	c	void *
 663EBC	c	void *
 6640B1	c	float
@@ -19246,6 +19250,10 @@ FFF84	c	char *
 6708D1	c	int
 6708D9	c	int
 6708DA	c	int
+670A00	F	Mac 0x1638396 HumanLedge::Enter (vftable 0x19C0010 slot 12)
+670A00	c	Mac 0x1638396 HumanLedge::Enter (vftable 0x19C0010 slot 12)
+6711A0	F	Mac 0x1345F86 HumanLedge::_UpdateHumanLedge: the FSM dispatcher (root +0xDE0/+0xDE1/+0xDE2; records from +0xE2C, ids 1-29, LinkFSM 0x65D2E0). Callees named by position against the Mac dispatcher (RE/13_ledge_climb.md).
+6711A0	c	Mac 0x1345F86 HumanLedge::_UpdateHumanLedge: the FSM dispatcher (root +0xDE0/+0xDE1/+0xDE2; records from +0xE2C, ids 1-29, LinkFSM 0x65D2E0). Callees named by position against the Mac dispatcher (RE/13_ledge_climb.md).
 672BB1	c	Block
 675987	c	float
 676660	c	float
